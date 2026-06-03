@@ -41,6 +41,8 @@ services:
       - grafana_data:/var/lib/grafana
     environment:
       - TZ=America/Argentina/Buenos_Aires
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin1234
     
 volumes:
   mosquitto_data:
