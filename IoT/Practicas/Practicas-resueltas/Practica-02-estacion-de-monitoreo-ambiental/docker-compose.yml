@@ -15,9 +15,10 @@ services:
     ports:
       - "1880:1880"
     volumes:
-      - nodered_data:/data
+      - ./nodered_data:/data
     environment:
       - TZ=America/Argentina/Buenos_Aires
+      - INFLUXDB_TOKEN=IEjS8estr9A_nxkAyY8GlaBS0H720adFNMEhxTtCuOSdyFPPPklnnJiOWQWkV_FlFZ96bpYmdmA9doGJ_iE04g==
 
   influxdb:
     image: influxdb:2.9.1
@@ -32,6 +33,7 @@ services:
       - DOCKER_INFLUXDB_INIT_PASSWORD=admin1234
       - DOCKER_INFLUXDB_INIT_ORG=unlp
       - DOCKER_INFLUXDB_INIT_BUCKET=iot
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=TokenSuperSecretoTPIoTSpadariPedro
   
   grafana:
     image: grafana/grafana:latest
@@ -39,10 +41,12 @@ services:
       - "3000:3000"
     volumes:
       - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
     environment:
       - TZ=America/Argentina/Buenos_Aires
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin1234
+      - INFLUXDB_TOKEN=TokenSuperSecretoTPIoTSpadariPedro
     
 volumes:
   mosquitto_data:
