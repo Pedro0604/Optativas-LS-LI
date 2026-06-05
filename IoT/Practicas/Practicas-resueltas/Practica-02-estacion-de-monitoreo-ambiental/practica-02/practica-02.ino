@@ -8,9 +8,13 @@
 #include "conectar_wifi.hpp"
 
 extern const int ldrPin;
+
+extern const int readInterval;
+
+extern char const *const mqttClientName;
 extern char const *const mqttServer;
 extern const int mqttPort;
-extern const int readInterval;
+
 extern DHT dht;
 
 unsigned long lastReadTime = 0;
@@ -29,13 +33,13 @@ void setup()
   pinMode(ldrPin, INPUT);
 
   mqttClient.setServer(mqttServer, mqttPort);
-  if (mqttClient.connect("ESP32-Estacion-Monitoreo-Ambiental"))
+  if (mqttClient.connect(mqttClientName))
   {
     Serial.println("Conectado exitosamente a MQTT");
   }
   else
   {
-    Serial.print("Fallo la conexión a MQTT, estado: ");
+    Serial.print("Falló la conexión a MQTT, estado: ");
     Serial.println(mqttClient.state());
   }
 }
@@ -56,8 +60,30 @@ void loop()
     if (mqttClient.connected())
     {
       mqttClient.publish("iot/ambiente", payload);
-    } else {
+    }
+    else
+    {
       Serial.println("No se pudo enviar a MQTT, el cliente no está conectado.");
+      Serial.println("Se intentará la reconexión con backoff exponencial.");
+
+      int backoffTime = 1000;
+      while (!mqttClient.connected())
+      {
+        Serial.println("Intentando reconectar a MQTT...");
+        if (mqttClient.connect(mqttClientName))
+        {
+          Serial.println("Reconectado exitosamente a MQTT");
+          break;
+        }
+        else
+        {
+          Serial.print("Falló la reconexión a MQTT, estado: ");
+          Serial.println(mqttClient.state());
+          Serial.printf("Esperando %ds antes del próximo intento...\n", backoffTime / 1000);
+          delay(backoffTime);
+          backoffTime = min(backoffTime * 2, 32000);
+        }
+      }
     }
 
     lastReadTime = millis();
