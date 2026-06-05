@@ -1,6 +1,6 @@
 services:
   mosquitto:
-    image: eclipse-mosquitto:latest
+    image: eclipse-mosquitto:2.1.2-alpine
     volumes:
       - ./mosquitto/config:/mosquitto/config
       - ./mosquitto/log:/mosquitto/log
