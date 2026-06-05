@@ -1,0 +1,5 @@
+FROM nodered/node-red:latest
+
+RUN npm install node-red-contrib-influxdb
+
+COPY --chown=node-red:node-red ./nodered-flow.json /data/flows.json

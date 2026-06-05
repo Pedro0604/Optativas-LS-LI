@@ -11,7 +11,9 @@ services:
       - TZ=${TZ}
 
   nodered:
-    image: nodered/node-red:latest
+    build: 
+      context: .
+      dockerfile: Dockerfile.nodered
     ports:
       - "1880:1880"
     volumes:
@@ -26,6 +28,7 @@ services:
       - "8086:8086"
     volumes:
       - influxdb_data:/var/lib/influxdb2
+      - influxdb_config:/etc/influxdb2
     environment:
       - TZ=${TZ}
       - DOCKER_INFLUXDB_INIT_MODE=setup
@@ -52,4 +55,5 @@ volumes:
   mosquitto_data:
   nodered_data:
   influxdb_data:
+  influxdb_config:
   grafana_data:

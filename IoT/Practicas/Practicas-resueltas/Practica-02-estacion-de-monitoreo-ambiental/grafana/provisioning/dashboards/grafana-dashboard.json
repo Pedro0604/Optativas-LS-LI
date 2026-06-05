@@ -4,19 +4,23 @@
     "metadata": {
         "name": "adnz5ml",
         "namespace": "default",
-        "uid": "37c738a5-9f40-4ad3-b5fb-5afa7e070335",
-        "resourceVersion": "1780611082681980",
-        "generation": 27,
-        "creationTimestamp": "2026-06-03T23:12:27Z",
+        "uid": "8bb32125-dbf9-456d-b7e0-8390f17ad152",
+        "resourceVersion": "1780692079922993",
+        "generation": 4,
+        "creationTimestamp": "2026-06-05T20:06:23Z",
         "labels": {
-            "grafana.app/deprecatedInternalID": "4166451546996736"
+            "grafana.app/deprecatedInternalID": "340803484098560"
         },
         "annotations": {
-            "grafana.app/createdBy": "user:dfo22kkkkgb28b",
-            "grafana.app/folder": "",
-            "grafana.app/saved-from-ui": "Grafana v13.0.2 (3fcdbc5a)",
-            "grafana.app/updatedBy": "user:dfo22kkkkgb28b",
-            "grafana.app/updatedTimestamp": "2026-06-04T22:11:22Z"
+            "grafana.app/createdBy": "access-policy:service",
+            "grafana.app/managedBy": "classic-file-provisioning",
+            "grafana.app/managerId": "Dashboards Estacion Ambiental",
+            "grafana.app/sourceChecksum": "853324ce4d9e934ff2f07872e41a0aeb",
+            "grafana.app/sourcePath": "/etc/grafana/provisioning/dashboards/grafana-dashboard.json",
+            "grafana.app/sourceTimestamp": "1780692031000",
+            "grafana.app/updatedBy": "access-policy:service",
+            "grafana.app/updatedTimestamp": "2026-06-05T20:41:19Z",
+            "grafana.app/folder": ""
         }
     },
     "spec": {
@@ -24,20 +28,20 @@
             {
                 "kind": "AnnotationQuery",
                 "spec": {
-                    "query": {
-                        "kind": "DataQuery",
-                        "group": "grafana",
-                        "version": "v0",
-                        "datasource": {
-                            "name": "-- Grafana --"
-                        },
-                        "spec": {}
-                    },
+                    "builtIn": true,
                     "enable": true,
                     "hide": true,
                     "iconColor": "rgba(0, 211, 255, 1)",
                     "name": "Annotations & Alerts",
-                    "builtIn": true
+                    "query": {
+                        "datasource": {
+                            "name": "-- Grafana --"
+                        },
+                        "group": "grafana",
+                        "kind": "DataQuery",
+                        "spec": {},
+                        "version": "v0"
+                    }
                 }
             }
         ],
@@ -47,10 +51,6 @@
             "panel-1": {
                 "kind": "Panel",
                 "spec": {
-                    "id": 1,
-                    "title": "",
-                    "description": "",
-                    "links": [],
                     "data": {
                         "kind": "QueryGroup",
                         "spec": {
@@ -58,31 +58,87 @@
                                 {
                                     "kind": "PanelQuery",
                                     "spec": {
+                                        "hidden": false,
                                         "query": {
-                                            "kind": "DataQuery",
                                             "group": "influxdb",
-                                            "version": "v0",
-                                            "datasource": {
-                                                "name": "ffo2biq1mgd1cb"
-                                            },
+                                            "kind": "DataQuery",
                                             "spec": {
                                                 "query": "from(bucket: \"iot\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"ambiente\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"temp\")"
-                                            }
+                                            },
+                                            "version": "v0"
                                         },
-                                        "refId": "A",
-                                        "hidden": false
+                                        "refId": "A"
                                     }
                                 }
                             ],
-                            "transformations": [],
-                            "queryOptions": {}
+                            "queryOptions": {},
+                            "transformations": []
                         }
                     },
+                    "description": "Temperatura medida por el sensor DHT11 conectado al ESP32.",
+                    "id": 1,
+                    "links": [],
+                    "title": "Temperatura",
+                    "transparent": true,
                     "vizConfig": {
-                        "kind": "VizConfig",
                         "group": "gauge",
-                        "version": "13.0.2",
+                        "kind": "VizConfig",
                         "spec": {
+                            "fieldConfig": {
+                                "defaults": {
+                                    "color": {
+                                        "mode": "thresholds"
+                                    },
+                                    "displayName": "Temperatura",
+                                    "fieldMinMax": false,
+                                    "max": 35,
+                                    "min": 0,
+                                    "noValue": "Sin datos",
+                                    "thresholds": {
+                                        "mode": "absolute",
+                                        "steps": [
+                                            {
+                                                "color": "green",
+                                                "value": 0
+                                            },
+                                            {
+                                                "color": "dark-blue",
+                                                "value": 0
+                                            },
+                                            {
+                                                "color": "blue",
+                                                "value": 5
+                                            },
+                                            {
+                                                "color": "light-blue",
+                                                "value": 10
+                                            },
+                                            {
+                                                "color": "green",
+                                                "value": 15
+                                            },
+                                            {
+                                                "color": "dark-green",
+                                                "value": 20
+                                            },
+                                            {
+                                                "color": "yellow",
+                                                "value": 25
+                                            },
+                                            {
+                                                "color": "orange",
+                                                "value": 30
+                                            },
+                                            {
+                                                "color": "red",
+                                                "value": 35
+                                            }
+                                        ]
+                                    },
+                                    "unit": "celsius"
+                                },
+                                "overrides": []
+                            },
                             "options": {
                                 "barShape": "flat",
                                 "barWidthFactor": 0.33,
@@ -110,72 +166,15 @@
                                 "sizing": "auto",
                                 "sparkline": true,
                                 "textMode": "auto"
-                            },
-                            "fieldConfig": {
-                                "defaults": {
-                                    "displayName": "Temperatura",
-                                    "unit": "celsius",
-                                    "min": 0,
-                                    "max": 35,
-                                    "thresholds": {
-                                        "mode": "absolute",
-                                        "steps": [
-                                            {
-                                                "value": 0,
-                                                "color": "green"
-                                            },
-                                            {
-                                                "value": 0,
-                                                "color": "dark-blue"
-                                            },
-                                            {
-                                                "value": 5,
-                                                "color": "blue"
-                                            },
-                                            {
-                                                "value": 10,
-                                                "color": "light-blue"
-                                            },
-                                            {
-                                                "value": 15,
-                                                "color": "green"
-                                            },
-                                            {
-                                                "value": 20,
-                                                "color": "dark-green"
-                                            },
-                                            {
-                                                "value": 25,
-                                                "color": "yellow"
-                                            },
-                                            {
-                                                "value": 30,
-                                                "color": "orange"
-                                            },
-                                            {
-                                                "value": 35,
-                                                "color": "red"
-                                            }
-                                        ]
-                                    },
-                                    "color": {
-                                        "mode": "thresholds"
-                                    },
-                                    "fieldMinMax": false
-                                },
-                                "overrides": []
                             }
-                        }
+                        },
+                        "version": "13.0.2"
                     }
                 }
             },
             "panel-2": {
                 "kind": "Panel",
                 "spec": {
-                    "id": 2,
-                    "title": "",
-                    "description": "",
-                    "links": [],
                     "data": {
                         "kind": "QueryGroup",
                         "spec": {
@@ -183,33 +182,80 @@
                                 {
                                     "kind": "PanelQuery",
                                     "spec": {
+                                        "hidden": false,
                                         "query": {
-                                            "kind": "DataQuery",
                                             "group": "influxdb",
-                                            "version": "v0",
-                                            "datasource": {
-                                                "name": "ffo2biq1mgd1cb"
-                                            },
+                                            "kind": "DataQuery",
                                             "spec": {
                                                 "query": "from(bucket: \"iot\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"ambiente\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"hum\")"
-                                            }
+                                            },
+                                            "version": "v0"
                                         },
-                                        "refId": "A",
-                                        "hidden": false
+                                        "refId": "A"
                                     }
                                 }
                             ],
-                            "transformations": [],
-                            "queryOptions": {}
+                            "queryOptions": {},
+                            "transformations": []
                         }
                     },
+                    "description": "Humedad medida por el sensor DHT11 conectado al ESP32.",
+                    "id": 2,
+                    "links": [],
+                    "title": "Humedad",
+                    "transparent": true,
                     "vizConfig": {
-                        "kind": "VizConfig",
                         "group": "stat",
-                        "version": "13.0.2",
+                        "kind": "VizConfig",
                         "spec": {
+                            "fieldConfig": {
+                                "defaults": {
+                                    "color": {
+                                        "fixedColor": "dark-blue",
+                                        "mode": "thresholds"
+                                    },
+                                    "displayName": "Humedad",
+                                    "fieldMinMax": false,
+                                    "noValue": "Sin datos",
+                                    "thresholds": {
+                                        "mode": "absolute",
+                                        "steps": [
+                                            {
+                                                "color": "green",
+                                                "value": 0
+                                            },
+                                            {
+                                                "color": "#907225",
+                                                "value": 0
+                                            },
+                                            {
+                                                "color": "#ffefbf",
+                                                "value": 40
+                                            },
+                                            {
+                                                "color": "light-blue",
+                                                "value": 50
+                                            },
+                                            {
+                                                "color": "blue",
+                                                "value": 60
+                                            },
+                                            {
+                                                "color": "semi-dark-blue",
+                                                "value": 70
+                                            },
+                                            {
+                                                "color": "dark-blue",
+                                                "value": 90
+                                            }
+                                        ]
+                                    },
+                                    "unit": "percent"
+                                },
+                                "overrides": []
+                            },
                             "options": {
-                                "colorMode": "background",
+                                "colorMode": "value",
                                 "graphMode": "area",
                                 "justifyMode": "auto",
                                 "orientation": "auto",
@@ -225,70 +271,15 @@
                                 "text": {},
                                 "textMode": "auto",
                                 "wideLayout": true
-                            },
-                            "fieldConfig": {
-                                "defaults": {
-                                    "displayName": "Humedad",
-                                    "unit": "percent",
-                                    "thresholds": {
-                                        "mode": "absolute",
-                                        "steps": [
-                                            {
-                                                "value": 0,
-                                                "color": "green"
-                                            },
-                                            {
-                                                "value": 0,
-                                                "color": "#907225"
-                                            },
-                                            {
-                                                "value": 40,
-                                                "color": "super-light-blue"
-                                            },
-                                            {
-                                                "value": 50,
-                                                "color": "light-blue"
-                                            },
-                                            {
-                                                "value": 60,
-                                                "color": "blue"
-                                            },
-                                            {
-                                                "value": 70,
-                                                "color": "semi-dark-blue"
-                                            },
-                                            {
-                                                "value": 80,
-                                                "color": "dark-blue"
-                                            },
-                                            {
-                                                "value": 90,
-                                                "color": "#121d95"
-                                            },
-                                            {
-                                                "value": 100,
-                                                "color": "#0b00ff"
-                                            }
-                                        ]
-                                    },
-                                    "color": {
-                                        "mode": "thresholds"
-                                    },
-                                    "fieldMinMax": false
-                                },
-                                "overrides": []
                             }
-                        }
+                        },
+                        "version": "13.0.2"
                     }
                 }
             },
             "panel-3": {
                 "kind": "Panel",
                 "spec": {
-                    "id": 3,
-                    "title": "",
-                    "description": "",
-                    "links": [],
                     "data": {
                         "kind": "QueryGroup",
                         "spec": {
@@ -296,97 +287,38 @@
                                 {
                                     "kind": "PanelQuery",
                                     "spec": {
+                                        "hidden": false,
                                         "query": {
-                                            "kind": "DataQuery",
                                             "group": "influxdb",
-                                            "version": "v0",
-                                            "datasource": {
-                                                "name": "ffo2biq1mgd1cb"
-                                            },
+                                            "kind": "DataQuery",
                                             "spec": {
                                                 "query": "from(bucket: \"iot\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"ambiente\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"light\")"
-                                            }
+                                            },
+                                            "version": "v0"
                                         },
-                                        "refId": "A",
-                                        "hidden": false
+                                        "refId": "A"
                                     }
                                 }
                             ],
-                            "transformations": [],
-                            "queryOptions": {}
+                            "queryOptions": {},
+                            "transformations": []
                         }
                     },
+                    "description": "Intensidad de luz medida por el sensor LDR conectado al ESP32.",
+                    "id": 3,
+                    "links": [],
+                    "title": "Luz",
+                    "transparent": true,
                     "vizConfig": {
-                        "kind": "VizConfig",
                         "group": "timeseries",
-                        "version": "13.0.2",
+                        "kind": "VizConfig",
                         "spec": {
-                            "options": {
-                                "annotations": {
-                                    "clustering": -1,
-                                    "multiLane": false
-                                },
-                                "legend": {
-                                    "calcs": [
-                                        "mean",
-                                        "min",
-                                        "max",
-                                        "last"
-                                    ],
-                                    "displayMode": "list",
-                                    "placement": "bottom",
-                                    "showLegend": true
-                                },
-                                "tooltip": {
-                                    "hideZeros": false,
-                                    "mode": "multi",
-                                    "sort": "none"
-                                }
-                            },
                             "fieldConfig": {
                                 "defaults": {
-                                    "displayName": "Luz",
-                                    "decimals": 0,
-                                    "thresholds": {
-                                        "mode": "absolute",
-                                        "steps": [
-                                            {
-                                                "value": 0,
-                                                "color": "green"
-                                            },
-                                            {
-                                                "value": 0,
-                                                "color": "#0101024a"
-                                            },
-                                            {
-                                                "value": 100,
-                                                "color": "#060a48"
-                                            },
-                                            {
-                                                "value": 300,
-                                                "color": "#3b57ba"
-                                            },
-                                            {
-                                                "value": 500,
-                                                "color": "#8e4f2a"
-                                            },
-                                            {
-                                                "value": 500,
-                                                "color": "orange"
-                                            },
-                                            {
-                                                "value": 1500,
-                                                "color": "light-yellow"
-                                            },
-                                            {
-                                                "value": 3500,
-                                                "color": "#ffef00"
-                                            }
-                                        ]
-                                    },
                                     "color": {
-                                        "mode": "thresholds",
-                                        "fixedColor": "#e0ce2f"
+                                        "fixedColor": "#e0ce2f",
+                                        "mode": "fixed",
+                                        "seriesBy": "last"
                                     },
                                     "custom": {
                                         "axisBorderShow": false,
@@ -427,21 +359,80 @@
                                             "mode": "off"
                                         }
                                     },
-                                    "fieldMinMax": false
+                                    "decimals": 0,
+                                    "displayName": "Luz",
+                                    "fieldMinMax": false,
+                                    "noValue": "Sin datos",
+                                    "thresholds": {
+                                        "mode": "absolute",
+                                        "steps": [
+                                            {
+                                                "color": "green",
+                                                "value": 0
+                                            },
+                                            {
+                                                "color": "#0101024a",
+                                                "value": 0
+                                            },
+                                            {
+                                                "color": "#060a48",
+                                                "value": 100
+                                            },
+                                            {
+                                                "color": "#3b57ba",
+                                                "value": 300
+                                            },
+                                            {
+                                                "color": "#8e4f2a",
+                                                "value": 500
+                                            },
+                                            {
+                                                "color": "orange",
+                                                "value": 500
+                                            },
+                                            {
+                                                "color": "light-yellow",
+                                                "value": 1500
+                                            },
+                                            {
+                                                "color": "#ffef00",
+                                                "value": 3500
+                                            }
+                                        ]
+                                    }
                                 },
                                 "overrides": []
+                            },
+                            "options": {
+                                "annotations": {
+                                    "clustering": -1,
+                                    "multiLane": false
+                                },
+                                "legend": {
+                                    "calcs": [
+                                        "mean",
+                                        "min",
+                                        "max",
+                                        "last"
+                                    ],
+                                    "displayMode": "list",
+                                    "placement": "bottom",
+                                    "showLegend": true
+                                },
+                                "tooltip": {
+                                    "hideZeros": false,
+                                    "mode": "multi",
+                                    "sort": "none"
+                                }
                             }
-                        }
+                        },
+                        "version": "13.0.2"
                     }
                 }
             },
             "panel-4": {
                 "kind": "Panel",
                 "spec": {
-                    "id": 4,
-                    "title": "",
-                    "description": "",
-                    "links": [],
                     "data": {
                         "kind": "QueryGroup",
                         "spec": {
@@ -449,31 +440,74 @@
                                 {
                                     "kind": "PanelQuery",
                                     "spec": {
+                                        "hidden": false,
                                         "query": {
-                                            "kind": "DataQuery",
                                             "group": "influxdb",
-                                            "version": "v0",
-                                            "datasource": {
-                                                "name": "ffo2biq1mgd1cb"
-                                            },
+                                            "kind": "DataQuery",
                                             "spec": {
                                                 "query": "from(bucket: \"iot\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"ambiente\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"air\")"
-                                            }
+                                            },
+                                            "version": "v0"
                                         },
-                                        "refId": "A",
-                                        "hidden": false
+                                        "refId": "A"
                                     }
                                 }
                             ],
-                            "transformations": [],
-                            "queryOptions": {}
+                            "queryOptions": {},
+                            "transformations": []
                         }
                     },
+                    "description": "Calidad del aire simulada por desde el ESP32.",
+                    "id": 4,
+                    "links": [],
+                    "title": "Calidad del aire",
+                    "transparent": true,
                     "vizConfig": {
-                        "kind": "VizConfig",
                         "group": "gauge",
-                        "version": "13.0.2",
+                        "kind": "VizConfig",
                         "spec": {
+                            "fieldConfig": {
+                                "defaults": {
+                                    "color": {
+                                        "mode": "thresholds"
+                                    },
+                                    "displayName": "Calidad del aire",
+                                    "max": 2000,
+                                    "min": 400,
+                                    "noValue": "Sin datos",
+                                    "thresholds": {
+                                        "mode": "absolute",
+                                        "steps": [
+                                            {
+                                                "color": "green",
+                                                "value": 0
+                                            },
+                                            {
+                                                "color": "dark-green",
+                                                "value": 400
+                                            },
+                                            {
+                                                "color": "light-green",
+                                                "value": 800
+                                            },
+                                            {
+                                                "color": "yellow",
+                                                "value": 1200
+                                            },
+                                            {
+                                                "color": "orange",
+                                                "value": 1600
+                                            },
+                                            {
+                                                "color": "dark-red",
+                                                "value": 2000
+                                            }
+                                        ]
+                                    },
+                                    "unit": "ppm"
+                                },
+                                "overrides": []
+                            },
                             "options": {
                                 "barShape": "flat",
                                 "barWidthFactor": 0.5,
@@ -501,49 +535,9 @@
                                 "sizing": "auto",
                                 "sparkline": true,
                                 "textMode": "auto"
-                            },
-                            "fieldConfig": {
-                                "defaults": {
-                                    "displayName": "Calidad del aire",
-                                    "unit": "ppm",
-                                    "min": 400,
-                                    "max": 2000,
-                                    "thresholds": {
-                                        "mode": "absolute",
-                                        "steps": [
-                                            {
-                                                "value": 0,
-                                                "color": "green"
-                                            },
-                                            {
-                                                "value": 400,
-                                                "color": "dark-green"
-                                            },
-                                            {
-                                                "value": 800,
-                                                "color": "light-green"
-                                            },
-                                            {
-                                                "value": 1200,
-                                                "color": "yellow"
-                                            },
-                                            {
-                                                "value": 1600,
-                                                "color": "orange"
-                                            },
-                                            {
-                                                "value": 2000,
-                                                "color": "dark-red"
-                                            }
-                                        ]
-                                    },
-                                    "color": {
-                                        "mode": "thresholds"
-                                    }
-                                },
-                                "overrides": []
                             }
-                        }
+                        },
+                        "version": "13.0.2"
                     }
                 }
             }
@@ -555,53 +549,53 @@
                     {
                         "kind": "GridLayoutItem",
                         "spec": {
-                            "x": 0,
-                            "y": 0,
-                            "width": 12,
-                            "height": 8,
                             "element": {
                                 "kind": "ElementReference",
                                 "name": "panel-1"
-                            }
+                            },
+                            "height": 8,
+                            "width": 12,
+                            "x": 0,
+                            "y": 0
                         }
                     },
                     {
                         "kind": "GridLayoutItem",
                         "spec": {
-                            "x": 12,
-                            "y": 0,
-                            "width": 12,
-                            "height": 8,
                             "element": {
                                 "kind": "ElementReference",
                                 "name": "panel-2"
-                            }
+                            },
+                            "height": 8,
+                            "width": 12,
+                            "x": 12,
+                            "y": 0
                         }
                     },
                     {
                         "kind": "GridLayoutItem",
                         "spec": {
-                            "x": 0,
-                            "y": 8,
-                            "width": 12,
-                            "height": 8,
                             "element": {
                                 "kind": "ElementReference",
                                 "name": "panel-3"
-                            }
+                            },
+                            "height": 8,
+                            "width": 12,
+                            "x": 0,
+                            "y": 8
                         }
                     },
                     {
                         "kind": "GridLayoutItem",
                         "spec": {
-                            "x": 12,
-                            "y": 8,
-                            "width": 12,
-                            "height": 8,
                             "element": {
                                 "kind": "ElementReference",
                                 "name": "panel-4"
-                            }
+                            },
+                            "height": 8,
+                            "width": 12,
+                            "x": 12,
+                            "y": 8
                         }
                     }
                 ]
@@ -609,12 +603,17 @@
         },
         "links": [],
         "liveNow": false,
+        "preferences": {
+            "layout": {
+                "kind": "GridLayout",
+                "spec": {
+                    "items": []
+                }
+            }
+        },
         "preload": false,
         "tags": [],
         "timeSettings": {
-            "timezone": "browser",
-            "from": "now-2m",
-            "to": "now",
             "autoRefresh": "5s",
             "autoRefreshIntervals": [
                 "5s",
@@ -628,18 +627,13 @@
                 "2h",
                 "1d"
             ],
+            "fiscalYearStartMonth": 0,
+            "from": "now-2m",
             "hideTimepicker": false,
-            "fiscalYearStartMonth": 0
+            "timezone": "browser",
+            "to": "now"
         },
         "title": "Ambiente",
-        "variables": [],
-        "preferences": {
-            "layout": {
-                "kind": "GridLayout",
-                "spec": {
-                    "items": []
-                }
-            }
-        }
+        "variables": []
     }
 }
