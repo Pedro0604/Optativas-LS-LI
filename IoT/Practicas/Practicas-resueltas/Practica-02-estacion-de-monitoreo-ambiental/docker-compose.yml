@@ -39,7 +39,7 @@ services:
       - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUXDB_TOKEN}
   
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:13.0.2
     ports:
       - "3000:3000"
     volumes:
