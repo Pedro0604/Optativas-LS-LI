@@ -50,6 +50,7 @@ services:
       - GF_SECURITY_ADMIN_USER=${USER}
       - GF_SECURITY_ADMIN_PASSWORD=${PASSWORD}
       - INFLUXDB_TOKEN=${INFLUXDB_TOKEN}
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/etc/grafana/provisioning/dashboards/grafana-dashboard.json
     
 volumes:
   mosquitto_data:
