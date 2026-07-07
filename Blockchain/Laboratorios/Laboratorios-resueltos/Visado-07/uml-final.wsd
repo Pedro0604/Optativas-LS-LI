@@ -1,0 +1,86 @@
+@startuml
+class App {
+    - mnemonicSeedPhraseHandler: MnemonicSeedPhraseHandler
+    - keyStorer: KeyStorer
+    - walletSynchronizer: WalletSynchronizer
+    + initWallet(walletPath: String, backendPath: String)
+}
+
+interface MnemonicSeedPhraseHandler {
+    + isValid(seedPhrase: String): boolean
+    + randomMnemonicWords(): String[]
+    + randomMnemonic(): String
+}
+
+class MnemonicSeedPhraseProvider implements MnemonicSeedPhraseHandler {
+    + isValid(seedPhrase: String): boolean
+    + randomMnemonicWords(): String[]
+    + randomMnemonic(): String
+}
+
+interface KeyStorer {
+    + getKey(): String
+    + saveKey(key: String)
+    + getSeed(): Seed
+    + seedPhase(seedBytes: String)
+}
+
+class SeedManager implements KeyStorer {
+    + {static} defaultManager(): SeedManager
+    + {static} loadKeyStoreFromFile(pathToFile: String, keystorePassword: String): KeyStore
+    + {static} saveKeyStoreOnFile(keyStore: KeyStore, pathToFile: String, keystorePassword: String)
+    + {static} getKey(keyStore: KeyStore, entryPassword: String, alias: KeyStoreEnum): String
+    + {static} writeToKeyStore(keyStore: KeyStore, entryPassword: String, alias: KeyStoreEnum, password: String)
+    + getKey(): String
+    + saveKey(key: String)
+    + getSeed(): Seed
+    + seedPhase(seedBytes: String)
+}
+
+interface WalletSynchronizer {
+    + start(): void
+    + stop(): void
+    + isSynchronizing(): boolean
+    + getSyncStatus(): SyncStatus
+    + sync(): SyncResult
+    + listTransactions(): Transaction[]
+    + pendingTransactions(): List<Transaction>
+    + receivedTransactions(): List<Transaction>
+    + sentTransactions(): List<Transaction>
+    + getAddresses(): UnifiedAddress[]
+    + sendTo(address: String, zatoshis: long, memo: String): SendResult
+    + getBalance(): Balance
+}
+
+class ConcreteWalletSynchronizer implements WalletSynchronizer {
+    + start(): void
+    + stop(): void
+    + isSynchronizing(): boolean
+    + getSyncStatus(): SyncStatus
+    + sync(): SyncResult
+    + listTransactions(): Transaction[]
+    + pendingTransactions(): List<Transaction>
+    + receivedTransactions(): List<Transaction>
+    + sentTransactions(): List<Transaction>
+    + getAddresses(): UnifiedAddress[]
+    + sendTo(address: String, zatoshis: long, memo: String): SendResult
+    + getBalance(): Balance
+}
+
+class WalletInitializer {
+    + WalletInitializer(cliPath: String, server: String)
+    + createNewWallet(dataDir: String): Seed
+    + createNewWallet(dataDir: String, seedPhrase: String[]): Seed
+    + createNewWallet(dataDir: String, keywords: String[]): Seed
+    + restoreWallet(dataDir: String, seedPhrase: String, birthday: Integer): void
+    + createNewWalletUsingRandomSeed(walletPath: String): Seed
+    + createNewWalletFromKeyStore(walletPath: String, pathToKeyStore: String, keystorePassword: String, dataPassword: String): Seed
+    + walletExists(path: String): Boolean
+}
+
+App --> MnemonicSeedPhraseHandler : "mnemonicSeedPhraseHandler"
+App --> KeyStorer : "keyStorer"
+App --> WalletSynchronizer : "walletSynchronizer"
+App ..> WalletInitializer : "instanciado en initWallet()"
+
+@enduml
