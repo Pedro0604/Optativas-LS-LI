@@ -2,25 +2,6 @@
 pragma solidity ^0.8.36;
 
 import {Escrow} from "./Escrow.sol";
-import {
-    NoEthProvided,
-    AddressZero,
-    CannotHireYourself
-} from "./EscrowErrores.sol";
-
-/**
- * Se emite cuando se crea un contrato
- * @param escrowAddress La dirección del nuevo contrato
- * @param owner Dueño del nuevo contrato
- * @param worker Trabajador del nuevo contrato
- * @param amount Cantidad de ETH en wei del nuevo contrato
- */
-event EscrowCreated(
-    address indexed escrowAddress,
-    address indexed owner,
-    address indexed worker,
-    uint amount
-);
 
 contract EscrowFactory {
     mapping(address owner => address[] escrows) public escrowsByOwner;
@@ -28,37 +9,54 @@ contract EscrowFactory {
     // TODO - ALL ESCROWS ARRAY?
 
     /**
-     * @param worker Dirección de quien realizará el trabajo y recibirá el pago
+     * Se emite cuando se crea un contrato
+     * @param escrowAddress La dirección del nuevo contrato
+     * @param owner Dueño del nuevo contrato
+     * @param worker Trabajador del nuevo contrato
+     * @param amount Cantidad de ETH en wei del nuevo contrato
+     * @param durationDays Duración del contrato en días
+     */
+    event EscrowCreated(
+        address indexed escrowAddress,
+        address indexed owner,
+        address indexed worker,
+        uint256 amount,
+        uint256 durationDays
+    );
+
+    /**
+     * @param worker_ Dirección de quien realizará el trabajo y recibirá el pago
+     * @param durationDays_ Límite de tiempo en días para realizar el contrato
      */
     function createEscrow(
-        address worker
+        address worker_,
+        uint256 durationDays_
     ) external payable returns (address escrowAddress) {
-        if (msg.value == 0) {
-            revert NoEthProvided();
-        }
-
-        if (worker == address(0)) {
-            revert AddressZero();
-        }
-
-        if (msg.sender == worker) {
-            revert CannotHireYourself();
-        }
-
         escrowAddress = address(
-            new Escrow{value: msg.value}({owner_: msg.sender, worker_: worker})
+            new Escrow{value: msg.value}({
+                owner_: msg.sender,
+                worker_: worker_,
+                durationDays: durationDays_
+            })
         );
 
         escrowsByOwner[msg.sender].push(escrowAddress);
-        escrowsByWorker[worker].push(escrowAddress);
+        escrowsByWorker[worker_].push(escrowAddress);
 
         emit EscrowCreated({
             escrowAddress: escrowAddress,
             owner: msg.sender,
-            worker: worker,
-            amount: msg.value
+            worker: worker_,
+            amount: msg.value,
+            durationDays: durationDays_
         });
+    }
 
-        return escrowAddress;
+    function getEscrowCountByOwner(address owner) external view returns (uint256) {
+        return escrowsByOwner[owner].length;
+    }
+
+    function getEscrowCountByWorker(address worker) external view returns (uint256) {
+        return escrowsByWorker[worker].length;
     }
 }
