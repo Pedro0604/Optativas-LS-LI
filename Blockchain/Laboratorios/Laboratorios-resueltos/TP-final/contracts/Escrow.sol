@@ -24,10 +24,10 @@ error ZeroDuration();
 contract Escrow {
     /**
      * El estado del contrato.
-     * @dev El valor default es State.Financed
+     * @dev El valor default es State.Funded
      */
     enum State {
-        Financed,
+        Funded,
         Accepted,
         Delivered,
         Approved,
@@ -99,6 +99,6 @@ contract Escrow {
         amount = msg.value;
         endTime = block.timestamp + durationDays * 1 days;
 
-        state = State.Financed;
+        state = State.Funded;
     }
 }
