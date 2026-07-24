@@ -1,26 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.36;
 
-/**
- * No se proveyó nada de ETH para realizar la creación de un nuevo contrato
- */
-error NoEthProvided();
-
-/**
- * La dirección indicada es la 0
- */
-error AddressZero();
-
-/**
- * No se puede contratarse a uno mismo
- */
-error CannotHireYourself();
-
-/**
- * La duración del contrato no puede ser 0
- */
-error ZeroDuration();
-
 contract Escrow {
     /**
      * El estado del contrato.
@@ -49,6 +29,39 @@ contract Escrow {
     error OnlyOwnerAllowed();
 
     /**
+     * No se proveyó nada de ETH para realizar la creación de un nuevo contrato
+     */
+    error NoEthProvided();
+
+    /**
+     * La dirección indicada es la 0
+     */
+    error AddressZero();
+
+    /**
+     * No se puede contratarse a uno mismo
+     */
+    error CannotHireYourself();
+
+    /**
+     * La duración del contrato no puede ser 0
+     */
+    error ZeroDuration();
+
+    /**
+     * Solo se permite interactuar con esta función después del tiempo definido
+     * @param time Tiempo a partir del cual se puede interactuar con la función
+     */
+    error OnlyAllowedAfterTime(uint256 time);
+
+    /**
+     * Solo se permite interactuar con esta función hasta del tiempo definido
+     * @param time Tiempo a partir hasta cual se puede interactuar con la función
+     */
+    error OnlyAllowedBeforeTime(uint256 time);
+    
+
+    /**
      * Estado invalido.
      * @param currentState Estado actual
      * @param expectedState Estado esperado
@@ -68,6 +81,20 @@ contract Escrow {
     modifier onlyOwner() {
         if (msg.sender != owner) {
             revert OnlyOwnerAllowed();
+        }
+        _;
+    }
+
+    modifier onlyAfter(uint256 time) {
+        if (block.timestamp <= time) {
+            revert OnlyAllowedAfterTime(time);
+        }
+        _;
+    }
+
+    modifier onlyBefore(uint256 time) {
+        if (block.timestamp > time) {
+            revert OnlyAllowedBeforeTime(time);
         }
         _;
     }
