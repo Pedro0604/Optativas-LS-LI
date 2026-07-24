@@ -1,7 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.28;
+pragma solidity ^0.8.36;
 
-import {Escrow, NoEthProvided, AddressZero, CannotHireYourself} from "./Escrow.sol";
+import {Escrow} from "./Escrow.sol";
+import {
+    NoEthProvided,
+    AddressZero,
+    CannotHireYourself
+} from "./EscrowErrores.sol";
 
 /**
  * Se emite cuando se crea un contrato
@@ -10,21 +15,29 @@ import {Escrow, NoEthProvided, AddressZero, CannotHireYourself} from "./Escrow.s
  * @param worker Trabajador del nuevo contrato
  * @param amount Cantidad de ETH en wei del nuevo contrato
  */
-event EscrowCreated(address indexed escrowAddress, address indexed owner, address indexed worker, uint amount);
+event EscrowCreated(
+    address indexed escrowAddress,
+    address indexed owner,
+    address indexed worker,
+    uint amount
+);
 
 contract EscrowFactory {
     mapping(address owner => address[] escrows) public escrowsByOwner;
     mapping(address worker => address[] escrows) public escrowsByWorker;
+    // TODO - ALL ESCROWS ARRAY?
 
     /**
      * @param worker Dirección de quien realizará el trabajo y recibirá el pago
      */
-    function createEscrow(address worker) external payable returns (address escrowAddress) {
+    function createEscrow(
+        address worker
+    ) external payable returns (address escrowAddress) {
         if (msg.value == 0) {
             revert NoEthProvided();
         }
 
-        if (worker == address(0)){
+        if (worker == address(0)) {
             revert AddressZero();
         }
 
@@ -32,7 +45,9 @@ contract EscrowFactory {
             revert CannotHireYourself();
         }
 
-        escrowAddress = address(            new Escrow{value: msg.value}({                owner_: msg.sender,                worker_: worker            })        );
+        escrowAddress = address(
+            new Escrow{value: msg.value}({owner_: msg.sender, worker_: worker})
+        );
 
         escrowsByOwner[msg.sender].push(escrowAddress);
         escrowsByWorker[worker].push(escrowAddress);
@@ -43,5 +58,7 @@ contract EscrowFactory {
             worker: worker,
             amount: msg.value
         });
+
+        return escrowAddress;
     }
 }

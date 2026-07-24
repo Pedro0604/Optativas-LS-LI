@@ -6,10 +6,10 @@ export default defineConfig({
   solidity: {
     profiles: {
       default: {
-        version: "0.8.28",
+        version: "0.8.36",
       },
       production: {
-        version: "0.8.28",
+        version: "0.8.36",
         settings: {
           optimizer: {
             enabled: true,

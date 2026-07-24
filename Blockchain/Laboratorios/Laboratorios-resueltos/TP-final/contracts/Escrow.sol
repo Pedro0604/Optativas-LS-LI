@@ -1,18 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.28;
+pragma solidity ^0.8.36;
 
-/**
- * No se proveyó nada de ETH para realizar la creación de un nuevo contrato
- */
-error NoEthProvided();
-
-/**
- * La dirección indicada es la 0
- */
-error AddressZero();
-
-/// No se puede contratarse a uno mismo
-error CannotHireYourself();
+import {
+    NoEthProvided,
+    AddressZero,
+    CannotHireYourself
+} from "./EscrowErrores.sol";
 
 contract Owned {
     address public owner;
@@ -23,6 +16,10 @@ contract Owned {
     error OnlyOwnerAllowed();
 
     constructor(address owner_) {
+        if (owner_ == address(0)) {
+            revert AddressZero();
+        }
+        
         owner = owner_;
     }
 
@@ -75,11 +72,11 @@ contract Escrow is Owned {
             revert NoEthProvided();
         }
 
-        if (owner_ == address(0) || worker_ == address(0)) {
+        if (worker_ == address(0)) {
             revert AddressZero();
         }
 
-        if (owner_ == worker) {
+        if (owner_ == worker_) {
             revert CannotHireYourself();
         }
 
