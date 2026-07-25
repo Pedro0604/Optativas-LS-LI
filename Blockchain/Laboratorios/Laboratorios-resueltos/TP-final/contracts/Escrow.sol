@@ -4,7 +4,7 @@ pragma solidity ^0.8.36;
 contract Escrow {
     /**
      * El estado del contrato.
-     * @dev El valor default es State.Funded
+     * TODO - DEFINIR QUÉ ES CADA ESTADO CUANDO SE VAYA DESARROLLANDO ESA FUNCIONALIDAD
      */
     enum State {
         Funded,
@@ -21,15 +21,39 @@ contract Escrow {
 
     State public state;
     address public immutable worker;
-    uint256 public immutable endTime; // TODO - Definir máx durationDays(?
+    uint256 public immutable deadline; // TODO - Definir máx durationDays(?
     uint256 public immutable amount;
     address public immutable owner;
     string public title;
 
     /**
+     * Estado invalido.
+     * @param currentState Estado actual
+     * @param expectedState Estado esperado
+     */
+    error InvalidState(State currentState, State expectedState);
+
+    /**
      * Solo el dueño puede realizar la función
      */
     error OnlyOwnerAllowed();
+
+    /**
+     * Solo el dueño puede realizar la función
+     */
+    error OnlyWorkerAllowed();
+
+    /**
+     * Solo se permite interactuar con esta función después del tiempo definido
+     * @param allowedAfterTime Tiempo a partir del cual se puede interactuar con la función
+     */
+    error OnlyAllowedAfterTime(uint256 allowedAfterTime);
+
+    /**
+     * Solo se permite interactuar con esta función antes del tiempo definido
+     * @param allowedBeforeTime Tiempo hasta el cual se puede interactuar con la función
+     */
+    error OnlyAllowedBeforeTime(uint256 allowedBeforeTime);
 
     /**
      * No se proveyó nada de ETH para realizar la creación de un nuevo contrato
@@ -52,18 +76,6 @@ contract Escrow {
     error ZeroDuration();
 
     /**
-     * Solo se permite interactuar con esta función después del tiempo definido
-     * @param allowedAfterTime Tiempo a partir del cual se puede interactuar con la función
-     */
-    error OnlyAllowedAfterTime(uint256 allowedAfterTime);
-
-    /**
-     * Solo se permite interactuar con esta función hasta del tiempo definido
-     * @param allowedBeforeTime Tiempo a partir hasta cual se puede interactuar con la función
-     */
-    error OnlyAllowedBeforeTime(uint256 allowedBeforeTime);
-
-    /**
      * El título del contrato no puede estar vacío
      */
     error EmptyTitle();
@@ -74,13 +86,6 @@ contract Escrow {
      * @param maxLength Longitud máxima permitida
      */
     error TitleTooLong(uint256 currentLength, uint256 maxLength);
-
-    /**
-     * Estado invalido.
-     * @param currentState Estado actual
-     * @param expectedState Estado esperado
-     */
-    error InvalidState(State currentState, State expectedState);
 
     modifier inState(State expectedState) {
         if (state != expectedState) {
@@ -99,15 +104,22 @@ contract Escrow {
         _;
     }
 
+    modifier onlyWorker() {
+        if (msg.sender != worker) {
+            revert OnlyWorkerAllowed();
+        }
+        _;
+    }
+
     modifier onlyAfter(uint256 time) {
-        if (block.timestamp <= time) {
+        if (block.timestamp < time) {
             revert OnlyAllowedAfterTime({allowedAfterTime: time});
         }
         _;
     }
 
     modifier onlyBefore(uint256 time) {
-        if (block.timestamp > time) {
+        if (block.timestamp >= time) {
             revert OnlyAllowedBeforeTime({allowedBeforeTime: time});
         }
         _;
@@ -157,7 +169,7 @@ contract Escrow {
         owner = owner_;
         worker = worker_;
         amount = msg.value;
-        endTime = block.timestamp + durationDays * 1 days;
+        deadline = block.timestamp + durationDays * 1 days;
         title = title_;
 
         state = State.Funded;
