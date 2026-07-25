@@ -1,0 +1,12 @@
+- Tests de EscrowFactory nuevos:
+    - que los datos del nuevo Escrow coincidan con los argumentos reenviados;
+    - multiples escrows:
+        - las dos direcciones almacenadas sean diferentes;
+        - la primera dirección siga en el índice cero;
+        - la segunda aparezca en el índice uno;
+        - ambos contratos conserven sus propios fondos y datos.
+        - en vez de mismo owner y worker, cambiarlos
+- Tests de Escrow:
+    - Creación exitosa
+    - Creación con cada uno de los fallos posibles
+- Luego, seguir añadiendo funcionalidad a Escrow: aceptar escrow por parte del worker...
