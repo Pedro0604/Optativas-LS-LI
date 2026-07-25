@@ -17,9 +17,9 @@ contract EscrowFactory {
      * @param durationDays Duración del contrato en días
      */
     event EscrowCreated(
-        address indexed escrowAddress,
         address indexed owner,
         address indexed worker,
+        address escrowAddress,
         uint256 amount,
         uint256 durationDays
     );
@@ -55,11 +55,15 @@ contract EscrowFactory {
         });
     }
 
-    function getEscrowCountByOwner(address owner) external view returns (uint256) {
+    function getEscrowCountByOwner(
+        address owner
+    ) external view returns (uint256) {
         return escrowsByOwner[owner].length;
     }
 
-    function getEscrowCountByWorker(address worker) external view returns (uint256) {
+    function getEscrowCountByWorker(
+        address worker
+    ) external view returns (uint256) {
         return escrowsByWorker[worker].length;
     }
 }
