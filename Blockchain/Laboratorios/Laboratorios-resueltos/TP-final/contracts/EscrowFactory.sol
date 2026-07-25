@@ -27,16 +27,19 @@ contract EscrowFactory {
     /**
      * @param worker_ Dirección de quien realizará el trabajo y recibirá el pago
      * @param durationDays_ Límite de tiempo en días para realizar el contrato
+     * @param title_ Título del contrato. Entre 1 y `Escrow.MAX_TITLE_LENGTH` bytes
      */
     function createEscrow(
         address worker_,
-        uint256 durationDays_
+        uint256 durationDays_,
+        string memory title_
     ) external payable returns (address escrowAddress) {
         escrowAddress = address(
             new Escrow{value: msg.value}({
                 owner_: msg.sender,
                 worker_: worker_,
-                durationDays: durationDays_
+                durationDays: durationDays_,
+                title_: title_
             })
         );
 
