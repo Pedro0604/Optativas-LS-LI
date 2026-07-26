@@ -1,0 +1,43 @@
+@startuml
+
+class WalletInitializer {
+    +WalletBackend getWalletBackend()
+    +KeyStorer getKeyStorer()
+    +AppResource1 getAppResource1()
+    +SomeSystemResource getSomeSystemResource()
+    +{static} WalletInitializer Constructor(keystorePath: String, resourcePath: String, backendPath: String)
+
+    +initialize ([UInt8]? seedBytes)
+}
+
+class KeyStorer {}
+
+class WalletBackend {}
+
+class AppResource1 {}
+
+class SomeSystemResource {}
+
+enum WalletInitializerError {
+    resourceInitFailed
+    keystoreInitFailed
+    appResourceInitFailed
+    backendInitFailed
+    initFailed
+}
+
+interface WalletSynchronizer {
+    void start()
+    void stop()
+    Address getAddress()
+    void sendToAddress(Amount address, Address address, String? memo, ...)
+    Transaction getTransactions()
+    BlockHeight getLatestHeight()
+}
+
+WalletInitializer --> WalletBackend : constructs
+WalletInitializer --> KeyStorer : constructs
+WalletInitializer --> AppResource1 : constructs
+WalletInitializer --> SomeSystemResource : constructs
+WalletInitializer --> WalletInitializerError : throws
+@enduml

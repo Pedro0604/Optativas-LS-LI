@@ -1,0 +1,75 @@
+@startuml
+
+
+    class App {
+        +seedPhase (String seedBytes)
+
+        + App(cliPath: String, server: String)
+        + Seed createNewWallet(dataDir: String): Seed
+        + Seed createNewWallet(dataDir: String, keywords: String[]): Seed
+        + void restoreWallet(dataDir: String, seedPhrase: String, birthday: Integer)
+        + Seed getSeed(): Seed
+        + UnifiedAddress[] getAddresses(): UnifiedAddress[]
+        + Balance getBalance(): Balance
+        + SyncStatus getSyncStatus(): SyncStatus
+        + SyncResult sync(): SyncResult
+        + Transaction[] listTransactions(): Transaction[]
+        + List<Transaction> pendingTransactions(): List<Transaction>
+        + List<Transaction> receivedTransactions(): List<Transaction>
+        + List<Transaction> sentTransactions(): List<Transaction>
+        + SendResult sendTo(address: String, zatoshis: long, memo: String): SendResult
+        + Seed createNewWalletUsingRandomSeed(walletPath: String): Seed
+        + Seed createNewWalletFromKeyStore(walletPath: String, pathToKeyStore: String, keystorePassword: String, dataPassword: String): Seed
+        + void start()
+        + void stop()
+        + boolean isSynchronizing()
+        - static KeyStore loadKeyStoreFromFile(pathToFile: String, keystorePassword: String): KeyStore
+        - static void saveKeyStoreOnFile(keyStore: KeyStore, pathToFile: String, keystorePassword: String)
+        - static String getKey(keyStore: KeyStore, entryPassword: String, alias: KeyStoreEnum): String
+        - static void writeToKeyStore(keyStore: KeyStore, entryPassword: String, alias: KeyStoreEnum, password: String)
+        + getKey():String
+        + saveKey(key:string)
+        
+        - boolean walletExists(path: String): Boolean
+        - boolean writablePath(path: String): Boolean
+        - Seed createNewWallet(dataDir: String, seedPhrase: String[]): Seed
+        - void runCLI(params: String[]): Process
+        - boolean isValid(seedPhrase: String): boolean
+        - String[] createMnemonicAsWords(): String[]
+        - String createMnemonicString(): String
+    }
+
+
+
+note right of App
+    App::App - Constructor of the class that initializes the Zcash wallet client.
+    App::createNewWallet - Creates a new wallet at the provided directory path.
+    App::restoreWallet - Restores a wallet using a provided seed phrase and birthday.
+    App::getSeed - Retrieves the seed of the wallet.
+    App::getAddresses - Retrieves the addresses associated with the wallet.
+    App::getBalance - Retrieves the balance of the wallet.
+    App::sync - Initiates synchronization of the wallet.
+    App::listTransactions - Retrieves a list of all transactions in the wallet.
+    App::pendingTransactions - Retrieves a list of pending transactions.
+    App::receivedTransactions - Retrieves a list of received transactions.
+    App::sentTransactions - Retrieves a list of sent transactions.
+    App::sendTo - Sends a transaction to a specified address with an amount and memo.
+    App::createNewWalletUsingRandomSeed - Creates a new wallet using a randomly generated seed.
+    App::createNewWalletFromKeyStore - Creates a wallet using a seed from a keystore.
+    App::start - Starts the synchronization process of the wallet.
+    App::stop - Stops the synchronization process of the wallet.
+    App::isSynchronizing - Checks if the wallet is currently synchronizing.
+    App::loadKeyStoreFromFile - Loads a keystore from a file.
+    App::saveKeyStoreOnFile - Saves a keystore to a file.
+    App::readFromKeyStore - Reads a protected data entry from a keystore.
+    App::writeToKeyStore - Writes a protected data entry to a keystore.
+    App::isValid - Validates a seed phrase.
+    App::createMnemonicAsWords - Generates mnemonic words for a seed.
+    App::createMnemonicString - Generates mnemonic strings for a seed.
+    App::saveKey - saves the key on a secure store. It relies on #readFromKeyStore to store the key in a JavaKeyStore
+    App::getKey - get the key from a secure store. It relies on #writeToKeyStore to store the key in a JavaKeyStore
+
+    App::createMnemonicString - Generates mnemonic strings for a seed.
+end note
+
+@enduml

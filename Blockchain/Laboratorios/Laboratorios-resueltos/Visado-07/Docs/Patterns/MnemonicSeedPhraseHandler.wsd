@@ -1,0 +1,26 @@
+@startuml
+interface MnemonicSeedPhraseHandler {
+    String randomMnemonic()
+    [String] randomMnemonicWords()
+    [UInt8] toSeed(String Mnemonic)
+    [String] asWords()
+    Bool isValid(String mnemonic)
+}
+class MnemonicSeedProvider {
+    String randomMnemonic()
+    [String] randomMnemonicWords()
+    [UInt8] toSeed(String Mnemonic)
+    [String] asWords()
+    Bool isValid(String mnemonic)
+}
+
+enum MnemonicError {
+    checksumFailed
+    invalidSeed
+}
+
+MnemonicSeedPhraseHandler <|-- MnemonicSeedProvider : implements
+MnemonicSeedProvider --> MnemonicError : throws
+
+
+@enduml

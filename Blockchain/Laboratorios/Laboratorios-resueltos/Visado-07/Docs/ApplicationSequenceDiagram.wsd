@@ -1,0 +1,111 @@
+@startuml
+autoactivate on
+create UI
+
+create App
+UI -> App: new (walletPath,BackendAddress)
+
+App->App: loggerSetup
+return
+App->App: BackendConnectorSetup(BackendAddress)
+return
+App->App: walletStorageSetup(walletPath)
+return
+return
+== If wallet not initialized, Wallet creation with random seed Phase == 
+
+UI->App: createNewWallet(dataDir)
+  App->App: createRandomSeedPhrase()
+    App -> MnemonicLib: initialize(24)
+    return
+
+  App -> MnemonicLib: generate()
+  return seed
+  
+
+  
+  return seed
+  App->App: saveKey(seed)
+  App->App:openFile(keystorefile,keystorePassowrd)
+  return javaKeystore
+  
+  App->App:savetKey(javaKeystore,keyPassword,seed)
+  return 
+  
+  return
+  App->App: restoreFromSeed(seed)
+  return
+
+return
+
+== If wallet not initialized, Wallet creation using a seed phrase == 
+
+
+
+UI->App: createWithSeed(seed)
+
+  App->App: walltExists(this.datadir)
+  note over App: Checks if the wallet directrory \n path  is valid
+return
+  
+  App->App: isValid(seed)
+    note over App: Checks if the mneonic \n seedphrase is valid 
+    App -> MnemonicLib: initialize(seed,24)
+    return
+    App -> MnemonicLib:  validate ()
+  
+    return isValid
+  return isvalid
+  
+  App->Backend: createWithSeed(this.datadir,seed)
+  
+    note over Backend: Sync blocks from main mode
+
+  return nodeResult
+return
+
+== Send tokens to an addres with a memo == 
+
+
+
+UI->App:sendTo(address, amount,memo)
+    App->App:validateParams(address,amount, memo)
+    note over App: Checks if \n address is valid \n amount is greater than 0 and less than max \n note is not emopty \n there is possitive balance higher than amount
+return
+    App->Backend: send(address, amount,memo)
+    return nodeResult
+    return nodeResult
+
+== Query latest Transactions == 
+
+UI->App:getTransactions
+
+      App->Backend: getTransactions(...)
+      return nodeResult
+
+== Sync blocks == 
+
+UI->App:start
+      create Thread
+      App-> Thread: start
+      
+      Thread->App: sync()
+      App->Backend: downloadBlocks()
+      return
+      return
+
+UI->App:stop
+      
+      App->Thread: destroy()
+      return
+      destroy Thread
+return
+
+
+
+
+
+
+
+@enduml
+

@@ -1,0 +1,43 @@
+@startuml
+interface WalletSynchronizer {
+    Status status
+    Float progress
+    [Transaction] transactions
+    void start()
+    void stop()
+    [Address] getAddresses()
+    void sendToAddress(Amount address, Address address, String? memo, ...)
+    Transaction getTransactions()
+    BlockHeight getLatestHeight()
+}
+
+enum WalletSynchronizerError {
+    initFailed
+    syncFailed
+    connectionFailed
+    generalError
+    criticalError
+}
+
+enum Status {
+    stopped
+    disconnected
+    syncing
+    synced
+}
+
+class ConcreteWalletSynchronizer {
+    +init(initializer: Initializer)
+}
+
+class Initializer {}
+
+WalletSynchronizer --> WalletSynchronizerError : throws
+
+WalletSynchronizer <|-- ConcreteWalletSynchronizer : implements
+
+ConcreteWalletSynchronizer ---* Initializer
+
+WalletSynchronizer -[dotted]-> Status : publishes
+
+@enduml

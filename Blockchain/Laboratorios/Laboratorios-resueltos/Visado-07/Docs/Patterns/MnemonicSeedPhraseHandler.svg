@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" contentStyleType="text/css" height="509px" preserveAspectRatio="none" style="width:259px;height:509px;background:#FFFFFF;" version="1.1" viewBox="0 0 259 509" width="259px" zoomAndPan="magnify"><defs/><g><!--MD5=[07806bc1eb9e48265271edd7b2d2c4ed]
+class MnemonicSeedPhraseHandler--><g id="elem_MnemonicSeedPhraseHandler"><rect codeLine="1" fill="#F1F1F1" height="130.4414" id="MnemonicSeedPhraseHandler" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="245" x="7" y="7"/><ellipse cx="26.05" cy="23" fill="#B4A7E5" rx="11" ry="11" style="stroke:#181818;stroke-width:1.0;"/><path d="M22.4777,19.2651 L22.4777,17.1069 L29.8571,17.1069 L29.8571,19.2651 L27.3918,19.2651 L27.3918,27.3418 L29.8571,27.3418 L29.8571,29.5 L22.4777,29.5 L22.4777,27.3418 L24.9431,27.3418 L24.9431,19.2651 Z " fill="#000000"/><text fill="#000000" font-family="sans-serif" font-size="14" font-style="italic" lengthAdjust="spacing" textLength="204" x="40.95" y="28.291">MnemonicSeedPhraseHandler</text><line style="stroke:#181818;stroke-width:0.5;" x1="8" x2="251" y1="39" y2="39"/><line style="stroke:#181818;stroke-width:0.5;" x1="8" x2="251" y1="47" y2="47"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="180" x="13" y="64.5352">String randomMnemonic()</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="233" x="13" y="81.0234">[String] randomMnemonicWords()</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="224" x="13" y="97.5117">[UInt8] toSeed(String Mnemonic)</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="123" x="13" y="114">[String] asWords()</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="206" x="13" y="130.4883">Bool isValid(String mnemonic)</text></g><!--MD5=[6f27efb631a624a62707388c51c1ddb9]
+class MnemonicSeedProvider--><g id="elem_MnemonicSeedProvider"><rect codeLine="8" fill="#F1F1F1" height="130.4414" id="MnemonicSeedProvider" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="245" x="7" y="214.44"/><ellipse cx="45.4" cy="230.44" fill="#ADD1B2" rx="11" ry="11" style="stroke:#181818;stroke-width:1.0;"/><path d="M47.8731,236.5831 Q47.2921,236.8819 46.6529,237.0313 Q46.0138,237.1807 45.3082,237.1807 Q42.8014,237.1807 41.4815,235.5289 Q40.1617,233.877 40.1617,230.7559 Q40.1617,227.6265 41.4815,225.9747 Q42.8014,224.3228 45.3082,224.3228 Q46.0138,224.3228 46.6612,224.4722 Q47.3087,224.6216 47.8731,224.9205 L47.8731,227.6431 Q47.2423,227.0621 46.6488,226.7923 Q46.0553,226.5225 45.4244,226.5225 Q44.0797,226.5225 43.3949,227.5892 Q42.7101,228.6558 42.7101,230.7559 Q42.7101,232.8477 43.3949,233.9144 Q44.0797,234.981 45.4244,234.981 Q46.0553,234.981 46.6488,234.7112 Q47.2423,234.4415 47.8731,233.8604 Z " fill="#000000"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="161" x="64.6" y="235.731">MnemonicSeedProvider</text><line style="stroke:#181818;stroke-width:0.5;" x1="8" x2="251" y1="246.44" y2="246.44"/><line style="stroke:#181818;stroke-width:0.5;" x1="8" x2="251" y1="254.44" y2="254.44"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="180" x="13" y="271.9752">String randomMnemonic()</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="233" x="13" y="288.4634">[String] randomMnemonicWords()</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="224" x="13" y="304.9517">[UInt8] toSeed(String Mnemonic)</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="123" x="13" y="321.44">[String] asWords()</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="206" x="13" y="337.9283">Bool isValid(String mnemonic)</text></g><!--MD5=[e88ee0ea52fe4bdbeda66cd220c26eed]
+class MnemonicError--><g id="elem_MnemonicError"><rect codeLine="16" fill="#F1F1F1" height="80.9766" id="MnemonicError" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:0.5;" width="138" x="60.5" y="421.88"/><ellipse cx="75.5" cy="437.88" fill="#EB937F" rx="11" ry="11" style="stroke:#181818;stroke-width:1.0;"/><path d="M79.1143,444.38 L71.3945,444.38 L71.3945,431.9869 L79.1143,431.9869 L79.1143,434.1451 L73.8433,434.1451 L73.8433,436.818 L78.6162,436.818 L78.6162,438.9762 L73.8433,438.9762 L73.8433,442.2218 L79.1143,442.2218 Z " fill="#000000"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="106" x="89.5" y="443.171">MnemonicError</text><line style="stroke:#181818;stroke-width:0.5;" x1="61.5" x2="197.5" y1="453.88" y2="453.88"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="109" x="66.5" y="471.4152">checksumFailed</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="78" x="66.5" y="487.9034">invalidSeed</text><line style="stroke:#181818;stroke-width:0.5;" x1="61.5" x2="197.5" y1="494.8566" y2="494.8566"/></g><!--MD5=[d828bd7e52c3aee30b70da591b3057a7]
+reverse link MnemonicSeedPhraseHandler to MnemonicSeedProvider--><g id="link_MnemonicSeedPhraseHandler_MnemonicSeedProvider"><path codeLine="21" d="M129.5,158.56 C129.5,177.13 129.5,196.49 129.5,214.1 " fill="none" id="MnemonicSeedPhraseHandler-backto-MnemonicSeedProvider" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="none" points="122.5,158.66,129.5,138.66,136.5,158.66,122.5,158.66" style="stroke:#181818;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="74" x="130.5" y="181.0084">implements</text></g><!--MD5=[6ba85474280f32e1b0bbd2c5341ba0c2]
+link MnemonicSeedProvider to MnemonicError--><g id="link_MnemonicSeedProvider_MnemonicError"><path codeLine="22" d="M129.5,345.14 C129.5,368.39 129.5,394.15 129.5,415.49 " fill="none" id="MnemonicSeedProvider-to-MnemonicError" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="129.5,420.39,133.5,411.39,129.5,415.39,125.5,411.39,129.5,420.39" style="stroke:#181818;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="43" x="130.5" y="388.4484">throws</text></g><!--MD5=[3ea966bfdc638c47b9cdc5504f82cd68]
+@startuml
+interface MnemonicSeedPhraseHandler {
+    String randomMnemonic()
+    [String] randomMnemonicWords()
+    [UInt8] toSeed(String Mnemonic)
+    [String] asWords()
+    Bool isValid(String mnemonic)
+}
+class MnemonicSeedProvider {
+    String randomMnemonic()
+    [String] randomMnemonicWords()
+    [UInt8] toSeed(String Mnemonic)
+    [String] asWords()
+    Bool isValid(String mnemonic)
+}
+
+enum MnemonicError {
+    checksumFailed
+    invalidSeed
+}
+
+MnemonicSeedPhraseHandler <|- - MnemonicSeedProvider : implements
+MnemonicSeedProvider - -> MnemonicError : throws
+
+
+@enduml
+
+PlantUML version 1.2022.7(Mon Aug 22 14:01:30 ART 2022)
+(GPL source distribution)
+Java Runtime: Java(TM) SE Runtime Environment
+JVM: Java HotSpot(TM) 64-Bit Server VM
+Default Encoding: UTF-8
+Language: en
+Country: US
+--></g></svg>
