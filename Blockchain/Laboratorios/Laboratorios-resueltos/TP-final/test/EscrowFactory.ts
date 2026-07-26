@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { network } from "hardhat";
-import type { EscrowFactory } from "../types/ethers-contracts/EscrowFactory.js";
+import type { EscrowFactory, } from "../types/ethers-contracts/EscrowFactory.js";
 import type { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/types";
 
 const { ethers, networkHelpers } = await network.create();
@@ -145,10 +145,15 @@ describe("EscrowFactory", function () {
     });
 
     it("Should allow to create multiple escrows", async function () {
-      const { escrowFactory, owner, worker } =
+      const { escrowFactory, owner, worker, escrowAddress, otherAccount } =
         await deployAndCreateDefaultEscrow();
 
       await createDefaultEscrow(escrowFactory, owner, worker); // Mismo owner y factory
+
+      const secondEscrowAddress = await escrowFactory.escrowsByOwner(
+        owner.address,
+        1,
+      );
 
       expect(await escrowFactory.getEscrowCountByOwner(owner.address)).to.equal(
         2n,
@@ -157,6 +162,67 @@ describe("EscrowFactory", function () {
       expect(
         await escrowFactory.getEscrowCountByWorker(worker.address),
       ).to.equal(2n);
+
+      expect(escrowAddress).not.to.equal(secondEscrowAddress);
+
+      expect(await escrowFactory.escrowsByOwner(owner.address, 0)).to.equal(
+        escrowAddress,
+      );
+      expect(await escrowFactory.escrowsByOwner(owner.address, 1)).to.equal(
+        secondEscrowAddress,
+      );
+
+      const amount = ethers.parseEther("2");
+      const durationDays = 15n;
+      const title = "Escrow de prueba";
+
+      await (
+        await escrowFactory
+          .connect(otherAccount)
+          .createEscrow(owner.address, durationDays, title, {
+            value: amount,
+          })
+      ).wait();
+
+      expect(await escrowFactory.getEscrowCountByOwner(owner.address)).to.equal(
+        2,
+      );
+      expect(
+        await escrowFactory.getEscrowCountByWorker(worker.address),
+      ).to.equal(2);
+      expect(
+        await escrowFactory.getEscrowCountByWorker(owner.address),
+      ).to.equal(1);
+      expect(
+        await escrowFactory.getEscrowCountByOwner(otherAccount.address),
+      ).to.equal(1);
+    });
+
+    it("Should allow to create multiple escrows", async function () {
+      const { escrowFactory, owner, worker } = await networkHelpers.loadFixture(
+        deployEscrowFactoryFixture,
+      );
+
+      const amount = ethers.parseEther("2");
+      const durationDays = 15n;
+      const title = "Escrow de prueba";
+
+      await (
+        await escrowFactory
+          .connect(owner)
+          .createEscrow(worker.address, durationDays, title, {
+            value: amount,
+          })
+      ).wait();
+
+      const escrowAddress = await escrowFactory.escrowsByOwner(
+        owner.address,
+        0,
+      );
+
+      const escrow = await ethers.getContractAt("Escrow", escrowAddress);
+      
+      // TODO - CONTINUAR CON que los datos del nuevo Escrow coincidan con los argumentos reenviados;
     });
 
     it("Should revert the whole creation when Escrow construction fails", async function () {
