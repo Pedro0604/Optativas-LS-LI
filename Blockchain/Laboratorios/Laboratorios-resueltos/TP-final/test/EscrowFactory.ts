@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { network } from "hardhat";
-import type { EscrowFactory, } from "../types/ethers-contracts/EscrowFactory.js";
+import type { EscrowFactory } from "../types/ethers-contracts/EscrowFactory.js";
 import type { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/types";
 
 const { ethers, networkHelpers } = await network.create();
@@ -20,6 +20,9 @@ describe("EscrowFactory", function () {
     };
   }
 
+  // TODO - REFACTOR PARA USAR UN CREATE_ESCROW QUE COMO DEFAULT TENGA 1, 30 Y "ESCROW DE PRUEBA", ASÍ CUANDO SE NECESITA CREAR MÁS DE UN ESCROW,
+  // SE PUEDE HACER FACILMENTE, Y ELIMINAR EL ESCROW_ADRESS QUE OBTIENE EL ADDRESS DEL PRIMER ESCROW, PORQUE SI NO ES EL PRIMERO, DEVUELVE OTRA ADDRESS
+  // A LO SUMO, USAR EL VALOR DE RETORNO DE CREATE_ESCROW, O EL EVENT ESCROW_CREATED
   async function createDefaultEscrow(
     escrowFactory: EscrowFactory,
     owner: HardhatEthersSigner,
@@ -198,22 +201,26 @@ describe("EscrowFactory", function () {
       ).to.equal(1);
     });
 
-    it("Should allow to create multiple escrows", async function () {
+    it("Should correctly save the values of the new Escrow", async function () {
       const { escrowFactory, owner, worker } = await networkHelpers.loadFixture(
         deployEscrowFactoryFixture,
       );
 
       const amount = ethers.parseEther("2");
-      const durationDays = 15n;
+      const durationDays = 15;
       const title = "Escrow de prueba";
 
-      await (
-        await escrowFactory
-          .connect(owner)
-          .createEscrow(worker.address, durationDays, title, {
-            value: amount,
-          })
-      ).wait();
+      const transaction = await escrowFactory
+        .connect(owner)
+        .createEscrow(worker.address, durationDays, title, {
+          value: amount,
+        });
+
+      const waitedTransaction = await transaction.wait();
+
+      if (waitedTransaction === null) {
+        throw new Error("La transacción de creación del escrow no fue minada");
+      }
 
       const escrowAddress = await escrowFactory.escrowsByOwner(
         owner.address,
@@ -221,8 +228,16 @@ describe("EscrowFactory", function () {
       );
 
       const escrow = await ethers.getContractAt("Escrow", escrowAddress);
-      
-      // TODO - CONTINUAR CON que los datos del nuevo Escrow coincidan con los argumentos reenviados;
+
+      expect(await escrow.amount()).to.equal(amount);
+      expect(await escrow.owner()).to.equal(owner.address);
+      expect(await escrow.worker()).to.equal(worker.address);
+      expect(await escrow.title()).to.equal(title);
+
+      const escrowDeployementBlock = await waitedTransaction.getBlock();
+      const expectedDeadline =
+        escrowDeployementBlock.timestamp + durationDays * 86_400;
+      expect(await escrow.deadline()).to.equal(expectedDeadline);
     });
 
     it("Should revert the whole creation when Escrow construction fails", async function () {
