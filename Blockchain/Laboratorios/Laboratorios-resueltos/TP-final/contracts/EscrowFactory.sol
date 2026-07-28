@@ -6,7 +6,7 @@ import {Escrow} from "./Escrow.sol";
 contract EscrowFactory {
     mapping(address owner => address[] escrows) public escrowsByOwner;
     mapping(address worker => address[] escrows) public escrowsByWorker;
-    // TODO - ALL ESCROWS ARRAY?
+    address[] public allEscrows; // Ver si tiene sentido? Desde algún lado se listarían todos, sino sacarlo o dejar solo un count
 
     /**
      * Se emite cuando se crea un contrato
@@ -45,6 +45,7 @@ contract EscrowFactory {
 
         escrowsByOwner[msg.sender].push(escrowAddress);
         escrowsByWorker[worker_].push(escrowAddress);
+        allEscrows.push(escrowAddress);
 
         emit EscrowCreated({
             escrowAddress: escrowAddress,
@@ -65,5 +66,9 @@ contract EscrowFactory {
         address worker
     ) external view returns (uint256) {
         return escrowsByWorker[worker].length;
+    }
+
+    function getEscrowCount() external view returns (uint256) {
+        return allEscrows.length;
     }
 }
