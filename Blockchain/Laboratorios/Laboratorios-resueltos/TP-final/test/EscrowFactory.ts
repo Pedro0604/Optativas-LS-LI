@@ -72,7 +72,7 @@ describe("EscrowFactory", function () {
   }
 
   describe("createEscrow", function () {
-    it("Should emit EscrowCreated with the created escrow address", async function () {
+    it("Should emit EscrowCreated with the escrow creation data", async function () {
       const {
         escrowFactory,
         owner,
@@ -148,32 +148,33 @@ describe("EscrowFactory", function () {
     });
 
     it("Should allow to create multiple escrows", async function () {
-      const { escrowFactory, owner, worker, escrowAddress, otherAccount } =
+      const { escrowFactory, owner, worker, escrowAddress } =
         await deployAndCreateDefaultEscrow();
 
       await createDefaultEscrow(escrowFactory, owner, worker); // Mismo owner y factory
+
+      expect(await escrowFactory.getEscrowCountByOwner(owner.address))
+        .to.equal(await escrowFactory.getEscrowCountByWorker(worker.address))
+        .and.to.equal(2n);
 
       const secondEscrowAddress = await escrowFactory.escrowsByOwner(
         owner.address,
         1,
       );
-
-      expect(await escrowFactory.getEscrowCountByOwner(owner.address)).to.equal(
-        2n,
-      );
-
-      expect(
-        await escrowFactory.getEscrowCountByWorker(worker.address),
-      ).to.equal(2n);
-
       expect(escrowAddress).not.to.equal(secondEscrowAddress);
 
-      expect(await escrowFactory.escrowsByOwner(owner.address, 0)).to.equal(
-        escrowAddress,
-      );
-      expect(await escrowFactory.escrowsByOwner(owner.address, 1)).to.equal(
-        secondEscrowAddress,
-      );
+      expect(await escrowFactory.escrowsByOwner(owner.address, 0))
+        .to.equal(await escrowFactory.escrowsByWorker(worker.address, 0))
+        .and.to.equal(escrowAddress);
+      expect(await escrowFactory.escrowsByOwner(owner.address, 1))
+        .to.equal(await escrowFactory.escrowsByWorker(worker.address, 1))
+        .and.to.equal(secondEscrowAddress);
+    });
+
+    // TODO - ACOMODAR NOMBRE
+    it("Should independently save escrows for the same address as worker and owner", async function () {
+      const { escrowFactory, owner, worker, otherAccount } =
+        await deployAndCreateDefaultEscrow();
 
       const amount = ethers.parseEther("2");
       const durationDays = 15n;
@@ -185,59 +186,15 @@ describe("EscrowFactory", function () {
           .createEscrow(owner.address, durationDays, title, {
             value: amount,
           })
-      ).wait();
+      ).wait(); // Owner: otherAccount.address - Worker: owner.address
 
-      expect(await escrowFactory.getEscrowCountByOwner(owner.address)).to.equal(
-        2,
-      );
-      expect(
-        await escrowFactory.getEscrowCountByWorker(worker.address),
-      ).to.equal(2);
-      expect(
-        await escrowFactory.getEscrowCountByWorker(owner.address),
-      ).to.equal(1);
-      expect(
-        await escrowFactory.getEscrowCountByOwner(otherAccount.address),
-      ).to.equal(1);
-    });
+      expect(await escrowFactory.getEscrowCountByOwner(owner.address))
+        .to.equal(await escrowFactory.getEscrowCountByWorker(worker.address))
+        .and.to.equal(1); // El default
 
-    it("Should correctly save the values of the new Escrow", async function () {
-      const { escrowFactory, owner, worker } = await networkHelpers.loadFixture(
-        deployEscrowFactoryFixture,
-      );
-
-      const amount = ethers.parseEther("2");
-      const durationDays = 15;
-      const title = "Escrow de prueba";
-
-      const transaction = await escrowFactory
-        .connect(owner)
-        .createEscrow(worker.address, durationDays, title, {
-          value: amount,
-        });
-
-      const waitedTransaction = await transaction.wait();
-
-      if (waitedTransaction === null) {
-        throw new Error("La transacción de creación del escrow no fue minada");
-      }
-
-      const escrowAddress = await escrowFactory.escrowsByOwner(
-        owner.address,
-        0,
-      );
-
-      const escrow = await ethers.getContractAt("Escrow", escrowAddress);
-
-      expect(await escrow.amount()).to.equal(amount);
-      expect(await escrow.owner()).to.equal(owner.address);
-      expect(await escrow.worker()).to.equal(worker.address);
-      expect(await escrow.title()).to.equal(title);
-
-      const escrowDeployementBlock = await waitedTransaction.getBlock();
-      const expectedDeadline =
-        escrowDeployementBlock.timestamp + durationDays * 86_400;
-      expect(await escrow.deadline()).to.equal(expectedDeadline);
+      expect(await escrowFactory.getEscrowCountByOwner(otherAccount.address))
+        .to.equal(await escrowFactory.getEscrowCountByWorker(owner.address))
+        .and.to.equal(1); // El segundo escrow creado (Owner: otherAccount.address - Worker: owner.address)
     });
 
     it("Should revert the whole creation when Escrow construction fails", async function () {
@@ -269,8 +226,10 @@ describe("EscrowFactory", function () {
         await escrowFactory.getEscrowCountByWorker(worker.address),
       ).to.equal(0n);
     });
+  });
 
-    it("Should keep owner events consistent with the registered escrows", async function () {
+  describe("events consistency", function () {
+    it("Should keep events consistent with the registered escrows", async function () {
       const { escrowFactory, owner, worker, otherAccount } =
         await networkHelpers.loadFixture(deployEscrowFactoryFixture);
 
@@ -301,86 +260,47 @@ describe("EscrowFactory", function () {
         ).wait();
       }
 
-      const filter = escrowFactory.filters.EscrowCreated(owner.address); // El resto de parametros no interesan
+      const ownerFilter = escrowFactory.filters.EscrowCreated(owner.address); // El resto de parametros no interesan
+      const workerFilter = escrowFactory.filters.EscrowCreated(
+        undefined, // No interesa la dirección del owner
+        worker.address,
+      );
 
-      const events = await escrowFactory.queryFilter(
-        filter,
+      const ownerEvents = await escrowFactory.queryFilter(
+        ownerFilter,
+        deploymentBlockNumber,
+        "latest",
+      );
+      const workerEvents = await escrowFactory.queryFilter(
+        workerFilter,
         deploymentBlockNumber,
         "latest",
       );
 
-      expect(events.length).to.equal(2);
+      expect(await escrowFactory.getEscrowCountByOwner(owner.address))
+        .to.equal(BigInt(ownerEvents.length))
+        .to.equal(2n);
+      expect(await escrowFactory.getEscrowCountByWorker(worker.address))
+        .to.equal(BigInt(workerEvents.length))
+        .to.equal(1n); // Uno de los escrows tiene como worker a otherAccount
 
-      expect(await escrowFactory.getEscrowCountByOwner(owner.address)).to.equal(
-        BigInt(events.length),
-      );
-
-      for (let index = 0; index < events.length; index++) {
+      for (let index = 0; index < ownerEvents.length; index++) {
         const registeredAddress = await escrowFactory.escrowsByOwner(
           owner.address,
           index,
         );
 
-        expect(events[index].args.escrowAddress).to.equal(registeredAddress);
-      }
-    });
-
-    it("Should keep worker events consistent with the registered escrows", async function () {
-      const { escrowFactory, owner, worker, otherAccount } =
-        await networkHelpers.loadFixture(deployEscrowFactoryFixture);
-
-      const deploymentBlockNumber = await ethers.provider.getBlockNumber();
-
-      const escrows = [
-        {
-          worker: worker.address,
-          amount: ethers.parseEther("1"),
-          durationDays: 10n,
-          title: "Primer trabajo",
-        },
-        {
-          worker: otherAccount.address,
-          amount: ethers.parseEther("2"),
-          durationDays: 20n,
-          title: "Segundo trabajo",
-        },
-      ];
-
-      for (const escrow of escrows) {
-        await (
-          await escrowFactory
-            .connect(owner)
-            .createEscrow(escrow.worker, escrow.durationDays, escrow.title, {
-              value: escrow.amount,
-            })
-        ).wait();
-      }
-
-      const filter = escrowFactory.filters.EscrowCreated(
-        undefined, // No interesa la dirección del owner
-        worker.address,
-      );
-
-      const events = await escrowFactory.queryFilter(
-        filter,
-        deploymentBlockNumber,
-        "latest",
-      );
-
-      expect(events.length).to.equal(1); // Un escrow tiene como worker a otherAccount
-
-      expect(
-        await escrowFactory.getEscrowCountByWorker(worker.address),
-      ).to.equal(BigInt(events.length));
-
-      for (let index = 0; index < events.length; index++) {
-        const registeredAddress = await escrowFactory.escrowsByWorker(
-          worker.address,
-          index,
+        expect(ownerEvents[index].args.escrowAddress).to.equal(
+          registeredAddress,
         );
-
-        expect(events[index].args.escrowAddress).to.equal(registeredAddress);
       }
+
+      // Solo hay un escrow del worker
+      const registeredAddress = await escrowFactory.escrowsByWorker(
+        worker.address,
+        0,
+      );
+      expect(workerEvents[0].args.escrowAddress).to.equal(registeredAddress);
     });
 
     it("Should match emitted amounts with stored escrow amounts", async function () {
