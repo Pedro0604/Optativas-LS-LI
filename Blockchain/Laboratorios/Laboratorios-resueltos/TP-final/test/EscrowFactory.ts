@@ -147,9 +147,12 @@ describe("EscrowFactory", function () {
         const { escrowFactory, owner, worker } =
           await deployAndCreateDefaultEscrow();
 
-        expect(await escrowFactory.getEscrowCountByWorker(owner.address))
-          .to.equal(await escrowFactory.getEscrowCountByOwner(worker.address))
-          .and.to.equal(0n);
+        expect(
+          await escrowFactory.getEscrowCountByWorker(owner.address),
+        ).to.equal(0n);
+        expect(
+          await escrowFactory.getEscrowCountByOwner(worker.address),
+        ).to.equal(0n);
       });
 
       it("Should transfer all provided ETH to the new escrow", async function () {
@@ -195,12 +198,13 @@ describe("EscrowFactory", function () {
 
         await createDefaultEscrow(escrowFactory, owner, worker); // Mismo owner y factory
 
-        expect(await escrowFactory.getEscrowCountByOwner(owner.address))
-          .and.to.equal(
-            await escrowFactory.getEscrowCountByWorker(worker.address),
-          )
-          .and.to.equal(await escrowFactory.getEscrowCount())
-          .and.to.equal(2n);
+        expect(
+          await escrowFactory.getEscrowCountByOwner(owner.address),
+        ).to.equal(2n);
+        expect(
+          await escrowFactory.getEscrowCountByWorker(worker.address),
+        ).to.equal(2n);
+        expect(await escrowFactory.getEscrowCount()).to.equal(2n);
 
         const secondEscrowAddress = await escrowFactory.escrowsByOwner(
           owner.address,
@@ -208,12 +212,18 @@ describe("EscrowFactory", function () {
         );
         expect(escrowAddress).not.to.equal(secondEscrowAddress);
 
-        expect(await escrowFactory.escrowsByOwner(owner.address, 0))
-          .to.equal(await escrowFactory.escrowsByWorker(worker.address, 0))
-          .and.to.equal(escrowAddress);
-        expect(await escrowFactory.escrowsByOwner(owner.address, 1))
-          .to.equal(await escrowFactory.escrowsByWorker(worker.address, 1))
-          .and.to.equal(secondEscrowAddress);
+        expect(await escrowFactory.escrowsByOwner(owner.address, 0)).to.equal(
+          escrowAddress,
+        );
+        expect(await escrowFactory.escrowsByWorker(worker.address, 0)).to.equal(
+          escrowAddress,
+        );
+        expect(await escrowFactory.escrowsByOwner(owner.address, 1)).to.equal(
+          secondEscrowAddress,
+        );
+        expect(await escrowFactory.escrowsByWorker(worker.address, 1)).to.equal(
+          secondEscrowAddress,
+        );
       });
 
       // TODO - ACOMODAR NOMBRE
@@ -233,13 +243,19 @@ describe("EscrowFactory", function () {
             })
         ).wait(); // Owner: otherAccount.address - Worker: owner.address
 
-        expect(await escrowFactory.getEscrowCountByOwner(owner.address))
-          .to.equal(await escrowFactory.getEscrowCountByWorker(worker.address))
-          .and.to.equal(1); // El default
+        expect(
+          await escrowFactory.getEscrowCountByOwner(owner.address),
+        ).to.equal(1n); // El default
+        expect(
+          await escrowFactory.getEscrowCountByWorker(worker.address),
+        ).to.equal(1); // El default
 
-        expect(await escrowFactory.getEscrowCountByOwner(otherAccount.address))
-          .to.equal(await escrowFactory.getEscrowCountByWorker(owner.address))
-          .and.to.equal(1); // El segundo escrow creado (Owner: otherAccount.address - Worker: owner.address)
+        expect(
+          await escrowFactory.getEscrowCountByOwner(otherAccount.address),
+        ).to.equal(1n); // El segundo escrow creado (Owner: otherAccount.address)
+        expect(
+          await escrowFactory.getEscrowCountByWorker(owner.address),
+        ).to.equal(1); // El segundo escrow creado (Worker: owner.address)
       });
     });
 
@@ -264,12 +280,13 @@ describe("EscrowFactory", function () {
 
         expect(await ethers.provider.getBalance(factoryAddress)).to.equal(0n);
 
-        expect(await escrowFactory.getEscrowCountByOwner(owner.address))
-          .and.to.equal(
-            await escrowFactory.getEscrowCountByWorker(worker.address),
-          )
-          .and.to.equal(await escrowFactory.getEscrowCount())
-          .and.to.equal(0n);
+        expect(
+          await escrowFactory.getEscrowCountByOwner(owner.address),
+        ).to.equal(0n);
+        expect(
+          await escrowFactory.getEscrowCountByWorker(worker.address),
+        ).to.equal(0n);
+        expect(await escrowFactory.getEscrowCount()).to.equal(0n);
       });
     });
 
