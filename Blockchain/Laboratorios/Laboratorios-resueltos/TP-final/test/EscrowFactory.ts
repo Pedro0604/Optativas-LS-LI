@@ -129,7 +129,11 @@ describe("EscrowFactory", function () {
             deployEscrowFactoryWithDefaultEscrowFixture,
           );
 
-        const result = await createEscrow({ escrowFactory, owner, worker }); // Mismo owner y factory
+        const result = await createEscrow({
+          escrowFactory,
+          owner,
+          workerAddress: worker.address,
+        }); // Mismo owner y factory
         const secondEscrowAddress = result.escrowAddress;
 
         expect(escrowAddress).not.to.equal(secondEscrowAddress);
@@ -171,7 +175,7 @@ describe("EscrowFactory", function () {
         await createEscrow({
           escrowFactory,
           owner: otherAccount,
-          worker: owner,
+          workerAddress: owner.address,
           amountInEth: 2,
           durationDays: 15,
         });
@@ -212,7 +216,12 @@ describe("EscrowFactory", function () {
         const factoryAddress = await escrowFactory.getAddress();
 
         await expect(
-          sendCreateEscrow({ escrowFactory, owner, worker, durationDays: 0 }), // durationDays = 0 para que falle
+          sendCreateEscrow({
+            escrowFactory,
+            owner,
+            workerAddress: worker.address,
+            durationDays: 0,
+          }), // durationDays = 0 para que falle
         ).to.revert(ethers); // No interesa el error ahora, sino que revierta
 
         expect(await ethers.provider.getBalance(factoryAddress)).to.equal(0n);
@@ -236,13 +245,13 @@ describe("EscrowFactory", function () {
 
         const escrows = [
           {
-            worker: worker,
+            workerAddress: worker.address,
             amount: 1,
             durationDays: 10n,
             title: "Primer trabajo",
           },
           {
-            worker: otherAccount,
+            workerAddress: otherAccount.address,
             amount: 2,
             durationDays: 20n,
             title: "Segundo trabajo",
@@ -253,7 +262,7 @@ describe("EscrowFactory", function () {
           await createEscrow({
             escrowFactory,
             owner,
-            worker: escrow.worker,
+            workerAddress: escrow.workerAddress,
             amountInEth: escrow.amount,
             durationDays: escrow.durationDays,
             title: escrow.title,

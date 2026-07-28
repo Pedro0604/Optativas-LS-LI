@@ -21,7 +21,7 @@ describe("Escrow", function () {
           await createEscrow({
             escrowFactory,
             owner,
-            worker,
+            workerAddress: worker.address,
             amountInEth: 2,
             durationDays: 10n,
             title: "Escrow de prueba constructor",
@@ -55,7 +55,7 @@ describe("Escrow", function () {
           sendCreateEscrow({
             escrowFactory,
             owner,
-            worker,
+            workerAddress: worker.address,
             title: "a",
           }),
         ).to.not.revert(ethers);
@@ -68,7 +68,7 @@ describe("Escrow", function () {
           sendCreateEscrow({
             escrowFactory,
             owner,
-            worker,
+            workerAddress: worker.address,
             title: maxLengthTitle,
           }),
         ).to.not.revert(ethers);
@@ -89,7 +89,7 @@ describe("Escrow", function () {
             sendCreateEscrow({
               escrowFactory,
               owner,
-              worker,
+              workerAddress: worker.address,
               title: okTitleWithAccent,
             }),
           ).to.not.revert(ethers);
@@ -109,7 +109,7 @@ describe("Escrow", function () {
             sendCreateEscrow({
               escrowFactory,
               owner,
-              worker,
+              workerAddress: worker.address,
               title: okTitleWithEmoji,
             }),
           ).to.not.revert(ethers);
@@ -131,7 +131,7 @@ describe("Escrow", function () {
           sendCreateEscrow({
             escrowFactory,
             owner,
-            worker,
+            workerAddress: worker.address,
             amountInEth: 0,
           }),
         ).to.be.revertedWithCustomError(escrow, "NoEthProvided");
@@ -143,14 +143,12 @@ describe("Escrow", function () {
             deployEscrowFactoryWithDefaultEscrowFixture,
           );
 
-        // TODO - CAMBIAR createEscrow y sendCreateEscrow para que del worker solo
-        // tomen la address y entonces se puede hacer esto con el helper
         await expect(
-          escrowFactory
-            .connect(owner)
-            .createEscrow(ethers.ZeroAddress, 30n, "Escrow de prueba", {
-              value: ethers.parseEther("1"),
-            }),
+          sendCreateEscrow({
+            escrowFactory,
+            owner,
+            workerAddress: ethers.ZeroAddress,
+          }),
         ).to.be.revertedWithCustomError(escrow, "ZeroAddress");
       });
 
@@ -164,7 +162,7 @@ describe("Escrow", function () {
           sendCreateEscrow({
             escrowFactory,
             owner,
-            worker: owner,
+            workerAddress: owner.address,
           }),
         ).to.be.revertedWithCustomError(escrow, "CannotHireYourself");
       });
@@ -179,7 +177,7 @@ describe("Escrow", function () {
           sendCreateEscrow({
             escrowFactory,
             owner,
-            worker,
+            workerAddress: worker.address,
             durationDays: 0n,
           }),
         ).to.be.revertedWithCustomError(escrow, "ZeroDuration");
@@ -195,7 +193,7 @@ describe("Escrow", function () {
           sendCreateEscrow({
             escrowFactory,
             owner,
-            worker,
+            workerAddress: worker.address,
             title: "",
           }),
         ).to.be.revertedWithCustomError(escrow, "EmptyTitle");
@@ -215,7 +213,7 @@ describe("Escrow", function () {
           sendCreateEscrow({
             escrowFactory,
             owner,
-            worker,
+            workerAddress: worker.address,
             title: exceedingTitle,
           }),
         )
@@ -241,7 +239,7 @@ describe("Escrow", function () {
             sendCreateEscrow({
               escrowFactory,
               owner,
-              worker,
+              workerAddress: worker.address,
               title: exceedingTitleWithAccent,
             }),
           )
@@ -269,7 +267,7 @@ describe("Escrow", function () {
             sendCreateEscrow({
               escrowFactory,
               owner,
-              worker,
+              workerAddress: worker.address,
               title: exceedingTitleWithEmoji,
             }),
           )

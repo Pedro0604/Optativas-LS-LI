@@ -1,6 +1,6 @@
 import type { EscrowFactory } from "../types/ethers-contracts/EscrowFactory.js";
 import type { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/types";
-import type { BigNumberish } from "ethers";
+import type { AddressLike, BigNumberish } from "ethers";
 import { network } from "hardhat";
 
 /**
@@ -38,7 +38,7 @@ export async function deployEscrowFactoryFixture() {
 export type CreateEscrowParams = {
   escrowFactory: EscrowFactory;
   owner: HardhatEthersSigner;
-  worker: HardhatEthersSigner;
+  workerAddress: AddressLike;
   amountInEth?: number;
   durationDays?: BigNumberish;
   title?: string;
@@ -61,14 +61,14 @@ export type CreateEscrowParams = {
 export function sendCreateEscrow({
   escrowFactory,
   owner,
-  worker,
+  workerAddress,
   amountInEth = 1,
   durationDays = 30,
   title = "Escrow de prueba",
 }: CreateEscrowParams) {
   return escrowFactory
     .connect(owner)
-    .createEscrow(worker.address, durationDays, title, {
+    .createEscrow(workerAddress, durationDays, title, {
       value: ethers.parseEther(String(amountInEth)),
     });
 }
@@ -90,7 +90,7 @@ export function sendCreateEscrow({
 export async function createEscrow({
   escrowFactory,
   owner,
-  worker,
+  workerAddress,
   amountInEth = 1,
   durationDays = 30,
   title = "Escrow de prueba",
@@ -99,14 +99,14 @@ export async function createEscrow({
 
   const escrowAddress = await escrowFactory
     .connect(owner)
-    .createEscrow.staticCall(worker.address, durationDays, title, {
+    .createEscrow.staticCall(workerAddress, durationDays, title, {
       value: amountInWei,
     });
 
   const transaction = await sendCreateEscrow({
     escrowFactory,
     owner,
-    worker,
+    workerAddress,
     amountInEth,
     durationDays,
     title,
@@ -147,7 +147,7 @@ export async function deployEscrowFactoryWithDefaultEscrowFixture() {
   const createResult = await createEscrow({
     escrowFactory: deployResult.escrowFactory,
     owner: deployResult.owner,
-    worker: deployResult.worker,
+    workerAddress: deployResult.worker.address,
   });
 
   return {
