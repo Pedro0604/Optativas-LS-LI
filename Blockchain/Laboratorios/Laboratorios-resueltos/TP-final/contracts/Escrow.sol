@@ -39,7 +39,7 @@ contract Escrow {
     error OnlyOwnerAllowed();
 
     /**
-     * Solo el dueño puede realizar la función
+     * Solo el worker puede realizar la función
      */
     error OnlyWorkerAllowed();
 
@@ -61,9 +61,9 @@ contract Escrow {
     error NoEthProvided();
 
     /**
-     * La dirección indicada es la 0
+     * La dirección indicada es la address(0)
      */
-    error AddressZero();
+    error ZeroAddress();
 
     /**
      * No se puede contratarse a uno mismo
@@ -142,7 +142,7 @@ contract Escrow {
         }
 
         if (owner_ == address(0) || worker_ == address(0)) {
-            revert AddressZero();
+            revert ZeroAddress();
         }
 
         if (owner_ == worker_) {

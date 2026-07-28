@@ -1,52 +1,282 @@
 import { expect } from "chai";
-import { network } from "hardhat";
-import type { EscrowFactory } from "../types/ethers-contracts/EscrowFactory.js";
-import type { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/types";
-import type { BigNumberish } from "ethers";
-
-const { ethers, networkHelpers } = await network.create();
+import {
+  deployEscrowFactoryFixture,
+  createEscrow,
+  networkHelpers,
+  ethers,
+  deployEscrowFactoryWithDefaultEscrowFixture,
+  EscrowState,
+  sendCreateEscrow,
+  getUtf8ByteLength,
+} from "./utils.js";
 
 describe("Escrow", function () {
-  async function deployEscrowFactoryFixture() {
-    const [owner, worker, otherAccount] = await ethers.getSigners();
-    const escrowFactory = await ethers.deployContract("EscrowFactory");
+  describe("constructor through EscrowFactory.createEscrow", function () {
+    describe("successful creation", function () {
+      it("Should correctly save the values of an Escrow", async function () {
+        const { escrowFactory, owner, worker } =
+          await networkHelpers.loadFixture(deployEscrowFactoryFixture);
 
-    await escrowFactory.waitForDeployment();
+        const { escrowAddress, amountInWei, title, receipt, durationDays } =
+          await createEscrow({
+            escrowFactory,
+            owner,
+            worker,
+            amountInEth: 2,
+            durationDays: 10n,
+            title: "Escrow de prueba constructor",
+          });
 
-    return {
-      escrowFactory,
-      owner,
-      worker,
-      otherAccount,
-    };
-  }
+        const escrow = await ethers.getContractAt("Escrow", escrowAddress);
 
-  async function createEscrow(
-    escrowFactory: EscrowFactory,
-    owner: HardhatEthersSigner,
-    worker: HardhatEthersSigner,
-    amount: Number,
-    durationDays: BigNumberish,
-    title: string,
-  ) {
-    const transaction = await escrowFactory
-      .connect(owner)
-      .createEscrow(worker.address, durationDays, title, {
-        value: ethers.parseEther(String(amount)),
+        expect(await escrow.owner()).to.equal(owner.address);
+        expect(await escrow.worker()).to.equal(worker.address);
+        expect(await escrow.amount()).to.equal(amountInWei);
+        expect(await escrow.title()).to.equal(title);
+        expect(await escrow.state()).to.equal(EscrowState.Funded);
+        expect(await ethers.provider.getBalance(escrowAddress)).to.equal(
+          amountInWei,
+        );
+
+        const escrowDeploymentBlock = await receipt.getBlock();
+        const expectedDeadline =
+          BigInt(escrowDeploymentBlock.timestamp) +
+          BigInt(durationDays) * 86_400n;
+        expect(await escrow.deadline()).to.equal(expectedDeadline);
       });
 
-    await transaction.wait();
+      it("Should not revert when title length using ASCII is equal to 1 or to MAX_TITLE_LENGTH", async function () {
+        const { escrowFactory, owner, worker, escrow } =
+          await networkHelpers.loadFixture(
+            deployEscrowFactoryWithDefaultEscrowFixture,
+          );
 
-    const escrowAddress = await escrowFactory.escrowsByOwner(owner.address, 0);
+        await expect(
+          sendCreateEscrow({
+            escrowFactory,
+            owner,
+            worker,
+            title: "a",
+          }),
+        ).to.not.revert(ethers);
 
-    return {
-      transaction,
-      escrowAddress,
-      amount,
-      durationDays,
-      title,
-    };
-  }
+        const maxLength = await escrow.MAX_TITLE_LENGTH();
+        const maxLengthTitle = "a".repeat(Number(maxLength));
 
-  describe("constructor", function () {});
+        expect(getUtf8ByteLength(maxLengthTitle)).to.equal(maxLength);
+        await expect(
+          sendCreateEscrow({
+            escrowFactory,
+            owner,
+            worker,
+            title: maxLengthTitle,
+          }),
+        ).to.not.revert(ethers);
+      });
+
+      describe("UTF-8 title length", function () {
+        it("Should accept MAX_TITLE_LENGTH bytes using an accented character", async function () {
+          const { escrowFactory, owner, worker, escrow } =
+            await networkHelpers.loadFixture(
+              deployEscrowFactoryWithDefaultEscrowFixture,
+            );
+
+          const maxLength = await escrow.MAX_TITLE_LENGTH();
+          const okTitleWithAccent = "a".repeat(Number(maxLength - 2n)) + "á"; // 'á' ocupa 2 bytes
+
+          expect(getUtf8ByteLength(okTitleWithAccent)).to.equal(maxLength);
+          await expect(
+            sendCreateEscrow({
+              escrowFactory,
+              owner,
+              worker,
+              title: okTitleWithAccent,
+            }),
+          ).to.not.revert(ethers);
+        });
+
+        it("Should accept MAX_TITLE_LENGTH bytes using an emoji", async function () {
+          const { escrowFactory, owner, worker, escrow } =
+            await networkHelpers.loadFixture(
+              deployEscrowFactoryWithDefaultEscrowFixture,
+            );
+
+          const maxLength = await escrow.MAX_TITLE_LENGTH();
+          const okTitleWithEmoji = "a".repeat(Number(maxLength - 4n)) + "😎"; // '😎' ocupa 4 bytes
+
+          expect(getUtf8ByteLength(okTitleWithEmoji)).to.equal(maxLength);
+          await expect(
+            sendCreateEscrow({
+              escrowFactory,
+              owner,
+              worker,
+              title: okTitleWithEmoji,
+            }),
+          ).to.not.revert(ethers);
+        });
+      });
+    });
+
+    describe("failures", function () {
+      // En los casos de fallo se usa el fixture deployEscrowFactoryWithDefaultEscrowFixture
+      // así se tiene acceso a `escrow` para poder acceder a los errores y constantes definidos
+      // en el contrato
+      it("Should revert when no eth is provided", async function () {
+        const { escrowFactory, owner, worker, escrow } =
+          await networkHelpers.loadFixture(
+            deployEscrowFactoryWithDefaultEscrowFixture,
+          );
+
+        await expect(
+          sendCreateEscrow({
+            escrowFactory,
+            owner,
+            worker,
+            amountInEth: 0,
+          }),
+        ).to.be.revertedWithCustomError(escrow, "NoEthProvided");
+      });
+
+      it("Should revert when the worker address is address(0)", async function () {
+        const { escrowFactory, owner, escrow } =
+          await networkHelpers.loadFixture(
+            deployEscrowFactoryWithDefaultEscrowFixture,
+          );
+
+        // TODO - CAMBIAR createEscrow y sendCreateEscrow para que del worker solo
+        // tomen la address y entonces se puede hacer esto con el helper
+        await expect(
+          escrowFactory
+            .connect(owner)
+            .createEscrow(ethers.ZeroAddress, 30n, "Escrow de prueba", {
+              value: ethers.parseEther("1"),
+            }),
+        ).to.be.revertedWithCustomError(escrow, "ZeroAddress");
+      });
+
+      it("Should revert when owner is the same account as worker", async function () {
+        const { escrowFactory, owner, escrow } =
+          await networkHelpers.loadFixture(
+            deployEscrowFactoryWithDefaultEscrowFixture,
+          );
+
+        await expect(
+          sendCreateEscrow({
+            escrowFactory,
+            owner,
+            worker: owner,
+          }),
+        ).to.be.revertedWithCustomError(escrow, "CannotHireYourself");
+      });
+
+      it("Should revert when durationDays is zero", async function () {
+        const { escrowFactory, owner, worker, escrow } =
+          await networkHelpers.loadFixture(
+            deployEscrowFactoryWithDefaultEscrowFixture,
+          );
+
+        await expect(
+          sendCreateEscrow({
+            escrowFactory,
+            owner,
+            worker,
+            durationDays: 0n,
+          }),
+        ).to.be.revertedWithCustomError(escrow, "ZeroDuration");
+      });
+
+      it("Should revert when title is empty", async function () {
+        const { escrowFactory, owner, worker, escrow } =
+          await networkHelpers.loadFixture(
+            deployEscrowFactoryWithDefaultEscrowFixture,
+          );
+
+        await expect(
+          sendCreateEscrow({
+            escrowFactory,
+            owner,
+            worker,
+            title: "",
+          }),
+        ).to.be.revertedWithCustomError(escrow, "EmptyTitle");
+      });
+
+      it("Should revert when title length using ASCII exceeds MAX_TITLE_LENGTH", async function () {
+        const { escrowFactory, owner, worker, escrow } =
+          await networkHelpers.loadFixture(
+            deployEscrowFactoryWithDefaultEscrowFixture,
+          );
+
+        const maxLength = await escrow.MAX_TITLE_LENGTH();
+        const exceedingTitle = "a".repeat(Number(maxLength + 1n));
+
+        expect(getUtf8ByteLength(exceedingTitle)).to.equal(maxLength + 1n);
+        await expect(
+          sendCreateEscrow({
+            escrowFactory,
+            owner,
+            worker,
+            title: exceedingTitle,
+          }),
+        )
+          .to.be.revertedWithCustomError(escrow, "TitleTooLong")
+          .withArgs(getUtf8ByteLength(exceedingTitle), maxLength);
+      });
+
+      describe("UTF-8 title length", function () {
+        it("Should revert when MAX_TITLE_LENGTH + 1 bytes using an accented character", async function () {
+          const { escrowFactory, owner, worker, escrow } =
+            await networkHelpers.loadFixture(
+              deployEscrowFactoryWithDefaultEscrowFixture,
+            );
+
+          const maxLength = await escrow.MAX_TITLE_LENGTH();
+          const exceedingTitleWithAccent =
+            "a".repeat(Number(maxLength - 1n)) + "á"; // 'á' ocupa 2 bytes
+
+          expect(getUtf8ByteLength(exceedingTitleWithAccent)).to.equal(
+            maxLength + 1n,
+          );
+          await expect(
+            sendCreateEscrow({
+              escrowFactory,
+              owner,
+              worker,
+              title: exceedingTitleWithAccent,
+            }),
+          )
+            .to.be.revertedWithCustomError(escrow, "TitleTooLong")
+            .withArgs(
+              getUtf8ByteLength(exceedingTitleWithAccent), // Se usa para sacar el length en bytes y no la cantidad caracteres unicode (ej.: 'á' es 1 caracter unicode pero 2 bytes)
+              maxLength,
+            );
+        });
+
+        it("Should revert when MAX_TITLE_LENGTH + 1 bytes using an emoji", async function () {
+          const { escrowFactory, owner, worker, escrow } =
+            await networkHelpers.loadFixture(
+              deployEscrowFactoryWithDefaultEscrowFixture,
+            );
+
+          const maxLength = await escrow.MAX_TITLE_LENGTH();
+          const exceedingTitleWithEmoji =
+            "a".repeat(Number(maxLength - 3n)) + "😎"; // '😎' ocupa 4 bytes
+
+          expect(getUtf8ByteLength(exceedingTitleWithEmoji)).to.equal(
+            maxLength + 1n,
+          );
+          await expect(
+            sendCreateEscrow({
+              escrowFactory,
+              owner,
+              worker,
+              title: exceedingTitleWithEmoji,
+            }),
+          )
+            .to.be.revertedWithCustomError(escrow, "TitleTooLong")
+            .withArgs(getUtf8ByteLength(exceedingTitleWithEmoji), maxLength);
+        });
+      });
+    });
+  });
 });

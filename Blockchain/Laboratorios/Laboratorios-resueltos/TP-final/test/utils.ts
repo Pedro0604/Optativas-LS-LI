@@ -118,10 +118,13 @@ export async function createEscrow({
     throw new Error("La transacción de creación no fue minada");
   }
 
+  const escrow = await ethers.getContractAt("Escrow", escrowAddress);
+
   return {
     transaction,
     receipt,
     escrowAddress,
+    escrow,
     amountInEth,
     amountInWei,
     durationDays,
@@ -151,4 +154,33 @@ export async function deployEscrowFactoryWithDefaultEscrowFixture() {
     ...deployResult,
     ...createResult,
   };
+}
+
+/**
+ * Representación del enum `Escrow.State` definido en `Escrow.sol`.
+ *
+ * Los valores deben coincidir exactamente con el orden de declaración del enum,
+ * ya que Solidity asigna valores enteros consecutivos a partir del 0.
+ *
+ * @warning Si se agrega, elimina o reordena el enum `Escrow.State` de `Escrow.sol`,
+ * este objeto también debe actualizarse.
+ */
+export const EscrowState = {
+  Funded: 0n,
+  Accepted: 1n,
+  Delivered: 2n,
+  Approved: 3n,
+  Disputed: 4n,
+  Paid: 5n,
+  Refunded: 6n,
+  Resolved: 7n,
+} as const;
+
+/**
+ * Obtiene la length del string en bytes, usando ethers.toUtf8Bytes
+ * @param str String a obtener su length
+ * @returns Length como BigInt
+ */
+export function getUtf8ByteLength(str: string) {
+  return BigInt(ethers.toUtf8Bytes(str).length);
 }
