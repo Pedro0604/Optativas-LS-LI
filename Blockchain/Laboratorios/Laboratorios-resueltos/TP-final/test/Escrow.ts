@@ -1,7 +1,5 @@
 import { expect } from "chai";
 import {
-  deployEscrowFactoryFixture,
-  createEscrow,
   networkHelpers,
   ethers,
   deployEscrowFactoryWithDefaultEscrowFixture,
@@ -14,18 +12,17 @@ describe("Escrow", function () {
   describe("constructor through EscrowFactory.createEscrow", function () {
     describe("successful creation", function () {
       it("Should correctly save the values of an Escrow", async function () {
-        const { escrowFactory, owner, worker } =
-          await networkHelpers.loadFixture(deployEscrowFactoryFixture);
-
-        const { escrowAddress, amountInWei, title, receipt, durationDays } =
-          await createEscrow({
-            escrowFactory,
-            owner,
-            workerAddress: worker.address,
-            amountInEth: 2,
-            durationDays: 10n,
-            title: "Escrow de prueba constructor",
-          });
+        const {
+          owner,
+          worker,
+          escrowAddress,
+          amountInWei,
+          title,
+          receipt,
+          durationDays,
+        } = await networkHelpers.loadFixture(
+          deployEscrowFactoryWithDefaultEscrowFixture,
+        );
 
         const escrow = await ethers.getContractAt("Escrow", escrowAddress);
 
