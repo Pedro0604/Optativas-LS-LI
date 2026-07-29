@@ -8,6 +8,7 @@ import {
   getUtf8ByteLength,
   SECONDS_PER_DAY,
   createEscrow,
+  getEscrowEventName,
 } from "./utils.js";
 
 type TitleCase = {
@@ -240,6 +241,53 @@ describe("Escrow", function () {
               .withArgs(titleLength, maxLength);
           });
         }
+      });
+    });
+  });
+
+  describe("accept", function () {
+    describe("succesful acceptance", function () {
+      const acceptedEvent = getEscrowEventName(EscrowState.Accepted);
+      it(`Should emit the ${acceptedEvent} event and change its state to Accepted`, async function () {
+        const { escrow, worker } = await networkHelpers.loadFixture(
+          deployEscrowFactoryWithDefaultEscrowFixture,
+        );
+
+        await expect(escrow.connect(worker).accept())
+          .to.emit(escrow, acceptedEvent)
+          .withArgs();
+        expect(await escrow.state()).to.equal(EscrowState.Accepted);
+      });
+    });
+
+    describe("failing acceptance", function () {
+      it(`Should revert when sender is not the worker`, async function () {
+        const { escrow, owner, otherAccount } =
+          await networkHelpers.loadFixture(
+            deployEscrowFactoryWithDefaultEscrowFixture,
+          );
+
+        await expect(escrow.connect(owner).accept())
+          .to.revertedWithCustomError(escrow, "OnlyWorkerAllowed")
+          .withArgs();
+        expect(await escrow.state()).to.equal(EscrowState.Funded);
+
+        await expect(escrow.connect(otherAccount).accept())
+          .to.revertedWithCustomError(escrow, "OnlyWorkerAllowed")
+          .withArgs();
+        expect(await escrow.state()).to.equal(EscrowState.Funded);
+      });
+
+      it(`Should revert when the escrow is not in State.Accepted`, async function () {
+        const { escrow, worker } = await networkHelpers.loadFixture(
+          deployEscrowFactoryWithDefaultEscrowFixture,
+        );
+
+        await escrow.connect(worker).accept();
+
+        await expect(escrow.connect(worker).accept())
+          .to.revertedWithCustomError(escrow, "InvalidState")
+          .withArgs(EscrowState.Accepted, EscrowState.Funded);
       });
     });
   });

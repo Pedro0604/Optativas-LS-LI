@@ -6,6 +6,8 @@ import {
   ethers,
   deployEscrowFactoryWithDefaultEscrowFixture,
   sendCreateEscrow,
+  EscrowState,
+  getEscrowEventName,
 } from "./utils.js";
 
 describe("EscrowFactory", function () {
@@ -84,7 +86,8 @@ describe("EscrowFactory", function () {
         );
       });
 
-      it("Should emit EscrowCreated with the escrow creation data", async function () {
+      const fundedEvent = getEscrowEventName(EscrowState.Funded);
+      it(`Should emit the ${fundedEvent} event with the escrow creation data`, async function () {
         const {
           escrowFactory,
           owner,
@@ -98,7 +101,7 @@ describe("EscrowFactory", function () {
         );
 
         await expect(transaction)
-          .to.emit(escrowFactory, "EscrowCreated")
+          .to.emit(escrowFactory, fundedEvent)
           .withArgs(
             owner.address,
             worker.address,

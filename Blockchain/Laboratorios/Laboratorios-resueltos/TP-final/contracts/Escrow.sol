@@ -27,6 +27,11 @@ contract Escrow {
     string public title;
 
     /**
+     * El Escrow fue aceptado
+     */
+    event Accepted();
+
+    /**
      * Estado invalido.
      * @param currentState Estado actual
      * @param expectedState Estado esperado
@@ -173,5 +178,10 @@ contract Escrow {
         title = title_;
 
         state = State.Funded;
+    }
+
+    function accept() external onlyWorker inState(State.Funded) {
+        state = State.Accepted;
+        emit Accepted();
     }
 }

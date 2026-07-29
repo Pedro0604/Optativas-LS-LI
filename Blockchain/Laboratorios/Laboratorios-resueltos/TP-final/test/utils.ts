@@ -179,10 +179,43 @@ export const EscrowState = {
 } as const;
 
 /**
+ * Tipo que representa todos los valores de EscrowState
+ */
+export type EscrowState = (typeof EscrowState)[keyof typeof EscrowState];
+
+/**
+ * Mapea un EscrowState al nombre del evento asociado
+ */
+export function getEscrowEventName(state: EscrowState): string {
+  switch (state) {
+    case EscrowState.Funded:
+      return "EscrowCreated";
+    case EscrowState.Accepted:
+      return "Accepted";
+    case EscrowState.Delivered:
+      return "Delivered";
+    case EscrowState.Approved:
+      return "Approved";
+    case EscrowState.Disputed:
+      return "Disputed";
+    case EscrowState.Paid:
+      return "Paid";
+    case EscrowState.Refunded:
+      return "Refunded";
+    case EscrowState.Resolved:
+      return "Resolved";
+    default: {
+      const _exhaustiveCheck: never = state;
+      throw new Error(`EscrowState no permitido: ${_exhaustiveCheck}`);
+    }
+  }
+}
+
+/**
  * Obtiene la length del string en bytes, usando ethers.toUtf8Bytes
  * @param str String a obtener su length
  * @returns Length como BigInt
  */
-export function getUtf8ByteLength(str: string) {
+export function getUtf8ByteLength(str: string): BigInt {
   return BigInt(ethers.toUtf8Bytes(str).length);
 }
