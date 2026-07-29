@@ -196,30 +196,149 @@ describe("EscrowFactory", function () {
     });
 
     describe("failures", function () {
-      it("Should revert the whole creation when Escrow construction fails", async function () {
-        const { escrowFactory, owner, worker } =
-          await networkHelpers.loadFixture(deployEscrowFactoryFixture);
+      it("Should preserve all existing state when Escrow construction fails", async function () {
+        const {
+          escrowFactory,
+          owner: account1,
+          worker: account2,
+          otherAccount: account3,
+          escrowAddress: firstEscrowAddress,
+        } = await networkHelpers.loadFixture(
+          deployEscrowFactoryWithDefaultEscrowFixture,
+        );
+
+        const { escrowAddress: secondEscrowAddress } = await createEscrow({
+          escrowFactory,
+          owner: account3,
+          workerAddress: account1.address,
+          amountInEth: 2,
+          durationDays: 15n,
+          title: "Segundo escrow válido",
+        });
 
         const factoryAddress = await escrowFactory.getAddress();
 
+        // Estado previo al intento inválido
+        const globalCountBefore = await escrowFactory.getEscrowCount();
+
+        const account1OwnerCountBefore =
+          await escrowFactory.getEscrowCountByOwner(account1.address);
+        const account1WorkerCountBefore =
+          await escrowFactory.getEscrowCountByWorker(account1.address);
+
+        const account2OwnerCountBefore =
+          await escrowFactory.getEscrowCountByOwner(account2.address);
+        const account2WorkerCountBefore =
+          await escrowFactory.getEscrowCountByWorker(account2.address);
+
+        const account3OwnerCountBefore =
+          await escrowFactory.getEscrowCountByOwner(account3.address);
+        const account3WorkerCountBefore =
+          await escrowFactory.getEscrowCountByWorker(account3.address);
+
+        const allEscrowsBefore = [
+          await escrowFactory.allEscrows(0),
+          await escrowFactory.allEscrows(1),
+        ];
+
+        const account1OwnerEscrowsBefore = [
+          await escrowFactory.escrowsByOwner(account1.address, 0),
+        ];
+
+        const account1WorkerEscrowsBefore = [
+          await escrowFactory.escrowsByWorker(account1.address, 0),
+        ];
+
+        const account2WorkerEscrowsBefore = [
+          await escrowFactory.escrowsByWorker(account2.address, 0),
+        ];
+
+        const account3OwnerEscrowsBefore = [
+          await escrowFactory.escrowsByOwner(account3.address, 0),
+        ];
+
+        const factoryBalanceBefore =
+          await ethers.provider.getBalance(factoryAddress);
+
+        const firstEscrowBalanceBefore =
+          await ethers.provider.getBalance(firstEscrowAddress);
+
+        const secondEscrowBalanceBefore =
+          await ethers.provider.getBalance(secondEscrowAddress);
+
+        // Creación fallida por durationDays = 0
         await expect(
           sendCreateEscrow({
             escrowFactory,
-            owner,
-            workerAddress: worker.address,
-            durationDays: 0,
-          }), // durationDays = 0 para que falle
-        ).to.revert(ethers); // No interesa el error ahora, sino que revierta
+            owner: account1,
+            workerAddress: account2.address,
+            amountInEth: 3,
+            durationDays: 0n,
+            title: "Escrow inválido",
+          }),
+        ).to.revert(ethers);
 
-        expect(await ethers.provider.getBalance(factoryAddress)).to.equal(0n);
+        // Los counts deben mantenerse
+        expect(await escrowFactory.getEscrowCount()).to.equal(
+          globalCountBefore,
+        );
 
         expect(
-          await escrowFactory.getEscrowCountByOwner(owner.address),
-        ).to.equal(0n);
+          await escrowFactory.getEscrowCountByOwner(account1.address),
+        ).to.equal(account1OwnerCountBefore);
+
         expect(
-          await escrowFactory.getEscrowCountByWorker(worker.address),
-        ).to.equal(0n);
-        expect(await escrowFactory.getEscrowCount()).to.equal(0n);
+          await escrowFactory.getEscrowCountByWorker(account1.address),
+        ).to.equal(account1WorkerCountBefore);
+
+        expect(
+          await escrowFactory.getEscrowCountByOwner(account2.address),
+        ).to.equal(account2OwnerCountBefore);
+
+        expect(
+          await escrowFactory.getEscrowCountByWorker(account2.address),
+        ).to.equal(account2WorkerCountBefore);
+
+        expect(
+          await escrowFactory.getEscrowCountByOwner(account3.address),
+        ).to.equal(account3OwnerCountBefore);
+
+        expect(
+          await escrowFactory.getEscrowCountByWorker(account3.address),
+        ).to.equal(account3WorkerCountBefore);
+
+        // Las direcciones existentes deben mantener su orden
+        expect(await escrowFactory.allEscrows(0)).to.equal(allEscrowsBefore[0]);
+        expect(await escrowFactory.allEscrows(1)).to.equal(allEscrowsBefore[1]);
+
+        expect(
+          await escrowFactory.escrowsByOwner(account1.address, 0),
+        ).to.equal(account1OwnerEscrowsBefore[0]);
+
+        expect(
+          await escrowFactory.escrowsByWorker(account1.address, 0),
+        ).to.equal(account1WorkerEscrowsBefore[0]);
+
+        expect(
+          await escrowFactory.escrowsByWorker(account2.address, 0),
+        ).to.equal(account2WorkerEscrowsBefore[0]);
+
+        expect(
+          await escrowFactory.escrowsByOwner(account3.address, 0),
+        ).to.equal(account3OwnerEscrowsBefore[0]);
+
+        // Ningún ETH debe quedar retenido ni alterar los escrows existentes
+        expect(await ethers.provider.getBalance(factoryAddress)).to.equal(
+          factoryBalanceBefore,
+        );
+
+        expect(await ethers.provider.getBalance(firstEscrowAddress)).to.equal(
+          firstEscrowBalanceBefore,
+        );
+
+        expect(await ethers.provider.getBalance(secondEscrowAddress)).to.equal(
+          secondEscrowBalanceBefore,
+        );
       });
     });
   });
