@@ -6,12 +6,13 @@ import {
   EscrowState,
   sendCreateEscrow,
   getUtf8ByteLength,
+  SECONDS_PER_DAY,
 } from "./utils.js";
 
 describe("Escrow", function () {
   describe("constructor through EscrowFactory.createEscrow", function () {
     describe("successful creation", function () {
-      it("Should correctly save the values of an Escrow", async function () {
+      it("Should correctly save the values and ETH balance of an Escrow", async function () {
         const {
           owner,
           worker,
@@ -38,7 +39,7 @@ describe("Escrow", function () {
         const escrowDeploymentBlock = await receipt.getBlock();
         const expectedDeadline =
           BigInt(escrowDeploymentBlock.timestamp) +
-          BigInt(durationDays) * 86_400n;
+          BigInt(durationDays) * SECONDS_PER_DAY;
         expect(await escrow.deadline()).to.equal(expectedDeadline);
       });
 

@@ -3,6 +3,8 @@ import type { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/types"
 import type { AddressLike, BigNumberish } from "ethers";
 import { network } from "hardhat";
 
+export const SECONDS_PER_DAY = 86_400n;
+
 /**
  * Instancias de Ethers y de los helpers de red asociadas a la conexión
  * utilizada por los tests.
