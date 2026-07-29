@@ -28,41 +28,28 @@ describe("EscrowFactory", function () {
 
   describe("createEscrow", function () {
     describe("successful creation", function () {
-      it("Should add the escrow to the escrows array", async function () {
-        const { escrowFactory, escrowAddress } =
+      it("Should register the escrow for its owner, worker and in the allEscrows array", async function () {
+        const { escrowFactory, escrowAddress, owner, worker } =
           await networkHelpers.loadFixture(
             deployEscrowFactoryWithDefaultEscrowFixture,
           );
 
+        // All escrows
         expect(await escrowFactory.getEscrowCount()).to.equal(1n);
         expect(await escrowFactory.allEscrows(0)).to.equal(escrowAddress);
-      });
 
-      it("Should register the escrow for its owner", async function () {
-        const { escrowFactory, owner, escrowAddress } =
-          await networkHelpers.loadFixture(
-            deployEscrowFactoryWithDefaultEscrowFixture,
-          );
-
+        // Owner
         expect(
           await escrowFactory.getEscrowCountByOwner(owner.address),
         ).to.equal(1n);
-
         expect(await escrowFactory.escrowsByOwner(owner.address, 0)).to.equal(
           escrowAddress,
         );
-      });
 
-      it("Should register the escrow for its worker", async function () {
-        const { escrowFactory, worker, escrowAddress } =
-          await networkHelpers.loadFixture(
-            deployEscrowFactoryWithDefaultEscrowFixture,
-          );
-
+        // Worker
         expect(
           await escrowFactory.getEscrowCountByWorker(worker.address),
         ).to.equal(1n);
-
         expect(await escrowFactory.escrowsByWorker(worker.address, 0)).to.equal(
           escrowAddress,
         );
