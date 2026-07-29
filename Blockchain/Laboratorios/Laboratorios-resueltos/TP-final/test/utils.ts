@@ -212,6 +212,31 @@ export function getEscrowEventName(state: EscrowState): string {
 }
 
 /**
+ * Representación de los errores del contrato.
+ *
+ * @warning Si se agregan, elimina o modifican errores en el contrato se debería
+ * modificar unicamente acá, si está bien utilizado.
+ */
+export const EscrowErrors = {
+  InvalidState: "InvalidState",
+  OnlyOwnerAllowed: "OnlyOwnerAllowed",
+  OnlyWorkerAllowed: "OnlyWorkerAllowed",
+  OnlyAllowedAfterTime: "OnlyAllowedAfterTime",
+  OnlyAllowedBeforeTime: "OnlyAllowedBeforeTime",
+  NoEthProvided: "NoEthProvided",
+  ZeroAddress: "ZeroAddress",
+  CannotHireYourself: "CannotHireYourself",
+  ZeroDuration: "ZeroDuration",
+  EmptyTitle: "EmptyTitle",
+  TitleTooLong: "TitleTooLong",
+} as const;
+
+/**
+ * Tipo que representa todos los valores de EscrowErrors
+ */
+export type EscrowErrors = (typeof EscrowErrors)[keyof typeof EscrowErrors];
+
+/**
  * Obtiene la length del string en bytes, usando ethers.toUtf8Bytes
  * @param str String a obtener su length
  * @returns Length como BigInt

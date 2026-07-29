@@ -1,5 +1,5 @@
 ### Next
-- Extraer strings de Custom errors a un enum o cost as const
+- Deliver/Submit por parte del worker
 
 ### Later
 - Reemplazar amountInEth por string o bigint para evitar problemas de precisión por number. Probar con valores de ETH no enteros para ver q tal.

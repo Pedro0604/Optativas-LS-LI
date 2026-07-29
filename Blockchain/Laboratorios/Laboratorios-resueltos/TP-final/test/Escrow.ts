@@ -9,6 +9,7 @@ import {
   SECONDS_PER_DAY,
   createEscrow,
   getEscrowEventName,
+  EscrowErrors,
 } from "./utils.js";
 
 type TitleCase = {
@@ -150,7 +151,7 @@ describe("Escrow", function () {
             workerAddress: worker.address,
             amountInEth: 0,
           }),
-        ).to.be.revertedWithCustomError(escrow, "NoEthProvided");
+        ).to.be.revertedWithCustomError(escrow, EscrowErrors.NoEthProvided);
       });
 
       it("Should revert when the worker address is address(0)", async function () {
@@ -165,7 +166,7 @@ describe("Escrow", function () {
             owner,
             workerAddress: ethers.ZeroAddress,
           }),
-        ).to.be.revertedWithCustomError(escrow, "ZeroAddress");
+        ).to.be.revertedWithCustomError(escrow, EscrowErrors.ZeroAddress);
       });
 
       it("Should revert when owner is the same account as worker", async function () {
@@ -180,7 +181,10 @@ describe("Escrow", function () {
             owner,
             workerAddress: owner.address,
           }),
-        ).to.be.revertedWithCustomError(escrow, "CannotHireYourself");
+        ).to.be.revertedWithCustomError(
+          escrow,
+          EscrowErrors.CannotHireYourself,
+        );
       });
 
       it("Should revert when durationDays is zero", async function () {
@@ -196,7 +200,7 @@ describe("Escrow", function () {
             workerAddress: worker.address,
             durationDays: 0n,
           }),
-        ).to.be.revertedWithCustomError(escrow, "ZeroDuration");
+        ).to.be.revertedWithCustomError(escrow, EscrowErrors.ZeroDuration);
       });
 
       it("Should revert when title is empty", async function () {
@@ -212,7 +216,7 @@ describe("Escrow", function () {
             workerAddress: worker.address,
             title: "",
           }),
-        ).to.be.revertedWithCustomError(escrow, "EmptyTitle");
+        ).to.be.revertedWithCustomError(escrow, EscrowErrors.EmptyTitle);
       });
 
       describe("title exceeding MAX_TITLE_LENGTH", function () {
@@ -237,7 +241,7 @@ describe("Escrow", function () {
                 title,
               }),
             )
-              .to.be.revertedWithCustomError(escrow, "TitleTooLong")
+              .to.be.revertedWithCustomError(escrow, EscrowErrors.TitleTooLong)
               .withArgs(titleLength, maxLength);
           });
         }
@@ -268,12 +272,12 @@ describe("Escrow", function () {
           );
 
         await expect(escrow.connect(owner).accept())
-          .to.revertedWithCustomError(escrow, "OnlyWorkerAllowed")
+          .to.revertedWithCustomError(escrow, EscrowErrors.OnlyWorkerAllowed)
           .withArgs();
         expect(await escrow.state()).to.equal(EscrowState.Funded);
 
         await expect(escrow.connect(otherAccount).accept())
-          .to.revertedWithCustomError(escrow, "OnlyWorkerAllowed")
+          .to.revertedWithCustomError(escrow, EscrowErrors.OnlyWorkerAllowed)
           .withArgs();
         expect(await escrow.state()).to.equal(EscrowState.Funded);
       });
@@ -286,7 +290,7 @@ describe("Escrow", function () {
         await escrow.connect(worker).accept();
 
         await expect(escrow.connect(worker).accept())
-          .to.revertedWithCustomError(escrow, "InvalidState")
+          .to.revertedWithCustomError(escrow, EscrowErrors.InvalidState)
           .withArgs(EscrowState.Accepted, EscrowState.Funded);
       });
     });
