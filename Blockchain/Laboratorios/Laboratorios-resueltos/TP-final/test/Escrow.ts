@@ -17,6 +17,7 @@ describe("Escrow", function () {
           owner,
           worker,
           escrowAddress,
+          escrow,
           amountInWei,
           title,
           receipt,
@@ -24,8 +25,6 @@ describe("Escrow", function () {
         } = await networkHelpers.loadFixture(
           deployEscrowFactoryWithDefaultEscrowFixture,
         );
-
-        const escrow = await ethers.getContractAt("Escrow", escrowAddress);
 
         expect(await escrow.owner()).to.equal(owner.address);
         expect(await escrow.worker()).to.equal(worker.address);
