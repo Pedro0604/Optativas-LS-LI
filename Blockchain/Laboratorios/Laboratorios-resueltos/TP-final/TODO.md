@@ -1,5 +1,5 @@
 ### Next
-- Ver state.md e implementar por partes y con tests primero acomodar lo existente a lo nuevo (añadir a creación: arbitro, duraciones nuevas, etc. y adecuar tests)
+- Ver specs-todo.md (y state.md, escrow-spec.md y guia-resumen.md de ayuda) e implementar por partes y con tests primero acomodar lo existente a lo nuevo (añadir a creación: arbitro, duraciones nuevas, etc. y adecuar tests)
 - Luego continuar desarrollando nueva funcionalidad
 
 ### Later
