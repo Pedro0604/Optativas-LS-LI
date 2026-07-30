@@ -1,39 +1,7 @@
-import type { EscrowFactory } from "../../types/ethers-contracts/EscrowFactory.js";
 import type { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/types";
-import type { AddressLike, BigNumberish } from "ethers";
-import { network } from "hardhat";
-
-export const SECONDS_PER_DAY = 86_400n;
-
-/**
- * Instancias de Ethers y de los helpers de red asociadas a la conexión
- * utilizada por los tests.
- */
-export const { ethers, networkHelpers } = await network.create();
-
-/**
- * Despliega una nueva instancia de `EscrowFactory` y obtiene las cuentas
- * que se utilizarán como participantes durante los tests.
- *
- * Uso como fixture: `const deployResult = await networkHelpers.loadFixture(deployEscrowFactoryFixture);`
- *
- * @returns La factory desplegada y los signers predeterminados para el
- * owner, worker y una cuenta adicional.
- */
-export async function deployEscrowFactoryFixture() {
-  const [owner, worker, arbiter, otherAccount] = await ethers.getSigners();
-  const escrowFactory = await ethers.deployContract("EscrowFactory");
-
-  await escrowFactory.waitForDeployment();
-
-  return {
-    escrowFactory,
-    owner,
-    worker,
-    arbiter,
-    otherAccount,
-  };
-}
+import type { EscrowFactory } from "../../types/ethers-contracts/EscrowFactory.js";
+import type { AddressLike } from "ethers";
+import { ethers, SECONDS_PER_DAY } from "./globals.js";
 
 /**
  * Parámetros para crear un nuevo contrato `Escrow` mediante `EscrowFactory`.
@@ -170,38 +138,4 @@ export async function createEscrow({
     arbitrationDuration,
     title,
   };
-}
-
-/**
- * Despliega una instancia de `EscrowFactory` y crea un escrow utilizando
- * los valores predeterminados de `createEscrow`.
- *
- * Uso como fixture: `const deployAndCreateResult = await networkHelpers.loadFixture(deployEscrowFactoryWithDefaultEscrowFixture);`
- *
- * @returns La factory, los signers, la transacción de creación, la dirección
- * del escrow y los valores utilizados para crearlo.
- */
-export async function deployEscrowFactoryWithDefaultEscrowFixture() {
-  const deployResult = await deployEscrowFactoryFixture();
-
-  const createResult = await createEscrow({
-    escrowFactory: deployResult.escrowFactory,
-    owner: deployResult.owner,
-    workerAddress: deployResult.worker.address,
-    arbiterAddress: deployResult.arbiter.address,
-  });
-
-  return {
-    ...deployResult,
-    ...createResult,
-  };
-}
-
-/**
- * Obtiene la length del string en bytes, usando ethers.toUtf8Bytes
- * @param str String a obtener su length
- * @returns Length como BigInt
- */
-export function getUtf8ByteLength(str: string): bigint {
-  return BigInt(ethers.toUtf8Bytes(str).length);
 }

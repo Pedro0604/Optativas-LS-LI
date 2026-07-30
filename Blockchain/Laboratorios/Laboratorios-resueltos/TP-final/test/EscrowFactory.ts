@@ -1,14 +1,11 @@
 import { expect } from "chai";
+import { Event } from "./constants/Event.js";
 import {
   deployEscrowFactoryFixture,
-  createEscrow,
-  networkHelpers,
-  ethers,
   deployEscrowFactoryWithDefaultEscrowFixture,
-  sendCreateEscrow,
-  SECONDS_PER_DAY,
-} from "./utils/utils.js";
-import { Event } from "./utils/escrow/Event.js";
+} from "./helpers/fixtures.js";
+import { ethers, networkHelpers, SECONDS_PER_DAY } from "./helpers/globals.js";
+import { createEscrow, sendCreateEscrow } from "./helpers/createEscrow.js";
 
 describe("EscrowFactory", function () {
   describe("deployment", function () {

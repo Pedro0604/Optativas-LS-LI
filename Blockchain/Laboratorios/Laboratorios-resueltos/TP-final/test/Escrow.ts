@@ -1,16 +1,11 @@
 import { expect } from "chai";
-import {
-  networkHelpers,
-  ethers,
-  deployEscrowFactoryWithDefaultEscrowFixture,
-  sendCreateEscrow,
-  getUtf8ByteLength,
-  SECONDS_PER_DAY,
-  createEscrow,
-} from "./utils/utils.js";
-import { State } from "./utils/escrow/State.js";
-import { Error } from "./utils/escrow/Error.js";
-import { Event } from "./utils/escrow/Event.js";
+import { getUtf8ByteLength } from "./helpers/utils.js";
+import { State } from "./constants/State.js";
+import { Error } from "./constants/Error.js";
+import { Event } from "./constants/Event.js";
+import { ethers, networkHelpers } from "./helpers/globals.js";
+import { deployEscrowFactoryWithDefaultEscrowFixture } from "./helpers/fixtures.js";
+import { createEscrow, sendCreateEscrow } from "./helpers/createEscrow.js";
 
 type TitleCase = {
   description: string;
