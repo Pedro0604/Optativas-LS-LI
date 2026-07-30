@@ -1,4 +1,4 @@
-import type { EscrowFactory } from "../types/ethers-contracts/EscrowFactory.js";
+import type { EscrowFactory } from "../../types/ethers-contracts/EscrowFactory.js";
 import type { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/types";
 import type { AddressLike, BigNumberish } from "ethers";
 import { network } from "hardhat";
@@ -157,84 +157,6 @@ export async function deployEscrowFactoryWithDefaultEscrowFixture() {
     ...createResult,
   };
 }
-
-/**
- * Representación del enum `Escrow.State` definido en `Escrow.sol`.
- *
- * Los valores deben coincidir exactamente con el orden de declaración del enum,
- * ya que Solidity asigna valores enteros consecutivos a partir del 0.
- *
- * @warning Si se agrega, elimina o reordena el enum `Escrow.State` de `Escrow.sol`,
- * este objeto también debe actualizarse.
- */
-export const EscrowState = {
-  Funded: 0n,
-  Accepted: 1n,
-  Delivered: 2n,
-  Approved: 3n,
-  Disputed: 4n,
-  Paid: 5n,
-  Refunded: 6n,
-  Resolved: 7n,
-} as const;
-
-/**
- * Tipo que representa todos los valores de EscrowState
- */
-export type EscrowState = (typeof EscrowState)[keyof typeof EscrowState];
-
-/**
- * Mapea un EscrowState al nombre del evento asociado
- */
-export function getEscrowEventName(state: EscrowState): string {
-  switch (state) {
-    case EscrowState.Funded:
-      return "EscrowCreated";
-    case EscrowState.Accepted:
-      return "Accepted";
-    case EscrowState.Delivered:
-      return "Delivered";
-    case EscrowState.Approved:
-      return "Approved";
-    case EscrowState.Disputed:
-      return "Disputed";
-    case EscrowState.Paid:
-      return "Paid";
-    case EscrowState.Refunded:
-      return "Refunded";
-    case EscrowState.Resolved:
-      return "Resolved";
-    default: {
-      const _exhaustiveCheck: never = state;
-      throw new Error(`EscrowState no permitido: ${_exhaustiveCheck}`);
-    }
-  }
-}
-
-/**
- * Representación de los errores del contrato.
- *
- * @warning Si se agregan, elimina o modifican errores en el contrato se debería
- * modificar unicamente acá, si está bien utilizado.
- */
-export const EscrowErrors = {
-  InvalidState: "InvalidState",
-  OnlyOwnerAllowed: "OnlyOwnerAllowed",
-  OnlyWorkerAllowed: "OnlyWorkerAllowed",
-  OnlyAllowedAfterTime: "OnlyAllowedAfterTime",
-  OnlyAllowedBeforeTime: "OnlyAllowedBeforeTime",
-  NoEthProvided: "NoEthProvided",
-  ZeroAddress: "ZeroAddress",
-  CannotHireYourself: "CannotHireYourself",
-  ZeroDuration: "ZeroDuration",
-  EmptyTitle: "EmptyTitle",
-  TitleTooLong: "TitleTooLong",
-} as const;
-
-/**
- * Tipo que representa todos los valores de EscrowErrors
- */
-export type EscrowErrors = (typeof EscrowErrors)[keyof typeof EscrowErrors];
 
 /**
  * Obtiene la length del string en bytes, usando ethers.toUtf8Bytes

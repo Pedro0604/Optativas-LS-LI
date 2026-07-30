@@ -3,14 +3,14 @@ import {
   networkHelpers,
   ethers,
   deployEscrowFactoryWithDefaultEscrowFixture,
-  EscrowState,
   sendCreateEscrow,
   getUtf8ByteLength,
   SECONDS_PER_DAY,
   createEscrow,
-  getEscrowEventName,
-  EscrowErrors,
-} from "./utils.js";
+} from "./utils/utils.js";
+import { State } from "./utils/escrow/State.js";
+import { Error } from "./utils/escrow/Error.js";
+import { Event } from "./utils/escrow/Event.js";
 
 type TitleCase = {
   description: string;
@@ -91,7 +91,7 @@ describe("Escrow", function () {
         expect(await escrow.worker()).to.equal(worker.address);
         expect(await escrow.amount()).to.equal(amountInWei);
         expect(await escrow.title()).to.equal(title);
-        expect(await escrow.state()).to.equal(EscrowState.Funded);
+        expect(await escrow.state()).to.equal(State.PendingAcceptance);
         expect(await ethers.provider.getBalance(escrowAddress)).to.equal(
           amountInWei,
         );
@@ -151,7 +151,7 @@ describe("Escrow", function () {
             workerAddress: worker.address,
             amountInEth: 0,
           }),
-        ).to.be.revertedWithCustomError(escrow, EscrowErrors.NoEthProvided);
+        ).to.be.revertedWithCustomError(escrow, Error.NoEthProvided);
       });
 
       it("Should revert when the worker address is address(0)", async function () {
@@ -166,7 +166,7 @@ describe("Escrow", function () {
             owner,
             workerAddress: ethers.ZeroAddress,
           }),
-        ).to.be.revertedWithCustomError(escrow, EscrowErrors.ZeroAddress);
+        ).to.be.revertedWithCustomError(escrow, Error.ZeroAddress);
       });
 
       it("Should revert when owner is the same account as worker", async function () {
@@ -181,10 +181,7 @@ describe("Escrow", function () {
             owner,
             workerAddress: owner.address,
           }),
-        ).to.be.revertedWithCustomError(
-          escrow,
-          EscrowErrors.CannotHireYourself,
-        );
+        ).to.be.revertedWithCustomError(escrow, Error.CannotHireYourself);
       });
 
       it("Should revert when durationDays is zero", async function () {
@@ -200,7 +197,7 @@ describe("Escrow", function () {
             workerAddress: worker.address,
             durationDays: 0n,
           }),
-        ).to.be.revertedWithCustomError(escrow, EscrowErrors.ZeroDuration);
+        ).to.be.revertedWithCustomError(escrow, Error.ZeroDuration);
       });
 
       it("Should revert when title is empty", async function () {
@@ -216,7 +213,7 @@ describe("Escrow", function () {
             workerAddress: worker.address,
             title: "",
           }),
-        ).to.be.revertedWithCustomError(escrow, EscrowErrors.EmptyTitle);
+        ).to.be.revertedWithCustomError(escrow, Error.EmptyTitle);
       });
 
       describe("title exceeding MAX_TITLE_LENGTH", function () {
@@ -241,7 +238,7 @@ describe("Escrow", function () {
                 title,
               }),
             )
-              .to.be.revertedWithCustomError(escrow, EscrowErrors.TitleTooLong)
+              .to.be.revertedWithCustomError(escrow, Error.TitleTooLong)
               .withArgs(titleLength, maxLength);
           });
         }
@@ -251,16 +248,15 @@ describe("Escrow", function () {
 
   describe("accept", function () {
     describe("succesful acceptance", function () {
-      const acceptedEvent = getEscrowEventName(EscrowState.Accepted);
-      it(`Should emit the ${acceptedEvent} event and change its state to Accepted`, async function () {
+      it(`Should emit the ${Event.Accepted} event and change its state to Accepted`, async function () {
         const { escrow, worker } = await networkHelpers.loadFixture(
           deployEscrowFactoryWithDefaultEscrowFixture,
         );
 
         await expect(escrow.connect(worker).accept())
-          .to.emit(escrow, acceptedEvent)
-          .withArgs();
-        expect(await escrow.state()).to.equal(EscrowState.Accepted);
+          .to.emit(escrow, Event.Accepted)
+          .withArgs(1); // TODO - REEMPLAZAR EL 1 POR LA DELIVERY_DEADLINE
+        expect(await escrow.state()).to.equal(State.Active);
       });
     });
 
@@ -272,14 +268,14 @@ describe("Escrow", function () {
           );
 
         await expect(escrow.connect(owner).accept())
-          .to.revertedWithCustomError(escrow, EscrowErrors.OnlyWorkerAllowed)
+          .to.revertedWithCustomError(escrow, Error.OnlyWorkerAllowed)
           .withArgs();
-        expect(await escrow.state()).to.equal(EscrowState.Funded);
+        expect(await escrow.state()).to.equal(State.PendingAcceptance);
 
         await expect(escrow.connect(otherAccount).accept())
-          .to.revertedWithCustomError(escrow, EscrowErrors.OnlyWorkerAllowed)
+          .to.revertedWithCustomError(escrow, Error.OnlyWorkerAllowed)
           .withArgs();
-        expect(await escrow.state()).to.equal(EscrowState.Funded);
+        expect(await escrow.state()).to.equal(State.PendingAcceptance);
       });
 
       it(`Should revert when the escrow is not in State.Accepted`, async function () {
@@ -290,8 +286,8 @@ describe("Escrow", function () {
         await escrow.connect(worker).accept();
 
         await expect(escrow.connect(worker).accept())
-          .to.revertedWithCustomError(escrow, EscrowErrors.InvalidState)
-          .withArgs(EscrowState.Accepted, EscrowState.Funded);
+          .to.revertedWithCustomError(escrow, Error.InvalidState)
+          .withArgs(State.Active, State.PendingAcceptance);
       });
     });
   });

@@ -2,35 +2,137 @@
 pragma solidity ^0.8.36;
 
 contract Escrow {
+    // Declaraciones de tipos
     /**
      * El estado del contrato.
-     * TODO - DEFINIR QUÉ ES CADA ESTADO CUANDO SE VAYA DESARROLLANDO ESA FUNCIONALIDAD
      */
     enum State {
-        Funded,
-        Accepted,
-        Delivered,
-        Approved,
+        // Estados no finales
+        PendingAcceptance,
+        Active,
+        PendingReview,
         Disputed,
-        Paid,
-        Refunded,
-        Resolved
+        // Estados finales
+        Cancelled,
+        AcceptanceExpired,
+        DeliveryExpired,
+        Approved,
+        ReviewExpired,
+        Resolved,
+        ArbitrationExpired
     }
 
+    // Variables de estado
+    // Constantes
     uint256 public constant MAX_TITLE_LENGTH = 64;
+    uint256 public constant MAX_DELIVERY_REFERENCE_LENGTH = 256;
+    uint256 public constant MAX_DISPUTE_REASON_LENGTH = 256;
+    uint256 public constant MAX_RESOLUTION_REASON_LENGTH = 256;
 
-    State public state;
+    // Inmutables
     address public immutable worker;
-    uint256 public immutable deadline; // TODO - Definir máx durationDays(?
+    uint256 public immutable deadline;
     uint256 public immutable amount;
     address public immutable owner;
+
+    // Mutables
+    State public state;
     string public title;
 
+    // Eventos
+    // Eventos desde el estado PendingAcceptance
     /**
-     * El Escrow fue aceptado
+     * El Escrow fue aceptado por el worker
+     *
+     * Transiciona a estado Active
+     *
+     * @param deliveryDeadline Fecha límite de entrega de trabajo
      */
-    event Accepted();
+    event Accepted(uint256 deliveryDeadline);
 
+    /**
+     * El período de aceptación expiró
+     * 
+     * Transiciona a estado AcceptanceExpired
+     *
+     */
+    event AcceptanceExpired();
+
+    /**
+     * El escrow fue cancelado por el owner antes de la aceptación
+     *
+     * Transiciona a estado Cancelled
+     */
+    event Cancelled();
+
+    // Eventos desde el estado Active
+    /**
+     * El trabajo fue entregado por el worker
+     *
+     * Transiciona a estado PendingReview
+     *
+     * @param reviewDeadline Fecha límite de revisión del trabajo
+     */
+    event WorkSubmitted(uint256 reviewDeadline);
+
+    /**
+     * El período de entrega del trabajo expiró
+     *
+     * Transiciona a estado DeliveryExpired
+     */
+    event DeliveryExpired();
+
+    // Eventos desde el estado PendingReview
+    /**
+     * El trabajo fue aprobado por el owner
+     *
+     * Transiciona a estado Approved
+     */
+    event WorkApproved();
+
+    /**
+     * El período de revisión del trabajo expiró
+     *
+     * Transiciona a estado ReviewExpired
+     */
+    event ReviewExpired();
+
+    /**
+     * El trabajo fue disputado por el owner
+     *
+     * Transiciona a estado Disputed
+     *
+     * @param arbitrationDeadline Fecha límite de resolución de la disputa
+     */
+    event DisputeOpened(uint256 arbitrationDeadline);
+
+    // Eventos desde el estado Disputed
+    /**
+     * La disputa fue resuelta
+     *
+     * Transiciona a estado Resolved
+     *
+     * @param ownerAmount Cantidad correspondiente al owner en wei
+     * @param workerAmount Cantidad correspondiente al worker en wei
+     */
+    event DisputeResolved(uint256 ownerAmount, uint256 workerAmount);
+
+    /**
+     * El período de resolución de la disputa expiró
+     *
+     * Transiciona a estado ArbitrationExpired
+     */
+    event ArbitrationExpired();
+
+    /**
+     * Se retiraron fondos del contrato
+     *
+     * @param account Cuenta que retira fondos (del worker o del owner)
+     * @param amount Cantidad de fondos retirados en wei
+     */
+    event FundsWithdrawn(address indexed account, uint256 amount);
+
+    // Errores
     /**
      * Estado invalido.
      * @param currentState Estado actual
@@ -92,6 +194,7 @@ contract Escrow {
      */
     error TitleTooLong(uint256 currentLength, uint256 maxLength);
 
+    // Modificadores
     modifier inState(State expectedState) {
         if (state != expectedState) {
             revert InvalidState({
@@ -130,6 +233,7 @@ contract Escrow {
         _;
     }
 
+    // Funciones
     /**
      * @param owner_ Dueño del contrato
      * @param worker_ Dirección de quien realizará el trabajo y recibirá el pago
@@ -177,11 +281,11 @@ contract Escrow {
         deadline = block.timestamp + durationDays * 1 days;
         title = title_;
 
-        state = State.Funded;
+        state = State.PendingAcceptance;
     }
 
-    function accept() external onlyWorker inState(State.Funded) {
-        state = State.Accepted;
-        emit Accepted();
+    function accept() external onlyWorker inState(State.PendingAcceptance) {
+        state = State.Active;
+        emit Accepted(1); // TODO - REEMPLAZAR EL 1 POR LA DELIVERY_DEADLINE
     }
 }
