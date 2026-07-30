@@ -103,7 +103,6 @@ contract Escrow {
      * El período de aceptación expiró
      *
      * Transiciona a estado AcceptanceExpired
-     *
      */
     event AcceptanceExpired();
 
@@ -420,10 +419,15 @@ contract Escrow {
     // External
     /**
      * Acepta un escrow.
-     * Solo lo puede realizar el worker.
-     * Solo se puede realizar antes de acceptanceDeadline
-     * Transiciona de PendingAcceptance a PendingSubmission
-     * Calcula submissionDeadline
+     * 
+     * Requisitos:
+     * - Solo lo puede realizar el worker.
+     * - Solo se puede realizar antes de acceptanceDeadline.
+     * 
+     * Efectos:
+     * - Transiciona de PendingAcceptance a PendingSubmission.
+     * - Emite el evento EscrowAccepted.
+     * - Calcula submissionDeadline.
      */
     function acceptEscrow()
         external
@@ -434,6 +438,28 @@ contract Escrow {
         state = State.PendingSubmission;
         submissionDeadline = block.timestamp + submissionDuration * 1 seconds;
         emit EscrowAccepted(submissionDeadline);
+    }
+
+    /**
+     * Materializa la expiración del período de aceptación.
+     * 
+     * Requisitos:
+     * - Puede ser ejecutada por cualquier cuenta.
+     * - Solo se puede realizar después de acceptanceDeadline.
+     * 
+     * Efectos:
+     * - Acredita el amount completo al owner.
+     * - Transiciona de PendingAcceptance a AcceptanceExpired.
+     * - Emite el evento AcceptanceExpired.
+     */
+    function expireAcceptance()
+        external
+        inState(State.PendingAcceptance)
+        expired(acceptanceDeadline)
+    {
+        pendingWithdrawals[owner] = amount;
+        state = State.AcceptanceExpired;
+        emit AcceptanceExpired();
     }
 
     function acceptanceExpired() external view returns (bool expired_) {

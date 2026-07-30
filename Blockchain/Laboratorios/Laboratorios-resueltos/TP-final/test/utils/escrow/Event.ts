@@ -17,14 +17,14 @@ const eventsFromPendingAcceptance = {
    * Transiciona a estado AcceptanceExpired
    *
    */
-  AcceptanceExpire: "AcceptanceExpired",
+  AcceptanceExpired: "AcceptanceExpired",
 
   /**
    * El escrow fue cancelado por el owner antes de la aceptación
    *
    * Transiciona a estado EscrowCancelled
    */
-  EscrowCancelle: "EscrowCancelled",
+  EscrowCancelled: "EscrowCancelled",
 } as const;
 
 /**
@@ -45,7 +45,7 @@ const eventsFromPendingSubmission = {
    *
    * Transiciona a estado SubmissionExpired
    */
-  SubmissionExpire: "SubmissionExpired",
+  SubmissionExpired: "SubmissionExpired",
 } as const;
 
 /**
@@ -57,14 +57,14 @@ const eventsFromPendingReview = {
    *
    * Transiciona a estado WorkApproved
    */
-  WorkApprove: "WorkApproved",
+  WorkApproved: "WorkApproved",
 
   /**
    * El período de revisión del trabajo expiró
    *
    * Transiciona a estado ReviewExpired
    */
-  ReviewExpire: "ReviewExpired",
+  ReviewExpired: "ReviewExpired",
 
   /**
    * El trabajo fue disputado por el owner
@@ -95,7 +95,7 @@ const eventsFromPendingArbitration = {
    *
    * Transiciona a estado ArbitrationExpired
    */
-  ArbitrationExpire: "ArbitrationExpired",
+  ArbitrationExpired: "ArbitrationExpired",
 } as const;
 
 /**
