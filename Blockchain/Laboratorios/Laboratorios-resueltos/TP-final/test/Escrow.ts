@@ -165,7 +165,7 @@ describe("Escrow", function () {
       });
     });
 
-    describe("failures", function () {
+    describe("failing creation", function () {
       // En los casos de fallo se usa el fixture deployEscrowFactoryWithDefaultEscrowFixture
       // así se tiene acceso a `escrow` para poder acceder a los errores y constantes definidos
       // en el contrato
@@ -485,6 +485,77 @@ describe("Escrow", function () {
         );
         await expect(escrow.connect(owner).expireAcceptance())
           .to.be.revertedWithCustomError(escrow, Error.DeadlineNotExpiredYet)
+          .withArgs(acceptanceDeadline);
+      });
+    });
+  });
+
+  describe("cancelEscrow", function () {
+    describe("successful cancelation", function () {
+      it(`Should emit the ${Event.EscrowCancelled} event, change its state to EscrowCancelled and credit the full amount to the owner`, async function () {
+        const { escrow, owner, amountInWei } = await networkHelpers.loadFixture(
+          deployEscrowFactoryWithDefaultEscrowFixture,
+        );
+
+        await expect(escrow.connect(owner).cancelEscrow())
+          .to.emit(escrow, Event.EscrowCancelled)
+          .withArgs();
+
+        expect(await escrow.state()).to.equal(State.EscrowCancelled);
+        expect(await escrow.submissionDeadline()).to.equal(0n);
+        expect(await escrow.pendingWithdrawals(owner)).to.equal(amountInWei);
+      });
+
+      it(`Should not revert at acceptanceDeadline - 1`, async function () {
+        const { escrow, owner } = await networkHelpers.loadFixture(
+          deployEscrowFactoryWithDefaultEscrowFixture,
+        );
+
+        await networkHelpers.time.setNextBlockTimestamp(
+          (await escrow.acceptanceDeadline()) - 1n,
+        );
+        await expect(escrow.connect(owner).cancelEscrow()).to.not.revert(
+          ethers,
+        );
+      });
+    });
+
+    describe("failing cancelation", function () {
+      it(`Should revert when sender is not the owner`, async function () {
+        const { escrow, worker, arbiter } = await networkHelpers.loadFixture(
+          deployEscrowFactoryWithDefaultEscrowFixture,
+        );
+
+        await expect(escrow.connect(worker).cancelEscrow())
+          .to.be.revertedWithCustomError(escrow, Error.OnlyOwnerAllowed)
+          .withArgs();
+
+        await expect(escrow.connect(arbiter).cancelEscrow())
+          .to.be.revertedWithCustomError(escrow, Error.OnlyOwnerAllowed)
+          .withArgs();
+      });
+
+      it(`Should revert when the escrow is not in State.PendingAcceptance`, async function () {
+        const { escrow, owner } = await networkHelpers.loadFixture(
+          deployEscrowFactoryWithDefaultEscrowFixture,
+        );
+
+        await escrow.connect(owner).cancelEscrow();
+
+        await expect(escrow.connect(owner).cancelEscrow())
+          .to.be.revertedWithCustomError(escrow, Error.InvalidState)
+          .withArgs(State.EscrowCancelled, State.PendingAcceptance);
+      });
+
+      it(`Should revert at acceptanceDeadline`, async function () {
+        const { escrow, owner } = await networkHelpers.loadFixture(
+          deployEscrowFactoryWithDefaultEscrowFixture,
+        );
+
+        const acceptanceDeadline = await escrow.acceptanceDeadline();
+        await networkHelpers.time.setNextBlockTimestamp(acceptanceDeadline);
+        await expect(escrow.connect(owner).cancelEscrow())
+          .to.be.revertedWithCustomError(escrow, Error.DeadlineAlreadyExpired)
           .withArgs(acceptanceDeadline);
       });
     });

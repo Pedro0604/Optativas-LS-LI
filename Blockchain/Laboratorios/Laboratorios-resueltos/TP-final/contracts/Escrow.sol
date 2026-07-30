@@ -419,11 +419,12 @@ contract Escrow {
     // External
     /**
      * Acepta un escrow.
-     * 
+     *
      * Requisitos:
-     * - Solo lo puede realizar el worker.
-     * - Solo se puede realizar antes de acceptanceDeadline.
-     * 
+     * - Solo lo puede ejecutar el worker.
+     * - Debe estar en estado PendingAcceptance.
+     * - Solo se puede ejecutar antes de acceptanceDeadline.
+     *
      * Efectos:
      * - Transiciona de PendingAcceptance a PendingSubmission.
      * - Emite el evento EscrowAccepted.
@@ -442,11 +443,12 @@ contract Escrow {
 
     /**
      * Materializa la expiración del período de aceptación.
-     * 
+     *
      * Requisitos:
-     * - Puede ser ejecutada por cualquier cuenta.
-     * - Solo se puede realizar después de acceptanceDeadline.
-     * 
+     * - Puede ser ejecutado por cualquier cuenta.
+     * - Debe estar en estado PendingAcceptance.
+     * - Solo se puede ejecutar después de acceptanceDeadline.
+     *
      * Efectos:
      * - Acredita el amount completo al owner.
      * - Transiciona de PendingAcceptance a AcceptanceExpired.
@@ -460,6 +462,30 @@ contract Escrow {
         pendingWithdrawals[owner] = amount;
         state = State.AcceptanceExpired;
         emit AcceptanceExpired();
+    }
+
+    /**
+     * Cancela el escrow antes de que sea aceptado
+     *
+     * Requisitos:
+     * - Solo lo puede ejecutar el owner.
+     * - Debe estar en estado PendingAcceptance.
+     * - Solo se puede realizar antes de acceptanceDeadline.
+     *
+     * Efectos:
+     * - Acredita el amount completo al owner.
+     * - Transiciona de PendingAcceptance a EscrowCancelled.
+     * - Emite el evento EscrowCancelled.
+     */
+    function cancelEscrow()
+        external
+        onlyOwner
+        inState(State.PendingAcceptance)
+        notExpired(acceptanceDeadline)
+    {
+        pendingWithdrawals[owner] = amount;
+        state = State.EscrowCancelled;
+        emit EscrowCancelled();
     }
 
     function acceptanceExpired() external view returns (bool expired_) {
