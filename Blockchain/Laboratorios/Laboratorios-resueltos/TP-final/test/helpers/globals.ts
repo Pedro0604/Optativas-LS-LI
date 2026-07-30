@@ -6,4 +6,7 @@ import { network } from "hardhat";
  */
 export const { ethers, networkHelpers } = await network.create();
 
+/**
+ * Segundos en un día
+ */
 export const SECONDS_PER_DAY = 86_400n;
