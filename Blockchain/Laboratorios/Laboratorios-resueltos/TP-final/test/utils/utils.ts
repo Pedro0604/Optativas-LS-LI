@@ -21,7 +21,7 @@ export const { ethers, networkHelpers } = await network.create();
  * owner, worker y una cuenta adicional.
  */
 export async function deployEscrowFactoryFixture() {
-  const [owner, worker, otherAccount] = await ethers.getSigners();
+  const [owner, worker, arbiter, otherAccount] = await ethers.getSigners();
   const escrowFactory = await ethers.deployContract("EscrowFactory");
 
   await escrowFactory.waitForDeployment();
@@ -30,6 +30,7 @@ export async function deployEscrowFactoryFixture() {
     escrowFactory,
     owner,
     worker,
+    arbiter,
     otherAccount,
   };
 }
@@ -41,8 +42,12 @@ export type CreateEscrowParams = {
   escrowFactory: EscrowFactory;
   owner: HardhatEthersSigner;
   workerAddress: AddressLike;
-  amountInEth?: number;
-  durationDays?: BigNumberish;
+  arbiterAddress: AddressLike;
+  amountInEth?: bigint;
+  acceptanceDuration?: bigint;
+  submissionDuration?: bigint;
+  reviewDuration?: bigint;
+  arbitrationDuration?: bigint;
   title?: string;
 };
 
@@ -64,15 +69,28 @@ export function sendCreateEscrow({
   escrowFactory,
   owner,
   workerAddress,
-  amountInEth = 1,
-  durationDays = 30,
+  arbiterAddress,
+  amountInEth = 1n,
+  acceptanceDuration = SECONDS_PER_DAY,
+  submissionDuration = SECONDS_PER_DAY,
+  reviewDuration = SECONDS_PER_DAY,
+  arbitrationDuration = SECONDS_PER_DAY,
   title = "Escrow de prueba",
 }: CreateEscrowParams) {
   return escrowFactory
     .connect(owner)
-    .createEscrow(workerAddress, durationDays, title, {
-      value: ethers.parseEther(String(amountInEth)),
-    });
+    .createEscrow(
+      workerAddress,
+      arbiterAddress,
+      acceptanceDuration,
+      submissionDuration,
+      reviewDuration,
+      arbitrationDuration,
+      title,
+      {
+        value: ethers.parseEther(String(amountInEth)),
+      },
+    );
 }
 
 /**
@@ -93,24 +111,41 @@ export async function createEscrow({
   escrowFactory,
   owner,
   workerAddress,
-  amountInEth = 1,
-  durationDays = 30,
+  arbiterAddress,
+  amountInEth = 1n,
+  acceptanceDuration = SECONDS_PER_DAY,
+  submissionDuration = SECONDS_PER_DAY,
+  reviewDuration = SECONDS_PER_DAY,
+  arbitrationDuration = SECONDS_PER_DAY,
   title = "Escrow de prueba",
 }: CreateEscrowParams) {
   const amountInWei = ethers.parseEther(String(amountInEth));
 
   const escrowAddress = await escrowFactory
     .connect(owner)
-    .createEscrow.staticCall(workerAddress, durationDays, title, {
-      value: amountInWei,
-    });
+    .createEscrow.staticCall(
+      workerAddress,
+      arbiterAddress,
+      acceptanceDuration,
+      submissionDuration,
+      reviewDuration,
+      arbitrationDuration,
+      title,
+      {
+        value: amountInWei,
+      },
+    );
 
   const transaction = await sendCreateEscrow({
     escrowFactory,
     owner,
     workerAddress,
+    arbiterAddress,
     amountInEth,
-    durationDays,
+    acceptanceDuration,
+    submissionDuration,
+    reviewDuration,
+    arbitrationDuration,
     title,
   });
 
@@ -129,7 +164,10 @@ export async function createEscrow({
     escrow,
     amountInEth,
     amountInWei,
-    durationDays,
+    acceptanceDuration,
+    submissionDuration,
+    reviewDuration,
+    arbitrationDuration,
     title,
   };
 }
@@ -150,6 +188,7 @@ export async function deployEscrowFactoryWithDefaultEscrowFixture() {
     escrowFactory: deployResult.escrowFactory,
     owner: deployResult.owner,
     workerAddress: deployResult.worker.address,
+    arbiterAddress: deployResult.arbiter.address,
   });
 
   return {
@@ -163,6 +202,6 @@ export async function deployEscrowFactoryWithDefaultEscrowFixture() {
  * @param str String a obtener su length
  * @returns Length como BigInt
  */
-export function getUtf8ByteLength(str: string): BigInt {
+export function getUtf8ByteLength(str: string): bigint {
   return BigInt(ethers.toUtf8Bytes(str).length);
 }

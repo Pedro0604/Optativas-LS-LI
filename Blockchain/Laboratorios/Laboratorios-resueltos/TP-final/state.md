@@ -1,106 +1,110 @@
 ## Estados
+
 enum State {
-    // Estados no finales
-    PendingAcceptance,
-    Active,
-    PendingReview,
-    Disputed,
+// Estados no finales
+PendingAcceptance,
+PendingSubmission,
+PendingReview,
+PendingArbitration,
 
     // Estados finales
-    Cancelled,
+    EscrowCancelled,
     AcceptanceExpired,
-    DeliveryExpired,
-    Approved,
+    SubmissionExpired,
+    WorkApproved,
     ReviewExpired,
-    Resolved,
+    DisputeResolved,
     ArbitrationExpired
+
 }
 
 ---
 
 ## Transiciones de estado
+
 PendingAcceptance
-├── accept()
-│   ├── solo worker
-│   ├── antes de acceptanceDeadline
-│   ├── calcula deliveryDeadline
-│   ├── emite Accepted(deliveryDeadline)
-│   └── pasa a Active
+├── acceptEscrow()
+│ ├── solo worker
+│ ├── antes de acceptanceDeadline
+│ ├── calcula submissionDeadline
+│ ├── emite EscrowAccepted(submissionDeadline)
+│ └── pasa a PendingSubmission
 │
-├── cancel()
-│   ├── solo owner
-│   ├── antes de acceptanceDeadline
-│   ├── acredita 100 % al owner
-│   ├── emite Cancelled()
-│   └── pasa a Cancelled
+├── cancelEscrow()
+│ ├── solo owner
+│ ├── antes de acceptanceDeadline
+│ ├── acredita 100 % al owner
+│ ├── emite EscrowCancelled()
+│ └── pasa a EscrowCancelled
 │
 └── expireAcceptance()
-    ├── cualquier cuenta
-    ├── desde acceptanceDeadline
-    ├── acredita 100 % al owner
-    ├── emite AcceptanceExpired()
-    └── pasa a AcceptanceExpired
-Active
-├── submitWork(deliveryReference)
-│   ├── solo worker
-│   ├── antes de deliveryDeadline
-│   ├── referencia de 1 a 256 bytes
-│   ├── almacena la referencia permanentemente
-│   ├── calcula reviewDeadline
-│   ├── emite WorkSubmitted(reviewDeadline)
-│   └── pasa a PendingReview
+├── cualquier cuenta
+├── desde acceptanceDeadline
+├── acredita 100 % al owner
+├── emite AcceptanceExpired()
+└── pasa a AcceptanceExpired
+PendingSubmission
+├── submitWork(submissionReference)
+│ ├── solo worker
+│ ├── antes de submissionDeadline
+│ ├── referencia de 1 a 256 bytes
+│ ├── almacena la referencia permanentemente
+│ ├── calcula reviewDeadline
+│ ├── emite WorkSubmitted(reviewDeadline)
+│ └── pasa a PendingReview
 │
 └── expireDelivery()
-    ├── cualquier cuenta
-    ├── desde deliveryDeadline
-    ├── acredita 100 % al owner
-    ├── emite DeliveryExpired()
-    └── pasa a DeliveryExpired
+├── cualquier cuenta
+├── desde submissionDeadline
+├── acredita 100 % al owner
+├── emite SubmissionExpired()
+└── pasa a SubmissionExpired
 PendingReview
 ├── approveWork()
-│   ├── solo owner
-│   ├── antes de reviewDeadline
-│   ├── acredita 100 % al worker
-│   ├── emite WorkApproved()
-│   └── pasa a Approved
+│ ├── solo owner
+│ ├── antes de reviewDeadline
+│ ├── acredita 100 % al worker
+│ ├── emite WorkApproved()
+│ └── pasa a WorkApproved
 │
 ├── openDispute(disputeReason)
-│   ├── solo owner
-│   ├── antes de reviewDeadline
-│   ├── motivo de 1 a 256 bytes
-│   ├── almacena el motivo permanentemente
-│   ├── calcula arbitrationDeadline
-│   ├── emite DisputeOpened(arbitrationDeadline)
-│   └── pasa a Disputed
+│ ├── solo owner
+│ ├── antes de reviewDeadline
+│ ├── motivo de 1 a 256 bytes
+│ ├── almacena el motivo permanentemente
+│ ├── calcula arbitrationDeadline
+│ ├── emite DisputeOpened(arbitrationDeadline)
+│ └── pasa a PendingArbitration
 │
 └── expireReview()
-    ├── cualquier cuenta
-    ├── desde reviewDeadline
-    ├── acredita 100 % al worker
-    ├── emite ReviewExpired()
-    └── pasa a ReviewExpired
-Disputed
+├── cualquier cuenta
+├── desde reviewDeadline
+├── acredita 100 % al worker
+├── emite ReviewExpired()
+└── pasa a ReviewExpired
+PendingArbitration
 ├── resolveDispute(workerAmount, resolutionReason)
-│   ├── solo arbitrator
-│   ├── antes de arbitrationDeadline
-│   ├── workerAmount entre 0 y amount
-│   ├── calcula ownerAmount = amount - workerAmount
-│   ├── almacena una justificación de 1 a 256 bytes
-│   ├── acredita ambos saldos
-│   ├── emite DisputeResolved(ownerAmount, workerAmount)
-│   └── pasa a Resolved
+│ ├── solo arbiter
+│ ├── antes de arbitrationDeadline
+│ ├── workerAmount entre 0 y amount
+│ ├── calcula ownerAmount = amount - workerAmount
+│ ├── almacena una justificación de 1 a 256 bytes
+│ ├── acredita ambos saldos
+│ ├── emite DisputeResolved(ownerAmount, workerAmount)
+│ └── pasa a DisputeResolved
 │
 └── expireArbitration()
-    ├── cualquier cuenta
-    ├── desde arbitrationDeadline
-    ├── divide 50/50
-    ├── asigna el wei sobrante al worker
-    ├── emite ArbitrationExpired()
-    └── pasa a ArbitrationExpired
+├── cualquier cuenta
+├── desde arbitrationDeadline
+├── divide 50/50
+├── asigna el wei sobrante al worker
+├── emite ArbitrationExpired()
+└── pasa a ArbitrationExpired
 
 ---
 
 ## withdraw
+
 withdraw()
 ├── retira todo pendingWithdrawals[msg.sender]
 ├── revierte si el saldo es cero
@@ -111,13 +115,14 @@ withdraw()
 ---
 
 ## Eventos
-event Accepted(uint256 deliveryDeadline);
-event Cancelled();
+
+event EscrowAccepted(uint256 submissionDeadline);
+event EscrowCancelled();
 
 event AcceptanceExpired();
 
 event WorkSubmitted(uint256 reviewDeadline);
-event DeliveryExpired();
+event SubmissionExpired();
 
 event WorkApproved();
 event ReviewExpired();
@@ -125,28 +130,29 @@ event ReviewExpired();
 event DisputeOpened(uint256 arbitrationDeadline);
 
 event DisputeResolved(
-    uint256 ownerAmount,
-    uint256 workerAmount
+uint256 ownerAmount,
+uint256 workerAmount
 );
 
 event ArbitrationExpired();
 
 event FundsWithdrawn(
-    address indexed account,
-    uint256 amount
+address indexed account,
+uint256 amount
 );
 
 ---
 
 ## Firmas de funciones
-function accept() external;
 
-function cancel() external;
+function acceptEscrow() external;
+
+function cancelEscrow() external;
 
 function expireAcceptance() external;
 
 function submitWork(
-    string calldata deliveryReference_
+string calldata submissionReference_
 ) external;
 
 function expireDelivery() external;
@@ -154,14 +160,14 @@ function expireDelivery() external;
 function approveWork() external;
 
 function openDispute(
-    string calldata disputeReason_
+string calldata disputeReason_
 ) external;
 
 function expireReview() external;
 
 function resolveDispute(
-    uint256 workerAmount,
-    string calldata resolutionReason_
+uint256 workerAmount,
+string calldata resolutionReason_
 ) external;
 
 function expireArbitration() external;
@@ -171,16 +177,19 @@ function withdraw() external;
 ---
 
 ## Deadlines y duraciones
+
 Antes del deadline: block.timestamp < deadline
 Desde el deadline: block.timestamp >= deadline
 
 Las expiraciones solo ocurren mediante:
+
 - expireAcceptance();
 - expireDelivery();
 - expireReview();
 - expireArbitration();
 
 Las duraciones:
+
 - Se expresan en segundos;
 - Deben ser mayores que cero;
 - No tienen un máximo contractual.
@@ -188,17 +197,19 @@ Las duraciones:
 ---
 
 ## Distribución de fondos en estados finales
-Cancelled           → 100 % owner
-AcceptanceExpired   → 100 % owner
-DeliveryExpired     → 100 % owner
-Approved            → 100 % worker
-ReviewExpired       → 100 % worker
-Resolved            → distribución elegida por arbitrator
-ArbitrationExpired  → 50/50, wei sobrante para worker
+
+EscrowCancelled → 100 % owner
+AcceptanceExpired → 100 % owner
+SubmissionExpired → 100 % owner
+WorkApproved → 100 % worker
+ReviewExpired → 100 % worker
+DisputeResolved → distribución elegida por arbiter
+ArbitrationExpired → 50/50, wei sobrante para worker
 
 --
 
 ## Text lengths
+
 uint256 public constant MAX_TITLE_LENGTH = 64;
 uint256 public constant MAX_DELIVERY_REFERENCE_LENGTH = 256;
 uint256 public constant MAX_DISPUTE_REASON_LENGTH = 256;
@@ -209,37 +220,53 @@ Mínimo 1
 ---
 
 ## createEscrow
+
 function createEscrow(
-    address worker_,
-    address arbitrator_,
-    uint256 acceptanceDuration_,
-    uint256 workDuration_,
-    uint256 reviewDuration_,
-    uint256 arbitrationDuration_,
-    string calldata title_
+address worker_,
+address arbitrator_,
+uint256 acceptanceDuration_,
+uint256 submissionDuration_,
+uint256 reviewDuration_,
+uint256 arbitrationDuration_,
+string calldata title_
 ) external payable returns (address escrowAddress);
 
 ---
 
 ## EscrowCreated
+
 event EscrowCreated(
-    address indexed owner,
-    address indexed worker,
-    address indexed arbitrator,
-    address escrowAddress,
-    uint256 amount,
-    uint256 acceptanceDeadline,
-    uint256 workDuration,
-    uint256 reviewDuration,
-    uint256 arbitrationDuration
+address indexed owner,
+address indexed worker,
+address indexed arbiter,
+address escrowAddress,
+uint256 amount,
+uint256 acceptanceDeadline,
+uint256 submissionDuration,
+uint256 reviewDuration,
+uint256 arbitrationDuration
 );
 
 ---
 
 ## Factory añade
-mapping(address arbitrator => address[] escrows)
-    public escrowsByArbitrator;
+
+mapping(address arbiter => address[] escrows)
+public escrowsByArbitrator;
 
 y este?:
 mapping(address escrow => bool registered)
-    public isEscrow;
+public isEscrow;
+
+## Transiciones válidas
+
+- `PendingAcceptance` to `PendingSubmission` through `acceptEscrow()`.
+- `PendingAcceptance` to `EscrowCancelled` through `cancelEscrow()`.
+- `PendingAcceptance` to `AcceptanceExpired` through `expireAcceptance()`.
+- `PendingSubmission` to `PendingReview` through `submitWork()`.
+- `PendingSubmission` to `SubmissionExpired` through `expireDelivery()`.
+- `PendingReview` to `WorkApproved` through `approveWork()`.
+- `PendingReview` to `PendingArbitration` through `openDispute()`.
+- `PendingReview` to `ReviewExpired` through `expireReview()`.
+- `PendingArbitration` to `DisputeResolved` through `resolveDispute()`.
+- `PendingArbitration` to `ArbitrationExpired` through `expireArbitration()`.

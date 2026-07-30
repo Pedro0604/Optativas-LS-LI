@@ -73,40 +73,73 @@ const tooLongTitleCases: TitleCase[] = [
 describe("Escrow", function () {
   describe("constructor through EscrowFactory.createEscrow", function () {
     describe("successful creation", function () {
-      it("Should correctly save the values and ETH balance of an Escrow", async function () {
+      it("Should set a correct initial state", async function () {
         const {
           owner,
           worker,
+          arbiter,
           escrowAddress,
           escrow,
           amountInWei,
           title,
           receipt,
-          durationDays,
+          acceptanceDuration,
+          submissionDuration,
+          reviewDuration,
+          arbitrationDuration,
         } = await networkHelpers.loadFixture(
           deployEscrowFactoryWithDefaultEscrowFixture,
         );
 
+        // Addresses ok
         expect(await escrow.owner()).to.equal(owner.address);
         expect(await escrow.worker()).to.equal(worker.address);
-        expect(await escrow.amount()).to.equal(amountInWei);
-        expect(await escrow.title()).to.equal(title);
+        expect(await escrow.arbiter()).to.equal(arbiter.address);
+
+        // State ok
         expect(await escrow.state()).to.equal(State.PendingAcceptance);
+
+        // Strings ok
+        expect(await escrow.title()).to.equal(title);
+        expect(await escrow.submissionReference()).to.equal("");
+        expect(await escrow.disputeReason()).to.equal("");
+        expect(await escrow.resolutionReason()).to.equal("");
+
+        // ETH ok
+        expect(await escrow.amount()).to.equal(amountInWei);
         expect(await ethers.provider.getBalance(escrowAddress)).to.equal(
           amountInWei,
         );
 
+        // Durations ok
+        expect(await escrow.submissionDuration()).to.equal(submissionDuration);
+        expect(await escrow.reviewDuration()).to.equal(reviewDuration);
+        expect(await escrow.arbitrationDuration()).to.equal(
+          arbitrationDuration,
+        );
+
+        // Non set deadlines ok
+        expect(await escrow.submissionDeadline()).to.equal(0n);
+        expect(await escrow.submissionExpired()).to.be.false;
+        expect(await escrow.reviewDeadline()).to.equal(0n);
+        expect(await escrow.reviewExpired()).to.be.false;
+        expect(await escrow.arbitrationDeadline()).to.equal(0n);
+        expect(await escrow.arbitrationExpired()).to.be.false;
+
+        // Acceptance deadline ok
         const escrowDeploymentBlock = await receipt.getBlock();
-        const expectedDeadline =
-          BigInt(escrowDeploymentBlock.timestamp) +
-          BigInt(durationDays) * SECONDS_PER_DAY;
-        expect(await escrow.deadline()).to.equal(expectedDeadline);
+        const expectedAcceptanceDeadline =
+          BigInt(escrowDeploymentBlock.timestamp) + acceptanceDuration;
+        expect(await escrow.acceptanceDeadline()).to.equal(
+          expectedAcceptanceDeadline,
+        );
+        expect(await escrow.acceptanceExpired()).to.be.false;
       });
 
       describe("valid title length", function () {
         for (const testCase of validTitleCases) {
           it(`Should accept ${testCase.description}`, async function () {
-            const { escrowFactory, owner, worker, escrow } =
+            const { escrowFactory, owner, worker, arbiter, escrow } =
               await networkHelpers.loadFixture(
                 deployEscrowFactoryWithDefaultEscrowFixture,
               );
@@ -121,6 +154,7 @@ describe("Escrow", function () {
               escrowFactory,
               owner,
               workerAddress: worker.address,
+              arbiterAddress: arbiter.address,
               title,
             });
 
@@ -139,7 +173,7 @@ describe("Escrow", function () {
       // Además, se usa obligatoriamente sendCreateEscrow porque no lanza excepción si hay revert
       // al esperarse que se mine el bloque solo dentro del expect().to.revert()
       it("Should revert when no eth is provided", async function () {
-        const { escrowFactory, owner, worker, escrow } =
+        const { escrowFactory, owner, worker, arbiter, escrow } =
           await networkHelpers.loadFixture(
             deployEscrowFactoryWithDefaultEscrowFixture,
           );
@@ -149,13 +183,14 @@ describe("Escrow", function () {
             escrowFactory,
             owner,
             workerAddress: worker.address,
-            amountInEth: 0,
+            arbiterAddress: arbiter.address,
+            amountInEth: 0n,
           }),
         ).to.be.revertedWithCustomError(escrow, Error.NoEthProvided);
       });
 
-      it("Should revert when the worker address is address(0)", async function () {
-        const { escrowFactory, owner, escrow } =
+      it("Should revert when the worker or arbiter address are address(0)", async function () {
+        const { escrowFactory, owner, worker, arbiter, escrow } =
           await networkHelpers.loadFixture(
             deployEscrowFactoryWithDefaultEscrowFixture,
           );
@@ -165,12 +200,22 @@ describe("Escrow", function () {
             escrowFactory,
             owner,
             workerAddress: ethers.ZeroAddress,
+            arbiterAddress: arbiter.address,
+          }),
+        ).to.be.revertedWithCustomError(escrow, Error.ZeroAddress);
+
+        await expect(
+          sendCreateEscrow({
+            escrowFactory,
+            owner,
+            workerAddress: worker.address,
+            arbiterAddress: ethers.ZeroAddress,
           }),
         ).to.be.revertedWithCustomError(escrow, Error.ZeroAddress);
       });
 
       it("Should revert when owner is the same account as worker", async function () {
-        const { escrowFactory, owner, escrow } =
+        const { escrowFactory, owner, arbiter, escrow } =
           await networkHelpers.loadFixture(
             deployEscrowFactoryWithDefaultEscrowFixture,
           );
@@ -180,11 +225,12 @@ describe("Escrow", function () {
             escrowFactory,
             owner,
             workerAddress: owner.address,
+            arbiterAddress: arbiter.address,
           }),
         ).to.be.revertedWithCustomError(escrow, Error.CannotHireYourself);
       });
 
-      it("Should revert when durationDays is zero", async function () {
+      it("Should revert when owner or worker are the same account as arbiter", async function () {
         const { escrowFactory, owner, worker, escrow } =
           await networkHelpers.loadFixture(
             deployEscrowFactoryWithDefaultEscrowFixture,
@@ -195,13 +241,48 @@ describe("Escrow", function () {
             escrowFactory,
             owner,
             workerAddress: worker.address,
-            durationDays: 0n,
+            arbiterAddress: owner.address,
           }),
-        ).to.be.revertedWithCustomError(escrow, Error.ZeroDuration);
+        ).to.be.revertedWithCustomError(escrow, Error.ArbiterCannotParticipate);
+
+        await expect(
+          sendCreateEscrow({
+            escrowFactory,
+            owner,
+            workerAddress: worker.address,
+            arbiterAddress: worker.address,
+          }),
+        ).to.be.revertedWithCustomError(escrow, Error.ArbiterCannotParticipate);
+      });
+
+      it("Should revert when any duration is zero", async function () {
+        const { escrowFactory, owner, worker, arbiter, escrow } =
+          await networkHelpers.loadFixture(
+            deployEscrowFactoryWithDefaultEscrowFixture,
+          );
+
+        const durationKeys = [
+          "acceptanceDuration",
+          "submissionDuration",
+          "reviewDuration",
+          "arbitrationDuration",
+        ];
+
+        for (const durationKey of durationKeys) {
+          await expect(
+            sendCreateEscrow({
+              escrowFactory,
+              owner,
+              workerAddress: worker.address,
+              arbiterAddress: arbiter.address,
+              [durationKey]: 0n,
+            }),
+          ).to.be.revertedWithCustomError(escrow, Error.ZeroDuration);
+        }
       });
 
       it("Should revert when title is empty", async function () {
-        const { escrowFactory, owner, worker, escrow } =
+        const { escrowFactory, owner, worker, arbiter, escrow } =
           await networkHelpers.loadFixture(
             deployEscrowFactoryWithDefaultEscrowFixture,
           );
@@ -211,15 +292,16 @@ describe("Escrow", function () {
             escrowFactory,
             owner,
             workerAddress: worker.address,
+            arbiterAddress: arbiter.address,
             title: "",
           }),
-        ).to.be.revertedWithCustomError(escrow, Error.EmptyTitle);
+        ).to.be.revertedWithCustomError(escrow, Error.EmptyString);
       });
 
       describe("title exceeding MAX_TITLE_LENGTH", function () {
         for (const testCase of tooLongTitleCases) {
           it(`Should revert when title length exceeds MAX_TITLE_LENGTH using ${testCase.description}`, async function () {
-            const { escrowFactory, owner, worker, escrow } =
+            const { escrowFactory, owner, worker, arbiter, escrow } =
               await networkHelpers.loadFixture(
                 deployEscrowFactoryWithDefaultEscrowFixture,
               );
@@ -235,10 +317,11 @@ describe("Escrow", function () {
                 escrowFactory,
                 owner,
                 workerAddress: worker.address,
+                arbiterAddress: arbiter.address,
                 title,
               }),
             )
-              .to.be.revertedWithCustomError(escrow, Error.TitleTooLong)
+              .to.be.revertedWithCustomError(escrow, Error.StringTooLong)
               .withArgs(titleLength, maxLength);
           });
         }
@@ -246,49 +329,99 @@ describe("Escrow", function () {
     });
   });
 
-  describe("accept", function () {
-    describe("succesful acceptance", function () {
-      it(`Should emit the ${Event.Accepted} event and change its state to Accepted`, async function () {
+  describe("acceptEscrow", function () {
+    describe("successful acceptance", function () {
+      it(`Should emit the ${Event.EscrowAccepted} event, change its state to PendingSubmission and set the submissionDeadline`, async function () {
+        const { escrow, worker, submissionDuration } =
+          await networkHelpers.loadFixture(
+            deployEscrowFactoryWithDefaultEscrowFixture,
+          );
+
+        const latestTimestamp = await networkHelpers.time.latest();
+        const nextBlockTimestamp = latestTimestamp + 12;
+        await networkHelpers.time.setNextBlockTimestamp(nextBlockTimestamp);
+
+        const expectedSubmissionDeadline =
+          BigInt(nextBlockTimestamp) + submissionDuration;
+
+        await expect(escrow.connect(worker).acceptEscrow())
+          .to.emit(escrow, Event.EscrowAccepted)
+          .withArgs(expectedSubmissionDeadline);
+
+        expect(await escrow.state()).to.equal(State.PendingSubmission);
+        expect(await escrow.submissionDeadline()).to.equal(
+          expectedSubmissionDeadline,
+        );
+      });
+
+      it(`Should not revert at acceptanceDeadline - 1`, async function () {
         const { escrow, worker } = await networkHelpers.loadFixture(
           deployEscrowFactoryWithDefaultEscrowFixture,
         );
 
-        await expect(escrow.connect(worker).accept())
-          .to.emit(escrow, Event.Accepted)
-          .withArgs(1); // TODO - REEMPLAZAR EL 1 POR LA DELIVERY_DEADLINE
-        expect(await escrow.state()).to.equal(State.Active);
+        await networkHelpers.time.setNextBlockTimestamp(
+          (await escrow.acceptanceDeadline()) - 1n,
+        );
+        await expect(escrow.connect(worker).acceptEscrow()).to.not.revert(
+          ethers,
+        );
       });
     });
 
     describe("failing acceptance", function () {
       it(`Should revert when sender is not the worker`, async function () {
-        const { escrow, owner, otherAccount } =
-          await networkHelpers.loadFixture(
-            deployEscrowFactoryWithDefaultEscrowFixture,
-          );
+        const { escrow, owner, arbiter } = await networkHelpers.loadFixture(
+          deployEscrowFactoryWithDefaultEscrowFixture,
+        );
 
-        await expect(escrow.connect(owner).accept())
-          .to.revertedWithCustomError(escrow, Error.OnlyWorkerAllowed)
+        await expect(escrow.connect(owner).acceptEscrow())
+          .to.be.revertedWithCustomError(escrow, Error.OnlyWorkerAllowed)
           .withArgs();
-        expect(await escrow.state()).to.equal(State.PendingAcceptance);
 
-        await expect(escrow.connect(otherAccount).accept())
-          .to.revertedWithCustomError(escrow, Error.OnlyWorkerAllowed)
+        await expect(escrow.connect(arbiter).acceptEscrow())
+          .to.be.revertedWithCustomError(escrow, Error.OnlyWorkerAllowed)
           .withArgs();
-        expect(await escrow.state()).to.equal(State.PendingAcceptance);
       });
 
-      it(`Should revert when the escrow is not in State.Accepted`, async function () {
+      it(`Should revert when the escrow is not in State.PendingAcceptance`, async function () {
         const { escrow, worker } = await networkHelpers.loadFixture(
           deployEscrowFactoryWithDefaultEscrowFixture,
         );
 
-        await escrow.connect(worker).accept();
+        await escrow.connect(worker).acceptEscrow();
 
-        await expect(escrow.connect(worker).accept())
-          .to.revertedWithCustomError(escrow, Error.InvalidState)
-          .withArgs(State.Active, State.PendingAcceptance);
+        await expect(escrow.connect(worker).acceptEscrow())
+          .to.be.revertedWithCustomError(escrow, Error.InvalidState)
+          .withArgs(State.PendingSubmission, State.PendingAcceptance);
       });
+
+      it(`Should revert at acceptanceDeadline`, async function () {
+        const { escrow, worker } = await networkHelpers.loadFixture(
+          deployEscrowFactoryWithDefaultEscrowFixture,
+        );
+
+        const acceptanceDeadline = await escrow.acceptanceDeadline();
+        await networkHelpers.time.setNextBlockTimestamp(acceptanceDeadline);
+        await expect(escrow.connect(worker).acceptEscrow())
+          .to.be.revertedWithCustomError(escrow, Error.DeadlineAlreadyExpired)
+          .withArgs(acceptanceDeadline);
+      });
+    });
+  });
+
+  describe("acceptanceExpired", function () {
+    it(`Should correctly calculate acceptanceExpired around acceptanceDeadline`, async function () {
+      const { escrow } = await networkHelpers.loadFixture(
+        deployEscrowFactoryWithDefaultEscrowFixture,
+      );
+
+      const acceptanceDeadline = await escrow.acceptanceDeadline();
+
+      await networkHelpers.time.increaseTo(acceptanceDeadline - 1n);
+      expect(await escrow.acceptanceExpired()).to.be.false;
+
+      await networkHelpers.time.increaseTo(acceptanceDeadline);
+      expect(await escrow.acceptanceExpired()).to.be.true;
     });
   });
 });

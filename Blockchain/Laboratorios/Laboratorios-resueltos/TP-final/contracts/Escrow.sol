@@ -8,17 +8,50 @@ contract Escrow {
      */
     enum State {
         // Estados no finales
+        /**
+         * El contrato fue creado y está pendiente de aceptación por parte del worker
+         */
         PendingAcceptance,
-        Active,
+        /**
+         * El contrato fue aceptado por el worker y está pendiente de la entrega del trabajo por parte del worker
+         */
+        PendingSubmission,
+        /**
+         * El trabajo fue entregado y está pendiente de revisión por parte del owner
+         */
         PendingReview,
-        Disputed,
+        /**
+         * El contrato fue disputado por el owner y está pendiente del arbitraje
+         */
+        PendingArbitration,
         // Estados finales
-        Cancelled,
+        /**
+         * El contrato fue cancelado por el owner antes de ser aceptado por el worker
+         */
+        EscrowCancelled,
+        /**
+         * El período de aceptación del contrato expiró
+         */
         AcceptanceExpired,
-        DeliveryExpired,
-        Approved,
+        /**
+         * El período de entrega del trabajo expiró
+         */
+        SubmissionExpired,
+        /**
+         * El trabajo entregado fue aprovado por el owner
+         */
+        WorkApproved,
+        /**
+         * El período de revisión del trabajo expiró
+         */
         ReviewExpired,
-        Resolved,
+        /**
+         * La disputa fue resuelta por el árbitro
+         */
+        DisputeResolved,
+        /**
+         * El período de arbitraje del contrato expiró
+         */
         ArbitrationExpired
     }
 
@@ -30,29 +63,45 @@ contract Escrow {
     uint256 public constant MAX_RESOLUTION_REASON_LENGTH = 256;
 
     // Inmutables
-    address public immutable worker;
-    uint256 public immutable deadline;
-    uint256 public immutable amount;
     address public immutable owner;
+    address public immutable worker;
+    address public immutable arbiter;
+
+    uint256 public immutable amount;
+
+    uint256 public immutable acceptanceDeadline;
+    uint256 public immutable submissionDuration;
+    uint256 public immutable reviewDuration;
+    uint256 public immutable arbitrationDuration;
 
     // Mutables
     State public state;
+
+    uint256 public submissionDeadline;
+    uint256 public reviewDeadline;
+    uint256 public arbitrationDeadline;
+
     string public title;
+    string public submissionReference;
+    string public disputeReason;
+    string public resolutionReason;
+
+    mapping(address account => uint256 amount) public pendingWithdrawals;
 
     // Eventos
     // Eventos desde el estado PendingAcceptance
     /**
-     * El Escrow fue aceptado por el worker
+     * El escrow fue aceptado por el worker
      *
-     * Transiciona a estado Active
+     * Transiciona a estado PendingSubmission
      *
-     * @param deliveryDeadline Fecha límite de entrega de trabajo
+     * @param submissionDeadline Fecha límite de entrega de trabajo
      */
-    event Accepted(uint256 deliveryDeadline);
+    event EscrowAccepted(uint256 submissionDeadline);
 
     /**
      * El período de aceptación expiró
-     * 
+     *
      * Transiciona a estado AcceptanceExpired
      *
      */
@@ -61,11 +110,11 @@ contract Escrow {
     /**
      * El escrow fue cancelado por el owner antes de la aceptación
      *
-     * Transiciona a estado Cancelled
+     * Transiciona a estado EscrowCancelled
      */
-    event Cancelled();
+    event EscrowCancelled();
 
-    // Eventos desde el estado Active
+    // Eventos desde el estado PendingSubmission
     /**
      * El trabajo fue entregado por el worker
      *
@@ -78,15 +127,15 @@ contract Escrow {
     /**
      * El período de entrega del trabajo expiró
      *
-     * Transiciona a estado DeliveryExpired
+     * Transiciona a estado SubmissionExpired
      */
-    event DeliveryExpired();
+    event SubmissionExpired();
 
     // Eventos desde el estado PendingReview
     /**
      * El trabajo fue aprobado por el owner
      *
-     * Transiciona a estado Approved
+     * Transiciona a estado WorkApproved
      */
     event WorkApproved();
 
@@ -100,17 +149,17 @@ contract Escrow {
     /**
      * El trabajo fue disputado por el owner
      *
-     * Transiciona a estado Disputed
+     * Transiciona a estado PendingArbitration
      *
      * @param arbitrationDeadline Fecha límite de resolución de la disputa
      */
     event DisputeOpened(uint256 arbitrationDeadline);
 
-    // Eventos desde el estado Disputed
+    // Eventos desde el estado PendingArbitration
     /**
      * La disputa fue resuelta
      *
-     * Transiciona a estado Resolved
+     * Transiciona a estado DisputeResolved
      *
      * @param ownerAmount Cantidad correspondiente al owner en wei
      * @param workerAmount Cantidad correspondiente al worker en wei
@@ -124,6 +173,7 @@ contract Escrow {
      */
     event ArbitrationExpired();
 
+    // Evento de retiro de fondos
     /**
      * Se retiraron fondos del contrato
      *
@@ -133,8 +183,10 @@ contract Escrow {
     event FundsWithdrawn(address indexed account, uint256 amount);
 
     // Errores
+    // Errores de estado y permisos
     /**
-     * Estado invalido.
+     * Estado inválido.
+     *
      * @param currentState Estado actual
      * @param expectedState Estado esperado
      */
@@ -151,17 +203,45 @@ contract Escrow {
     error OnlyWorkerAllowed();
 
     /**
+     * Solo el arbitro puede realizar la función
+     */
+    error OnlyArbiterAllowed();
+
+    // Errores de tiempo
+    /**
      * Solo se permite interactuar con esta función después del tiempo definido
+     *
      * @param allowedAfterTime Tiempo a partir del cual se puede interactuar con la función
      */
     error OnlyAllowedAfterTime(uint256 allowedAfterTime);
 
     /**
      * Solo se permite interactuar con esta función antes del tiempo definido
+     *
      * @param allowedBeforeTime Tiempo hasta el cual se puede interactuar con la función
      */
     error OnlyAllowedBeforeTime(uint256 allowedBeforeTime);
 
+    /**
+     * La deadline ya expiró
+     *
+     * @param deadline Deadline expirada
+     */
+    error DeadlineAlreadyExpired(uint256 deadline);
+
+    /**
+     * La deadline aún no expiró
+     *
+     * @param deadline Deadline no expirada
+     */
+    error DeadlineNotExpiredYet(uint256 deadline);
+
+    /**
+     * La duración no puede ser 0
+     */
+    error ZeroDuration();
+
+    // Errores de validación durante la creación
     /**
      * No se proveyó nada de ETH para realizar la creación de un nuevo contrato
      */
@@ -178,21 +258,30 @@ contract Escrow {
     error CannotHireYourself();
 
     /**
-     * La duración del contrato no puede ser 0
+     * El árbitro no puede ser owner ni worker
      */
-    error ZeroDuration();
+    error ArbiterCannotParticipate();
+
+    // Errores de strings
+    /**
+     * El string no puede estar vacío
+     */
+    error EmptyString(); // TODO - VER SI AGREGAR UN STRING DE REFERENCIA E.G.: TITLE, DISPUTE_REASON, ETC. O DIVIDIR EN UN ERROR EMPTY Y MAX PARA CADA TIPO DE STRING
 
     /**
-     * El título del contrato no puede estar vacío
-     */
-    error EmptyTitle();
-
-    /**
-     * El título del contrato no puede superar los `MAX_TITLE_LENGTH` bytes (caracteres utf-8 ocupan 1 byte, caracteres con tilde, emojis y otros tipos de caracteres ocupan más de 1 byte)
-     * @param currentLength Longitud del título provisto
+     * El string no puede superar `maxLength` bytes (caracteres utf-8 ocupan 1 byte, caracteres con tilde, emojis y otros tipos de caracteres ocupan más de 1 byte)
+     *
+     * @param currentLength Longitud del string provisto
      * @param maxLength Longitud máxima permitida
      */
-    error TitleTooLong(uint256 currentLength, uint256 maxLength);
+    error StringTooLong(uint256 currentLength, uint256 maxLength);
+
+    // Errores de resolución de disputa
+    error WorkerAmountExceedsEscrow(uint256 workerAmount, uint256 escrowAmount);
+
+    // Errores de withdraws
+    error NoFundsToWithdraw();
+    error WithdrawalFailed();
 
     // Modificadores
     modifier inState(State expectedState) {
@@ -219,6 +308,7 @@ contract Escrow {
         _;
     }
 
+    // TODO - SI NO SON USADAS ONLY AFTER Y BEFORE, ELIMINARLAS Y ELIMINAR SUS ERRORES. ELIMINAR TAMBIEN LOS ERRORES DE ERRORS.TS
     modifier onlyAfter(uint256 time) {
         if (block.timestamp < time) {
             revert OnlyAllowedAfterTime({allowedAfterTime: time});
@@ -233,24 +323,50 @@ contract Escrow {
         _;
     }
 
+    modifier notExpired(uint256 deadline) {
+        if (isExpired(deadline)) {
+            revert DeadlineAlreadyExpired(deadline);
+        }
+        _;
+    }
+
+    modifier expired(uint256 deadline) {
+        if (!isExpired(deadline)) {
+            revert DeadlineNotExpiredYet(deadline);
+        }
+        _;
+    }
+
     // Funciones
     /**
      * @param owner_ Dueño del contrato
      * @param worker_ Dirección de quien realizará el trabajo y recibirá el pago
-     * @param durationDays Límite de tiempo en días para realizar el contrato
-     * @param title_ Título del contrato. Entre 1 y `MAX_TITLE_LENGTH` bytes
+     * @param worker_ Dirección de quien realizará el arbitraje de ser necesario
+     * @param acceptanceDuration_ Duración del período de aceptación del escrow en segundos
+     * @param submissionDuration_ Duración del período de elaboración del trabajo en segundos
+     * @param reviewDuration_ Duración del período de revisión del trabajo en segundos
+     * @param arbitrationDuration_ Duración del período de arbitraje en segundos
+     * @param title_ Título del contrato. Entre 1 y `Escrow.MAX_TITLE_LENGTH` bytes
      */
     constructor(
         address owner_,
         address worker_,
-        uint256 durationDays,
+        address arbiter_,
+        uint256 acceptanceDuration_,
+        uint256 submissionDuration_,
+        uint256 reviewDuration_,
+        uint256 arbitrationDuration_,
         string memory title_
     ) payable {
         if (msg.value == 0) {
             revert NoEthProvided();
         }
 
-        if (owner_ == address(0) || worker_ == address(0)) {
+        if (
+            owner_ == address(0) ||
+            worker_ == address(0) ||
+            arbiter_ == address(0)
+        ) {
             revert ZeroAddress();
         }
 
@@ -258,34 +374,86 @@ contract Escrow {
             revert CannotHireYourself();
         }
 
-        if (durationDays == 0) {
-            revert ZeroDuration();
+        if (arbiter_ == owner_ || arbiter_ == worker_) {
+            revert ArbiterCannotParticipate();
+        }
+
+        if (
+            acceptanceDuration_ == 0 ||
+            submissionDuration_ == 0 ||
+            reviewDuration_ == 0 ||
+            arbitrationDuration_ == 0
+        ) {
+            revert ZeroDuration(); // TODO - Revertir con errores específicos para cada uno(?
+            // TODO - QUIZAS VALIDAR QUE ESTÉ ENTRE UN MIN Y UN MAX (12 HORAS Y 1 MES(?)
         }
 
         uint256 titleLength = bytes(title_).length;
 
         if (titleLength == 0) {
-            revert EmptyTitle();
+            revert EmptyString();
         }
 
         if (titleLength > MAX_TITLE_LENGTH) {
-            revert TitleTooLong({
+            revert StringTooLong({
                 currentLength: titleLength,
                 maxLength: MAX_TITLE_LENGTH
             });
         }
 
+        amount = msg.value;
+
         owner = owner_;
         worker = worker_;
-        amount = msg.value;
-        deadline = block.timestamp + durationDays * 1 days;
+        arbiter = arbiter_;
+
+        acceptanceDeadline = block.timestamp + acceptanceDuration_ * 1 seconds;
+        submissionDuration = submissionDuration_;
+        reviewDuration = reviewDuration_;
+        arbitrationDuration = arbitrationDuration_;
+
         title = title_;
 
         state = State.PendingAcceptance;
     }
 
-    function accept() external onlyWorker inState(State.PendingAcceptance) {
-        state = State.Active;
-        emit Accepted(1); // TODO - REEMPLAZAR EL 1 POR LA DELIVERY_DEADLINE
+    // External
+    /**
+     * Acepta un escrow.
+     * Solo lo puede realizar el worker.
+     * Solo se puede realizar antes de acceptanceDeadline
+     * Transiciona de PendingAcceptance a PendingSubmission
+     * Calcula submissionDeadline
+     */
+    function acceptEscrow()
+        external
+        onlyWorker
+        inState(State.PendingAcceptance)
+        notExpired(acceptanceDeadline)
+    {
+        state = State.PendingSubmission;
+        submissionDeadline = block.timestamp + submissionDuration * 1 seconds;
+        emit EscrowAccepted(submissionDeadline);
+    }
+
+    function acceptanceExpired() external view returns (bool expired_) {
+        return isExpired(acceptanceDeadline);
+    }
+
+    function submissionExpired() external view returns (bool expired_) {
+        return isExpired(submissionDeadline);
+    }
+
+    function reviewExpired() external view returns (bool expired_) {
+        return isExpired(reviewDeadline);
+    }
+
+    function arbitrationExpired() external view returns (bool expired_) {
+        return isExpired(arbitrationDeadline);
+    }
+
+    // Internal
+    function isExpired(uint256 deadline) internal view returns (bool expired_) {
+        return deadline > 0 && block.timestamp >= deadline;
     }
 }

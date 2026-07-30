@@ -1,16 +1,15 @@
 ### Next
-- Ver specs-todo.md (y state.md, escrow-spec.md y guia-resumen.md de ayuda) e implementar por partes y con tests primero acomodar lo existente a lo nuevo (añadir a creación: arbitro, duraciones nuevas, etc. y adecuar tests)
-- Luego continuar desarrollando nueva funcionalidad
+- 
 
 ### Later
 - Reemplazar amountInEth por string o bigint para evitar problemas de precisión por number. Probar con valores de ETH no enteros para ver q tal.
 
 ### Antes de entrgar
-
 - docstrings de .sol y utils.ts (o similares)
 - revisar y aplicar o eliminar TODOs
 - Matchear state de Escrow.sol con state de utils.ts
 
+## Links
 Grilling: https://chatgpt.com/c/6a6a88a4-3b28-83e9-8cb8-8fe8a40804c0
 Descarga de spec: https://chatgpt.com/c/6a6ac139-0cc8-83e9-ac85-77e5e851a73d
 

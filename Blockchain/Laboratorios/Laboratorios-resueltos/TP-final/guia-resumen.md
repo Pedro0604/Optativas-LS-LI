@@ -31,7 +31,7 @@ EscrowFactory
 Escrow
   ├── owner
   ├── worker
-  ├── arbitrator
+  ├── arbiter
   ├── fondos del acuerdo
   ├── máquina de estados
   ├── deadlines
@@ -45,7 +45,7 @@ La fábrica debe:
 - crear contratos `Escrow`;
 - transferir el `msg.value` al constructor del nuevo escrow;
 - registrar cada dirección creada;
-- asociar cada escrow con su `owner`, `worker` y `arbitrator`;
+- asociar cada escrow con su `owner`, `worker` y `arbiter`;
 - permitir listar y contar los escrows;
 - permitir verificar si una dirección fue creada por la fábrica;
 - emitir el evento canónico de creación.
@@ -78,16 +78,16 @@ Cada escrow debe:
 
 Cada escrow tiene tres participantes inmutables:
 
-| Rol          | Responsabilidad                                                                                              |
-| ------------ | ------------------------------------------------------------------------------------------------------------ |
-| `owner`      | Crea y financia el acuerdo, puede cancelarlo antes de la aceptación, aprobar el trabajo o abrir una disputa. |
-| `worker`     | Puede aceptar el acuerdo y registrar la entrega.                                                             |
-| `arbitrator` | Puede resolver una disputa antes del vencimiento del arbitraje.                                              |
+| Rol       | Responsabilidad                                                                                              |
+| --------- | ------------------------------------------------------------------------------------------------------------ |
+| `owner`   | Crea y financia el acuerdo, puede cancelarlo antes de la aceptación, aprobar el trabajo o abrir una disputa. |
+| `worker`  | Puede aceptar el acuerdo y registrar la entrega.                                                             |
+| `arbiter` | Puede resolver una disputa antes del vencimiento del arbitraje.                                              |
 
 ### Invariantes de participantes
 
 - Ninguna dirección puede ser `address(0)`.
-- `owner`, `worker` y `arbitrator` deben ser tres direcciones distintas.
+- `owner`, `worker` y `arbiter` deben ser tres direcciones distintas.
 - El `owner` se obtiene de `msg.sender` en `EscrowFactory.createEscrow`.
 - El árbitro queda definido durante la creación y no puede modificarse.
 - El worker no dispone de una función de rechazo explícito.
@@ -100,15 +100,15 @@ Cada escrow tiene tres participantes inmutables:
 ```solidity
 enum State {
   PendingAcceptance,
-  Active,
+  PendingSubmission,
   PendingReview,
-  Disputed,
-  Cancelled,
+  PendingArbitration,
+  EscrowCancelled,
   AcceptanceExpired,
-  DeliveryExpired,
-  Approved,
+  SubmissionExpired,
+  WorkApproved,
   ReviewExpired,
-  Resolved,
+  DisputeResolved,
   ArbitrationExpired
 }
 ```
@@ -128,40 +128,40 @@ Significa que:
 
 Transiciones posibles:
 
-- `accept()` → `Active`;
-- `cancel()` → `Cancelled`;
+- `acceptEscrow()` → `PendingSubmission`;
+- `cancelEscrow()` → `EscrowCancelled`;
 - `expireAcceptance()` → `AcceptanceExpired`.
 
-#### `Active`
+#### `PendingSubmission`
 
 Significa que:
 
 - el worker aceptó;
 - el acuerdo está vigente;
-- está corriendo `deliveryDeadline`;
+- está corriendo `submissionDeadline`;
 - todavía no se registró una entrega.
 
 Transiciones posibles:
 
 - `submitWork(...)` → `PendingReview`;
-- `expireDelivery()` → `DeliveryExpired`.
+- `expireDelivery()` → `SubmissionExpired`.
 
 #### `PendingReview`
 
 Significa que:
 
 - el worker registró la entrega;
-- `deliveryReference` quedó almacenada;
+- `submissionReference` quedó almacenada;
 - el owner debe aprobar o abrir una disputa;
 - está corriendo `reviewDeadline`.
 
 Transiciones posibles:
 
-- `approveWork()` → `Approved`;
-- `openDispute(...)` → `Disputed`;
+- `approveWork()` → `WorkApproved`;
+- `openDispute(...)` → `PendingArbitration`;
 - `expireReview()` → `ReviewExpired`.
 
-#### `Disputed`
+#### `PendingArbitration`
 
 Significa que:
 
@@ -172,19 +172,19 @@ Significa que:
 
 Transiciones posibles:
 
-- `resolveDispute(...)` → `Resolved`;
+- `resolveDispute(...)` → `DisputeResolved`;
 - `expireArbitration()` → `ArbitrationExpired`.
 
 ### Estados terminales
 
 Los siguientes estados son definitivos:
 
-- `Cancelled`
+- `EscrowCancelled`
 - `AcceptanceExpired`
-- `DeliveryExpired`
-- `Approved`
+- `SubmissionExpired`
+- `WorkApproved`
 - `ReviewExpired`
-- `Resolved`
+- `DisputeResolved`
 - `ArbitrationExpired`
 
 Desde un estado terminal:
@@ -204,26 +204,26 @@ No deben existir estados `Paid`, `Withdrawn` ni `PartiallyWithdrawn`. El resulta
 stateDiagram-v2
     [*] --> PendingAcceptance
 
-    PendingAcceptance --> Active: accept()
-    PendingAcceptance --> Cancelled: cancel()
+    PendingAcceptance --> PendingSubmission: acceptEscrow()
+    PendingAcceptance --> EscrowCancelled: cancelEscrow()
     PendingAcceptance --> AcceptanceExpired: expireAcceptance()
 
-    Active --> PendingReview: submitWork(reference)
-    Active --> DeliveryExpired: expireDelivery()
+    PendingSubmission --> PendingReview: submitWork(reference)
+    PendingSubmission --> SubmissionExpired: expireDelivery()
 
-    PendingReview --> Approved: approveWork()
-    PendingReview --> Disputed: openDispute(reason)
+    PendingReview --> WorkApproved: approveWork()
+    PendingReview --> PendingArbitration: openDispute(reason)
     PendingReview --> ReviewExpired: expireReview()
 
-    Disputed --> Resolved: resolveDispute(workerAmount, reason)
-    Disputed --> ArbitrationExpired: expireArbitration()
+    PendingArbitration --> DisputeResolved: resolveDispute(workerAmount, reason)
+    PendingArbitration --> ArbitrationExpired: expireArbitration()
 
-    Cancelled --> [*]
+    EscrowCancelled --> [*]
     AcceptanceExpired --> [*]
-    DeliveryExpired --> [*]
-    Approved --> [*]
+    SubmissionExpired --> [*]
+    WorkApproved --> [*]
     ReviewExpired --> [*]
-    Resolved --> [*]
+    DisputeResolved --> [*]
     ArbitrationExpired --> [*]
 ```
 
@@ -231,18 +231,18 @@ stateDiagram-v2
 
 ## 7. Resumen de transiciones
 
-| Estado origen       | Función                                | Quién puede llamarla | Restricción temporal           | Estado destino       | Distribución  |
-| ------------------- | -------------------------------------- | -------------------- | ------------------------------ | -------------------- | ------------- |
-| `PendingAcceptance` | `accept()`                             | `worker`             | Antes de `acceptanceDeadline`  | `Active`             | Ninguna       |
-| `PendingAcceptance` | `cancel()`                             | `owner`              | Antes de `acceptanceDeadline`  | `Cancelled`          | 100% owner    |
-| `PendingAcceptance` | `expireAcceptance()`                   | Cualquiera           | Desde `acceptanceDeadline`     | `AcceptanceExpired`  | 100% owner    |
-| `Active`            | `submitWork(reference)`                | `worker`             | Antes de `deliveryDeadline`    | `PendingReview`      | Ninguna       |
-| `Active`            | `expireDelivery()`                     | Cualquiera           | Desde `deliveryDeadline`       | `DeliveryExpired`    | 100% owner    |
-| `PendingReview`     | `approveWork()`                        | `owner`              | Antes de `reviewDeadline`      | `Approved`           | 100% worker   |
-| `PendingReview`     | `openDispute(reason)`                  | `owner`              | Antes de `reviewDeadline`      | `Disputed`           | Ninguna       |
-| `PendingReview`     | `expireReview()`                       | Cualquiera           | Desde `reviewDeadline`         | `ReviewExpired`      | 100% worker   |
-| `Disputed`          | `resolveDispute(workerAmount, reason)` | `arbitrator`         | Antes de `arbitrationDeadline` | `Resolved`           | Según árbitro |
-| `Disputed`          | `expireArbitration()`                  | Cualquiera           | Desde `arbitrationDeadline`    | `ArbitrationExpired` | 50/50         |
+| Estado origen        | Función                                | Quién puede llamarla | Restricción temporal           | Estado destino       | Distribución  |
+| -------------------- | -------------------------------------- | -------------------- | ------------------------------ | -------------------- | ------------- |
+| `PendingAcceptance`  | `acceptEscrow()`                       | `worker`             | Antes de `acceptanceDeadline`  | `PendingSubmission`  | Ninguna       |
+| `PendingAcceptance`  | `cancelEscrow()`                       | `owner`              | Antes de `acceptanceDeadline`  | `EscrowCancelled`    | 100% owner    |
+| `PendingAcceptance`  | `expireAcceptance()`                   | Cualquiera           | Desde `acceptanceDeadline`     | `AcceptanceExpired`  | 100% owner    |
+| `PendingSubmission`  | `submitWork(reference)`                | `worker`             | Antes de `submissionDeadline`  | `PendingReview`      | Ninguna       |
+| `PendingSubmission`  | `expireDelivery()`                     | Cualquiera           | Desde `submissionDeadline`     | `SubmissionExpired`  | 100% owner    |
+| `PendingReview`      | `approveWork()`                        | `owner`              | Antes de `reviewDeadline`      | `WorkApproved`       | 100% worker   |
+| `PendingReview`      | `openDispute(reason)`                  | `owner`              | Antes de `reviewDeadline`      | `PendingArbitration` | Ninguna       |
+| `PendingReview`      | `expireReview()`                       | Cualquiera           | Desde `reviewDeadline`         | `ReviewExpired`      | 100% worker   |
+| `PendingArbitration` | `resolveDispute(workerAmount, reason)` | `arbiter`            | Antes de `arbitrationDeadline` | `DisputeResolved`    | Según árbitro |
+| `PendingArbitration` | `expireArbitration()`                  | Cualquiera           | Desde `arbitrationDeadline`    | `ArbitrationExpired` | 50/50         |
 
 ---
 
@@ -251,7 +251,7 @@ stateDiagram-v2
 Todas las duraciones se reciben y almacenan en segundos:
 
 - `acceptanceDuration`;
-- `workDuration`;
+- `submissionDuration`;
 - `reviewDuration`;
 - `arbitrationDuration`.
 
@@ -269,7 +269,7 @@ Reglas:
 ### Cálculo de deadlines
 
 - `acceptanceDeadline` se calcula en el constructor.
-- `deliveryDeadline` se calcula en `accept()`.
+- `submissionDeadline` se calcula en `acceptEscrow()`.
 - `reviewDeadline` se calcula en `submitWork()`.
 - `arbitrationDeadline` se calcula en `openDispute()`.
 
@@ -286,9 +286,9 @@ La interfaz conceptual es:
 ```solidity
 function createEscrow(
   address worker_,
-  address arbitrator_,
+  address arbiter_,
   uint256 acceptanceDuration_,
-  uint256 workDuration_,
+  uint256 submissionDuration_,
   uint256 reviewDuration_,
   uint256 arbitrationDuration_,
   string calldata title_
@@ -310,7 +310,7 @@ function createEscrow(
 ```solidity
 mapping(address owner => address[] escrows) public escrowsByOwner;
 mapping(address worker => address[] escrows) public escrowsByWorker;
-mapping(address arbitrator => address[] escrows) public escrowsByArbitrator;
+mapping(address arbiter => address[] escrows) public escrowsByarbiter;
 
 address[] public allEscrows;
 
@@ -321,7 +321,7 @@ mapping(address escrow => bool registered) public isEscrow;
 
 - `getEscrowCountByOwner(address)`
 - `getEscrowCountByWorker(address)`
-- `getEscrowCountByArbitrator(address)`
+- `getEscrowCountByarbiter(address)`
 - `getEscrowCount()`
 
 No debe existir un contador global separado. El total es `allEscrows.length`.
@@ -332,11 +332,11 @@ No debe existir un contador global separado. El total es `allEscrows.length`.
 event EscrowCreated(
   address indexed owner,
   address indexed worker,
-  address indexed arbitrator,
+  address indexed arbiter,
   address escrowAddress,
   uint256 amount,
   uint256 acceptanceDeadline,
-  uint256 workDuration,
+  uint256 submissionDuration,
   uint256 reviewDuration,
   uint256 arbitrationDuration
 );
@@ -344,7 +344,7 @@ event EscrowCreated(
 
 Decisiones:
 
-- `owner`, `worker` y `arbitrator` son `indexed`;
+- `owner`, `worker` y `arbiter` son `indexed`;
 - `escrowAddress` no es `indexed`;
 - el título no se emite;
 - se emite el deadline absoluto de aceptación;
@@ -370,12 +370,12 @@ Todas las longitudes se miden en bytes UTF-8 mediante `bytes(value).length`.
 ```solidity
 address public immutable owner;
 address public immutable worker;
-address public immutable arbitrator;
+address public immutable arbiter;
 
 uint256 public immutable amount;
 
 uint256 public immutable acceptanceDeadline;
-uint256 public immutable workDuration;
+uint256 public immutable submissionDuration;
 uint256 public immutable reviewDuration;
 uint256 public immutable arbitrationDuration;
 ```
@@ -385,12 +385,12 @@ uint256 public immutable arbitrationDuration;
 ```solidity
 State public state;
 
-uint256 public deliveryDeadline;
+uint256 public submissionDeadline;
 uint256 public reviewDeadline;
 uint256 public arbitrationDeadline;
 
 string public title;
-string public deliveryReference;
+string public submissionReference;
 string public disputeReason;
 string public resolutionReason;
 
@@ -409,7 +409,7 @@ Las referencias y motivos:
 
 ## 11. Funciones de `Escrow`
 
-### `accept()`
+### `acceptEscrow()`
 
 Requisitos:
 
@@ -419,11 +419,11 @@ Requisitos:
 
 Efectos:
 
-- calcula `deliveryDeadline`;
-- cambia a `Active`;
-- emite `Accepted(deliveryDeadline)`.
+- calcula `submissionDeadline`;
+- cambia a `PendingSubmission`;
+- emite `EscrowAccepted(submissionDeadline)`.
 
-### `cancel()`
+### `cancelEscrow()`
 
 Requisitos:
 
@@ -434,8 +434,8 @@ Requisitos:
 Efectos:
 
 - acredita el monto completo al owner;
-- cambia a `Cancelled`;
-- emite `Cancelled()`.
+- cambia a `EscrowCancelled`;
+- emite `EscrowCancelled()`.
 
 ### `expireAcceptance()`
 
@@ -451,18 +451,18 @@ Efectos:
 - cambia a `AcceptanceExpired`;
 - emite `AcceptanceExpired()`.
 
-### `submitWork(string deliveryReference_)`
+### `submitWork(string submissionReference_)`
 
 Requisitos:
 
 - solo `worker`;
-- estado `Active`;
-- antes de `deliveryDeadline`;
+- estado `PendingSubmission`;
+- antes de `submissionDeadline`;
 - referencia de entre 1 y 256 bytes.
 
 Efectos:
 
-- almacena `deliveryReference`;
+- almacena `submissionReference`;
 - calcula `reviewDeadline`;
 - cambia a `PendingReview`;
 - emite `WorkSubmitted(reviewDeadline)`.
@@ -471,15 +471,15 @@ Efectos:
 
 Requisitos:
 
-- estado `Active`;
-- desde `deliveryDeadline`;
+- estado `PendingSubmission`;
+- desde `submissionDeadline`;
 - llamable por cualquier cuenta.
 
 Efectos:
 
 - acredita el monto completo al owner;
-- cambia a `DeliveryExpired`;
-- emite `DeliveryExpired()`.
+- cambia a `SubmissionExpired`;
+- emite `SubmissionExpired()`.
 
 ### `approveWork()`
 
@@ -492,7 +492,7 @@ Requisitos:
 Efectos:
 
 - acredita el monto completo al worker;
-- cambia a `Approved`;
+- cambia a `WorkApproved`;
 - emite `WorkApproved()`.
 
 ### `openDispute(string disputeReason_)`
@@ -508,7 +508,7 @@ Efectos:
 
 - almacena `disputeReason`;
 - calcula `arbitrationDeadline`;
-- cambia a `Disputed`;
+- cambia a `PendingArbitration`;
 - emite `DisputeOpened(arbitrationDeadline)`.
 
 ### `expireReview()`
@@ -529,8 +529,8 @@ Efectos:
 
 Requisitos:
 
-- solo `arbitrator`;
-- estado `Disputed`;
+- solo `arbiter`;
+- estado `PendingArbitration`;
 - antes de `arbitrationDeadline`;
 - `workerAmount <= amount`;
 - motivo de entre 1 y 256 bytes.
@@ -540,7 +540,7 @@ Efectos:
 - calcula `ownerAmount = amount - workerAmount`;
 - almacena `resolutionReason`;
 - acredita los saldos correspondientes;
-- cambia a `Resolved`;
+- cambia a `DisputeResolved`;
 - emite `DisputeResolved(ownerAmount, workerAmount)`.
 
 Los extremos son válidos:
@@ -552,7 +552,7 @@ Los extremos son válidos:
 
 Requisitos:
 
-- estado `Disputed`;
+- estado `PendingArbitration`;
 - desde `arbitrationDeadline`;
 - llamable por cualquier cuenta.
 
@@ -588,12 +588,12 @@ Efectos:
 ## 12. Eventos
 
 ```solidity
-event Accepted(uint256 deliveryDeadline);
-event Cancelled();
+event EscrowAccepted(uint256 submissionDeadline);
+event EscrowCancelled();
 event AcceptanceExpired();
 
 event WorkSubmitted(uint256 reviewDeadline);
-event DeliveryExpired();
+event SubmissionExpired();
 
 event WorkApproved();
 event ReviewExpired();
@@ -630,7 +630,7 @@ Los nombres exactos pueden ajustarse, pero conviene que cada causa sea distingui
 error InvalidState(State currentState, State expectedState);
 error OnlyOwnerAllowed();
 error OnlyWorkerAllowed();
-error OnlyArbitratorAllowed();
+error OnlyarbiterAllowed();
 ```
 
 ### Tiempo
@@ -652,7 +652,7 @@ block.timestamp >= allowedAfterTime
 error NoEthProvided();
 error ZeroAddress();
 error CannotHireYourself();
-error ParticipantsMustBeDifferent();
+error ArbiterCannotParticipate();
 error ZeroDuration();
 ```
 
@@ -661,17 +661,8 @@ Puede mantenerse `CannotHireYourself` para `owner == worker` y usar otro error p
 ### Strings
 
 ```solidity
-error EmptyTitle();
-error TitleTooLong(uint256 currentLength, uint256 maxLength);
-
-error EmptyDeliveryReference();
-error DeliveryReferenceTooLong(uint256 currentLength, uint256 maxLength);
-
-error EmptyDisputeReason();
-error DisputeReasonTooLong(uint256 currentLength, uint256 maxLength);
-
-error EmptyResolutionReason();
-error ResolutionReasonTooLong(uint256 currentLength, uint256 maxLength);
+error EmptyString();
+error StringTooLong(uint256 currentLength, uint256 maxLength);
 ```
 
 ### Resolución y retiros
@@ -808,7 +799,7 @@ El constructor de `Escrow` debe validar:
 - `msg.value > 0`;
 - `owner != address(0)`;
 - `worker != address(0)`;
-- `arbitrator != address(0)`;
+- `arbiter != address(0)`;
 - los tres participantes son distintos;
 - las cuatro duraciones son mayores que cero;
 - el título no está vacío;
@@ -819,10 +810,10 @@ Debe inicializar:
 ```text
 owner
 worker
-arbitrator
+arbiter
 amount
 acceptanceDeadline
-workDuration
+submissionDuration
 reviewDuration
 arbitrationDuration
 title
@@ -877,7 +868,7 @@ En el instante exacto:
 
 Probar que, aunque el estado todavía no se haya actualizado:
 
-- `accept()` no puede ganar contra `expireAcceptance()` después del deadline;
+- `acceptEscrow()` no puede ganar contra `expireAcceptance()` después del deadline;
 - `submitWork()` no puede ganar contra `expireDelivery()`;
 - `approveWork()` y `openDispute()` no pueden ganar contra `expireReview()`;
 - `resolveDispute()` no puede ganar contra `expireArbitration()`.
@@ -919,7 +910,7 @@ También probar un monto par.
 Después de una distribución proporcional:
 
 - el owner retira;
-- el estado permanece `Resolved`;
+- el estado permanece `DisputeResolved`;
 - el saldo del worker continúa intacto;
 - el worker retira después;
 - no existe dependencia entre ambos.
@@ -946,7 +937,7 @@ Probar límites por bytes, no por cantidad visual de caracteres:
 
 Comprobar que:
 
-- `deliveryDeadline == 0` antes de aceptar;
+- `submissionDeadline == 0` antes de aceptar;
 - `reviewDeadline == 0` antes de entregar;
 - `arbitrationDeadline == 0` antes de abrir disputa.
 
@@ -954,7 +945,7 @@ Comprobar que:
 
 Comprobar que no existe ninguna función que permita:
 
-- reemplazar `deliveryReference`;
+- reemplazar `submissionReference`;
 - cambiar `disputeReason`;
 - modificar `resolutionReason`.
 
@@ -964,7 +955,7 @@ Una misma cuenta puede actuar como:
 
 - owner en un escrow;
 - worker en otro;
-- arbitrator en otro.
+- arbiter en otro.
 
 Probar que cada creación se registra únicamente en el mapping correspondiente a su rol dentro de ese acuerdo.
 
@@ -994,7 +985,7 @@ En `PendingReview`:
 - owner antes del deadline: mostrar `Aprobar` y `Abrir disputa`;
 - cualquier cuenta desde el deadline: permitir `Procesar vencimiento de revisión`.
 
-En `Disputed`:
+En `PendingArbitration`:
 
 - árbitro antes del deadline: mostrar formulario de resolución;
 - cualquier cuenta desde el deadline: permitir `Aplicar distribución 50/50`.
@@ -1006,7 +997,7 @@ En cualquier estado:
 La UI debe consultar directamente:
 
 - `title`;
-- `deliveryReference`;
+- `submissionReference`;
 - `disputeReason`;
 - `resolutionReason`.
 
@@ -1018,7 +1009,7 @@ Estos valores no están incluidos en eventos.
 
 1. Actualizar el enum y las variables de `Escrow`.
 2. Agregar validaciones del constructor.
-3. Implementar `accept()` y el cálculo de `deliveryDeadline`.
+3. Implementar `acceptEscrow()` y el cálculo de `submissionDeadline`.
 4. Implementar cancelación y expiración de aceptación.
 5. Implementar entrega y expiración de entrega.
 6. Implementar aprobación y expiración de revisión.
@@ -1041,9 +1032,9 @@ El flujo principal es:
 
 ```text
 PendingAcceptance
-    → Active
+    → PendingSubmission
     → PendingReview
-    → Approved
+    → WorkApproved
 ```
 
 Si el owner no responde:
@@ -1057,14 +1048,14 @@ Si existe desacuerdo:
 
 ```text
 PendingReview
-    → Disputed
-    → Resolved
+    → PendingArbitration
+    → DisputeResolved
 ```
 
 Si el árbitro no responde:
 
 ```text
-Disputed
+PendingArbitration
     → ArbitrationExpired
 ```
 
@@ -1072,10 +1063,10 @@ Si el acuerdo no avanza:
 
 ```text
 PendingAcceptance
-    → Cancelled o AcceptanceExpired
+    → EscrowCancelled o AcceptanceExpired
 
-Active
-    → DeliveryExpired
+PendingSubmission
+    → SubmissionExpired
 ```
 
 Los fondos se asignan al llegar a un estado terminal y se transfieren únicamente mediante:

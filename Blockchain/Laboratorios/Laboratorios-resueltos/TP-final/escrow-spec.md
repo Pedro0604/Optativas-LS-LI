@@ -16,20 +16,20 @@ Each escrow will have three immutable participants:
 
 - An owner who creates and funds the agreement.
 - A worker who may accept the agreement and submit the work.
-- An arbitrator who resolves disputes.
+- An arbiter who resolves disputes.
 
 The agreement will move through an explicit state machine:
 
 - `PendingAcceptance`
-- `Active`
+- `PendingSubmission`
 - `PendingReview`
-- `Disputed`
-- `Cancelled`
+- `PendingArbitration`
+- `EscrowCancelled`
 - `AcceptanceExpired`
-- `DeliveryExpired`
-- `Approved`
+- `SubmissionExpired`
+- `WorkApproved`
 - `ReviewExpired`
-- `Resolved`
+- `DisputeResolved`
 - `ArbitrationExpired`
 
 The owner will define four configurable durations when creating the escrow:
@@ -47,7 +47,7 @@ The normal successful flow will be:
 
 - The owner creates and funds an escrow.
 - The worker accepts before the acceptance deadline.
-- The worker submits a delivery reference before the delivery deadline.
+- The worker submits a submission reference before the submission deadline.
 - The owner approves before the review deadline, or the review deadline expires.
 - The worker withdraws the allocated ETH.
 
@@ -55,26 +55,26 @@ The dispute flow will be:
 
 - The worker submits the work.
 - The owner opens a dispute before the review deadline.
-- The arbitrator resolves the dispute before the arbitration deadline by specifying the worker's allocation in wei.
+- The arbiter resolves the dispute before the arbitration deadline by specifying the worker's allocation in wei.
 - The remaining amount is allocated to the owner.
-- If the arbitrator does not act before the arbitration deadline, the funds are split 50/50, with any indivisible wei assigned to the worker.
+- If the arbiter does not act before the arbitration deadline, the funds are split 50/50, with any indivisible wei assigned to the worker.
 - Each beneficiary withdraws independently.
 
-The factory will register escrows globally and by owner, worker, and arbitrator. It will also expose a boolean registry for verifying whether an address was created by the factory.
+The factory will register escrows globally and by owner, worker, and arbiter. It will also expose a boolean registry for verifying whether an address was created by the factory.
 
 ## User Stories
 
 1. As an owner, I want to create an escrow with ETH, so that the payment is reserved before the worker begins.
 2. As an owner, I want to select a worker when creating an escrow, so that the agreement identifies who may perform the work.
-3. As an owner, I want to select an arbitrator when creating an escrow, so that disputes have a predefined independent resolver.
-4. As an owner, I want the worker and arbitrator to be visible before acceptance, so that all participants understand the agreement.
-5. As a worker, I want the arbitrator to be fixed before I accept, so that the owner cannot later choose a biased arbitrator.
-6. As an arbitrator, I want my role to be recorded in the escrow, so that my authority is unambiguous.
+3. As an owner, I want to select an arbiter when creating an escrow, so that disputes have a predefined independent resolver.
+4. As an owner, I want the worker and arbiter to be visible before acceptance, so that all participants understand the agreement.
+5. As a worker, I want the arbiter to be fixed before I accept, so that the owner cannot later choose a biased arbiter.
+6. As an arbiter, I want my role to be recorded in the escrow, so that my authority is unambiguous.
 7. As an owner, I want to provide a title for the escrow, so that the agreement can be identified in a user interface.
 8. As an owner, I want the title to be non-empty, so that every escrow has a meaningful identifier.
 9. As an owner, I want excessively long titles to be rejected, so that storage and gas usage remain bounded.
 10. As an owner, I want to configure an acceptance duration, so that the worker cannot leave my funds pending indefinitely.
-11. As an owner, I want to configure a work duration, so that the delivery obligation has a clear time limit.
+11. As an owner, I want to configure a work duration, so that the submission obligation has a clear time limit.
 12. As an owner, I want to configure a review duration, so that I have a defined period to assess the submitted work.
 13. As an owner, I want to configure an arbitration duration, so that a dispute cannot remain unresolved forever.
 14. As a developer, I want all durations expressed in seconds, so that contract calculations align directly with block timestamps.
@@ -92,19 +92,19 @@ The factory will register escrows globally and by owner, worker, and arbitrator.
 26. As any account, I want to materialize an expired acceptance period, so that the on-chain state can be updated without depending on one participant.
 27. As an indexer, I want cancellation and acceptance expiration to use different terminal states, so that their causes remain distinguishable.
 28. As a worker, I want the escrow to become active after acceptance, so that the state describes an ongoing agreement rather than only a past action.
-29. As a worker, I want a delivery deadline to be calculated when I accept, so that the work period has an absolute end time.
-30. As a worker, I want to submit work explicitly, so that the contract records that delivery occurred.
-31. As a worker, I want to associate a delivery reference with the submission, so that the submitted work can be identified.
-32. As an owner, I want the delivery reference to be stored on-chain, so that I can retrieve the reference during review.
-33. As an arbitrator, I want the delivery reference to be stored on-chain, so that I can identify the disputed submission.
-34. As a developer, I want the delivery reference to use a flexible string format, so that it can represent a URL, content identifier, commit, or other agreed reference.
-35. As an owner, I want empty delivery references to be rejected, so that the worker cannot advance the state without identifying a delivery.
-36. As a developer, I want delivery references limited to 256 bytes, so that storage costs remain bounded.
-37. As an owner, I want the delivery reference to be immutable after submission, so that the reviewed content cannot be replaced.
-38. As a worker, I want submission to be allowed only before the delivery deadline, so that the delivery rules are precise.
-39. As an owner, I want a missed delivery deadline to produce a distinct terminal outcome, so that non-delivery is distinguishable from other failures.
-40. As any account, I want to materialize a missed delivery deadline, so that the state does not depend on the owner acting.
-41. As an owner, I want the full escrow amount allocated back to me when delivery expires, so that I recover funds after non-performance.
+29. As a worker, I want a submission deadline to be calculated when I accept, so that the work period has an absolute end time.
+30. As a worker, I want to submit work explicitly, so that the contract records that submission occurred.
+31. As a worker, I want to associate a submission reference with the submission, so that the submitted work can be identified.
+32. As an owner, I want the submission reference to be stored on-chain, so that I can retrieve the reference during review.
+33. As an arbiter, I want the submission reference to be stored on-chain, so that I can identify the disputed submission.
+34. As a developer, I want the submission reference to use a flexible string format, so that it can represent a URL, content identifier, commit, or other agreed reference.
+35. As an owner, I want empty submission references to be rejected, so that the worker cannot advance the state without identifying a submission.
+36. As a developer, I want submission references limited to 256 bytes, so that storage costs remain bounded.
+37. As an owner, I want the submission reference to be immutable after submission, so that the reviewed content cannot be replaced.
+38. As a worker, I want submission to be allowed only before the submission deadline, so that the submission rules are precise.
+39. As an owner, I want a missed submission deadline to produce a distinct terminal outcome, so that non-submission is distinguishable from other failures.
+40. As any account, I want to materialize a missed submission deadline, so that the state does not depend on the owner acting.
+41. As an owner, I want the full escrow amount allocated back to me when submission expires, so that I recover funds after non-performance.
 42. As an owner, I want submitted work to enter a pending-review state, so that the contract clearly represents my next required action.
 43. As an owner, I want a review deadline to be calculated when work is submitted, so that the worker is not blocked indefinitely.
 44. As an owner, I want to approve submitted work explicitly, so that payment is released only after my affirmative decision.
@@ -114,29 +114,29 @@ The factory will register escrows globally and by owner, worker, and arbitrator.
 48. As an indexer, I want explicit approval and review expiration to use different terminal states, so that active approval and owner inaction remain distinguishable.
 49. As an owner, I want to open a dispute before the review deadline, so that I can contest work that does not satisfy the agreement.
 50. As a worker, I want disputes to be unavailable after the review deadline, so that my payment entitlement cannot be challenged late.
-51. As an owner, I want a dispute reason to be mandatory, so that the arbitrator receives a concrete basis for the dispute.
-52. As an arbitrator, I want the dispute reason stored on-chain, so that I can retrieve the owner's explanation.
+51. As an owner, I want a dispute reason to be mandatory, so that the arbiter receives a concrete basis for the dispute.
+52. As an arbiter, I want the dispute reason stored on-chain, so that I can retrieve the owner's explanation.
 53. As a developer, I want dispute reasons limited to 256 bytes, so that gas and storage usage remain bounded.
 54. As a worker, I want the dispute reason to be immutable, so that the grounds for arbitration cannot be changed after opening.
-55. As an arbitrator, I want an arbitration deadline to be calculated when a dispute opens, so that I know how long I have to decide.
-56. As an arbitrator, I want to resolve a dispute by assigning an exact worker amount in wei, so that the distribution can be precise.
+55. As an arbiter, I want an arbitration deadline to be calculated when a dispute opens, so that I know how long I have to decide.
+56. As an arbiter, I want to resolve a dispute by assigning an exact worker amount in wei, so that the distribution can be precise.
 57. As an owner, I want the owner's amount calculated as the escrow amount minus the worker amount, so that all funds are allocated exactly once.
-58. As an arbitrator, I want to assign zero to the worker when the owner should receive everything, so that fully owner-favorable outcomes are supported.
-59. As an arbitrator, I want to assign the full amount to the worker, so that fully worker-favorable outcomes are supported.
-60. As an arbitrator, I want to assign an intermediate amount to the worker, so that partial performance can be compensated.
+58. As an arbiter, I want to assign zero to the worker when the owner should receive everything, so that fully owner-favorable outcomes are supported.
+59. As an arbiter, I want to assign the full amount to the worker, so that fully worker-favorable outcomes are supported.
+60. As an arbiter, I want to assign an intermediate amount to the worker, so that partial performance can be compensated.
 61. As an owner, I want worker allocations greater than the escrow amount to be rejected, so that the contract cannot over-allocate funds.
-62. As an arbitrator, I want to provide a mandatory resolution reason, so that my decision has a recorded justification.
-63. As an owner, I want the resolution reason stored on-chain, so that I can inspect the arbitrator's justification.
-64. As a worker, I want the resolution reason stored on-chain, so that I can inspect the arbitrator's justification.
+62. As an arbiter, I want to provide a mandatory resolution reason, so that my decision has a recorded justification.
+63. As an owner, I want the resolution reason stored on-chain, so that I can inspect the arbiter's justification.
+64. As a worker, I want the resolution reason stored on-chain, so that I can inspect the arbiter's justification.
 65. As a developer, I want resolution reasons limited to 256 bytes, so that storage remains bounded.
-66. As an indexer, I want all arbitrator-decided outcomes to use one `Resolved` state, so that the state model does not attempt to encode every possible split.
+66. As an indexer, I want all arbiter-decided outcomes to use one `DisputeResolved` state, so that the state model does not attempt to encode every possible split.
 67. As an owner, I want the actual owner and worker allocations emitted when a dispute is resolved, so that the decision can be indexed without guessing.
-68. As a worker, I want the arbitrator to lose resolution authority after the arbitration deadline, so that a late decision cannot override the fallback rule.
-69. As any account, I want to materialize arbitration expiration, so that a missing arbitrator cannot lock funds indefinitely.
+68. As a worker, I want the arbiter to lose resolution authority after the arbitration deadline, so that a late decision cannot override the fallback rule.
+69. As any account, I want to materialize arbitration expiration, so that a missing arbiter cannot lock funds indefinitely.
 70. As an owner, I want arbitration expiration to allocate half the amount to me, so that the fallback is neutral.
 71. As a worker, I want arbitration expiration to allocate half the amount to me, so that the fallback is neutral.
 72. As a worker, I want any indivisible wei in the 50/50 fallback assigned to me, so that rounding is deterministic.
-73. As an indexer, I want arbitrator resolution and arbitration expiration to use different terminal states, so that arbitrator action and timeout are distinguishable.
+73. As an indexer, I want arbiter resolution and arbitration expiration to use different terminal states, so that arbiter action and timeout are distinguishable.
 74. As a beneficiary, I want funds allocated to a pending balance instead of transferred during a state transition, so that a failed transfer cannot block lifecycle progress.
 75. As an owner, I want to withdraw my allocated amount independently, so that I do not depend on the worker's ability to receive ETH.
 76. As a worker, I want to withdraw my allocated amount independently, so that I do not depend on the owner's ability to receive ETH.
@@ -150,7 +150,7 @@ The factory will register escrows globally and by owner, worker, and arbitrator.
 84. As an indexer, I want terminal states to remain irreversible, so that historical outcomes cannot be overwritten.
 85. As a developer, I want state-changing functions to require one exact source state, so that invalid transitions revert.
 86. As a developer, I want late actions to revert rather than implicitly process expiration, so that every function has one responsibility.
-87. As a developer, I want separate expiration functions for acceptance, delivery, review, and arbitration, so that each transition is explicit and testable.
+87. As a developer, I want separate expiration functions for acceptance, submission, review, and arbitration, so that each transition is explicit and testable.
 88. As a user, I want expiration functions callable by any account, so that objective state updates do not depend on privileged actors.
 89. As a developer, I want deadline windows to use strict complementary conditions, so that action and expiration are never valid simultaneously.
 90. As a developer, I want actions valid only when the timestamp is strictly before the deadline, so that the deadline instant counts as expired.
@@ -158,12 +158,12 @@ The factory will register escrows globally and by owner, worker, and arbitrator.
 92. As an indexer, I want events to describe completed actions, so that logs read as historical facts.
 93. As a developer, I want event names without an `Escrow` prefix, so that the ABI remains concise.
 94. As an indexer, I want deadlines emitted when a new timed stage begins, so that I can schedule UI updates without extra reads.
-95. As an indexer, I want delivery, dispute, and resolution strings omitted from events, so that dynamic text is not duplicated in logs.
-96. As an application, I want to read delivery, dispute, and resolution strings directly from the contract, so that stored values remain the authoritative source.
+95. As an indexer, I want submission, dispute, and resolution strings omitted from events, so that dynamic text is not duplicated in logs.
+96. As an application, I want to read submission, dispute, and resolution strings directly from the contract, so that stored values remain the authoritative source.
 97. As an indexer, I want actor addresses omitted from transitions where the actor is fixed by role, so that events do not duplicate contract data.
 98. As an indexer, I want the withdrawal account indexed, so that withdrawals can be filtered by beneficiary.
 99. As an indexer, I do not want deadline or amount fields indexed when exact-value filtering is not useful, so that event topics are reserved for meaningful filters.
-100. As an application, I want the factory creation event to identify the owner, worker, and arbitrator as indexed fields, so that escrows can be discovered by role.
+100. As an application, I want the factory creation event to identify the owner, worker, and arbiter as indexed fields, so that escrows can be discovered by role.
 101. As an application, I want the created escrow address in the factory event, so that I can interact with the new contract.
 102. As an application, I want the escrow amount in the factory event, so that I can display the funded value immediately.
 103. As an application, I want the acceptance deadline in the factory event, so that I know when the proposal expires.
@@ -171,14 +171,14 @@ The factory will register escrows globally and by owner, worker, and arbitrator.
 105. As an application, I want the title stored in the escrow rather than duplicated in the creation event, so that dynamic text is read from one source.
 106. As an owner, I want the factory to list all escrows I created, so that I can find my agreements.
 107. As a worker, I want the factory to list all escrows assigned to me, so that I can find my jobs.
-108. As an arbitrator, I want the factory to list all escrows assigned to me, so that I can find disputes I may need to resolve.
+108. As an arbiter, I want the factory to list all escrows assigned to me, so that I can find disputes I may need to resolve.
 109. As an application, I want a global escrow list, so that I can enumerate agreements without processing historical logs.
 110. As an application, I want the total escrow count derived from the global list, so that no duplicate counter must be maintained.
 111. As an application, I want to verify whether an address was created by the factory, so that I can reject unrelated or counterfeit contracts.
 112. As a developer, I want one escrow contract per agreement, so that funds and state remain isolated.
 113. As a developer, I want the factory to create and register escrows atomically, so that failed creation cannot leave partial registry entries.
 114. As a developer, I want the factory not to retain escrow funds, so that ETH is isolated in the created agreement.
-115. As a worker, I want the owner, worker, and arbitrator to be three different non-zero addresses, so that no participant controls conflicting roles.
+115. As a worker, I want the owner, worker, and arbiter to be three different non-zero addresses, so that no participant controls conflicting roles.
 116. As an owner, I want the funded amount to be greater than zero, so that empty escrows cannot be created.
 117. As a developer, I want the escrow constructor to validate its core invariants, so that the contract remains valid even if creation paths change.
 118. As a developer, I want only the factory to emit the system-level creation event, so that escrow discovery has one canonical source.
@@ -187,7 +187,7 @@ The factory will register escrows globally and by owner, worker, and arbitrator.
 121. As a tester, I want every invalid transition tested from all incompatible states, so that terminal and operational states cannot be bypassed.
 122. As a tester, I want deadline boundary tests at one second before, exactly at, and after each deadline, so that temporal semantics are verified.
 123. As a tester, I want cancellation and acceptance expiration tested independently, so that their terminal causes remain distinct.
-124. As a tester, I want delivery expiration to allocate the complete amount to the owner, so that non-delivery accounting is verified.
+124. As a tester, I want submission expiration to allocate the complete amount to the owner, so that non-submission accounting is verified.
 125. As a tester, I want explicit approval and review expiration tested independently, so that both worker-favorable outcomes are verified.
 126. As a tester, I want dispute resolution tested with zero, full, and partial worker allocations, so that the complete distribution range is covered.
 127. As a tester, I want arbitration expiration tested with even and odd amounts, so that 50/50 rounding is verified.
@@ -217,13 +217,13 @@ The factory will register escrows globally and by owner, worker, and arbitrator.
 
 ### Roles
 
-- Every escrow has an immutable owner, worker, and arbitrator.
+- Every escrow has an immutable owner, worker, and arbiter.
 - All three role addresses must be non-zero.
 - All three role addresses must be different.
 - The owner is the account that calls the factory creation function.
 - The worker is the only account authorized to accept and submit work.
 - The owner is the only account authorized to cancel before acceptance, approve work, and open a dispute.
-- The arbitrator is the only account authorized to resolve a dispute before the arbitration deadline.
+- The arbiter is the only account authorized to resolve a dispute before the arbitration deadline.
 - Expiration functions are permissionless because they apply deterministic results.
 
 ### State machine
@@ -231,29 +231,29 @@ The factory will register escrows globally and by owner, worker, and arbitrator.
 The state enum is ordered with operational states first and terminal states afterward:
 
 1. `PendingAcceptance`
-2. `Active`
+2. `PendingSubmission`
 3. `PendingReview`
-4. `Disputed`
-5. `Cancelled`
+4. `PendingArbitration`
+5. `EscrowCancelled`
 6. `AcceptanceExpired`
-7. `DeliveryExpired`
-8. `Approved`
+7. `SubmissionExpired`
+8. `WorkApproved`
 9. `ReviewExpired`
-10. `Resolved`
+10. `DisputeResolved`
 11. `ArbitrationExpired`
 
 The valid transitions are:
 
-- `PendingAcceptance` to `Active` through `accept()`.
-- `PendingAcceptance` to `Cancelled` through `cancel()`.
+- `PendingAcceptance` to `PendingSubmission` through `acceptEscrow()`.
+- `PendingAcceptance` to `EscrowCancelled` through `cancelEscrow()`.
 - `PendingAcceptance` to `AcceptanceExpired` through `expireAcceptance()`.
-- `Active` to `PendingReview` through `submitWork()`.
-- `Active` to `DeliveryExpired` through `expireDelivery()`.
-- `PendingReview` to `Approved` through `approveWork()`.
-- `PendingReview` to `Disputed` through `openDispute()`.
+- `PendingSubmission` to `PendingReview` through `submitWork()`.
+- `PendingSubmission` to `SubmissionExpired` through `expireDelivery()`.
+- `PendingReview` to `WorkApproved` through `approveWork()`.
+- `PendingReview` to `PendingArbitration` through `openDispute()`.
 - `PendingReview` to `ReviewExpired` through `expireReview()`.
-- `Disputed` to `Resolved` through `resolveDispute()`.
-- `Disputed` to `ArbitrationExpired` through `expireArbitration()`.
+- `PendingArbitration` to `DisputeResolved` through `resolveDispute()`.
+- `PendingArbitration` to `ArbitrationExpired` through `expireArbitration()`.
 
 All terminal states are irreversible. No lifecycle transition is permitted after reaching a terminal state. `withdraw()` remains available independently when the caller has a pending balance.
 
@@ -263,7 +263,7 @@ All terminal states are irreversible. No lifecycle transition is permitted after
 - Acceptance, work, review, and arbitration durations must each be greater than zero.
 - No maximum duration is enforced by the contracts.
 - The acceptance deadline is calculated during construction.
-- The delivery deadline is calculated when the worker accepts.
+- The submission deadline is calculated when the worker accepts.
 - The review deadline is calculated when the worker submits work.
 - The arbitration deadline is calculated when the owner opens a dispute.
 - Deadlines for stages that have not begun remain zero.
@@ -277,7 +277,7 @@ All terminal states are irreversible. No lifecycle transition is permitted after
 The factory creation interface receives:
 
 - Worker address.
-- Arbitrator address.
+- Arbiter address.
 - Acceptance duration.
 - Work duration.
 - Review duration.
@@ -308,11 +308,11 @@ The work-submission function is named `submitWork`.
 It:
 
 - Can be called only by the worker.
-- Can be called only from `Active`.
-- Can be called only before the delivery deadline.
-- Receives a delivery-reference string.
-- Requires the delivery reference to contain between 1 and 256 bytes.
-- Stores the delivery reference permanently.
+- Can be called only from `PendingSubmission`.
+- Can be called only before the submission deadline.
+- Receives a submission-reference string.
+- Requires the submission reference to contain between 1 and 256 bytes.
+- Stores the submission reference permanently.
 - Does not permit later modification.
 - Calculates the review deadline.
 - Moves the escrow to `PendingReview`.
@@ -327,7 +327,7 @@ It:
 - Can be called only from `PendingReview`.
 - Can be called only before the review deadline.
 - Allocates the full escrow amount to the worker.
-- Moves the escrow to `Approved`.
+- Moves the escrow to `WorkApproved`.
 
 ### Dispute interface
 
@@ -343,14 +343,14 @@ It:
 - Stores the dispute reason permanently.
 - Does not emit the dispute reason.
 - Calculates the arbitration deadline.
-- Moves the escrow to `Disputed`.
+- Moves the escrow to `PendingArbitration`.
 
 The dispute-resolution function is named `resolveDispute`.
 
 It:
 
-- Can be called only by the arbitrator.
-- Can be called only from `Disputed`.
+- Can be called only by the arbiter.
+- Can be called only from `PendingArbitration`.
 - Can be called only before the arbitration deadline.
 - Receives the worker allocation in wei.
 - Accepts any worker allocation from zero through the full escrow amount, inclusive.
@@ -360,7 +360,7 @@ It:
 - Stores the resolution reason permanently.
 - Does not emit the resolution reason.
 - Allocates the resulting balances.
-- Moves the escrow to `Resolved`.
+- Moves the escrow to `DisputeResolved`.
 
 ### Expiration behavior
 
@@ -375,10 +375,10 @@ It:
 `expireDelivery`:
 
 - Is permissionless.
-- Requires `Active`.
-- Requires the delivery deadline to have been reached.
+- Requires `PendingSubmission`.
+- Requires the submission deadline to have been reached.
 - Allocates the full amount to the owner.
-- Moves the escrow to `DeliveryExpired`.
+- Moves the escrow to `SubmissionExpired`.
 
 `expireReview`:
 
@@ -391,7 +391,7 @@ It:
 `expireArbitration`:
 
 - Is permissionless.
-- Requires `Disputed`.
+- Requires `PendingArbitration`.
 - Requires the arbitration deadline to have been reached.
 - Divides the escrow amount 50/50.
 - Calculates the owner amount through integer division by two.
@@ -408,7 +408,7 @@ It:
 - Can be called only from `PendingAcceptance`.
 - Can be called only before the acceptance deadline.
 - Allocates the full escrow amount to the owner.
-- Moves the escrow to `Cancelled`.
+- Moves the escrow to `EscrowCancelled`.
 
 There is no worker rejection function.
 
@@ -435,11 +435,11 @@ Escrow lifecycle event names do not use an `Escrow` prefix.
 
 The lifecycle events are:
 
-- `Accepted`, carrying the calculated delivery deadline.
-- `Cancelled`, carrying no parameters.
+- `EscrowAccepted`, carrying the calculated submission deadline.
+- `EscrowCancelled`, carrying no parameters.
 - `AcceptanceExpired`, carrying no parameters.
 - `WorkSubmitted`, carrying the calculated review deadline.
-- `DeliveryExpired`, carrying no parameters.
+- `SubmissionExpired`, carrying no parameters.
 - `WorkApproved`, carrying no parameters.
 - `ReviewExpired`, carrying no parameters.
 - `DisputeOpened`, carrying the calculated arbitration deadline.
@@ -461,7 +461,7 @@ The factory creation event carries:
 
 - Indexed owner.
 - Indexed worker.
-- Indexed arbitrator.
+- Indexed arbiter.
 - Non-indexed escrow address.
 - Amount.
 - Acceptance deadline.
@@ -477,7 +477,7 @@ The factory maintains:
 
 - A list of escrow addresses by owner.
 - A list of escrow addresses by worker.
-- A list of escrow addresses by arbitrator.
+- A list of escrow addresses by arbiter.
 - A global list of all escrow addresses.
 - A boolean escrow registry keyed by contract address.
 
@@ -485,7 +485,7 @@ The factory exposes count queries for:
 
 - Owner escrows.
 - Worker escrows.
-- Arbitrator escrows.
+- Arbiter escrows.
 - All escrows.
 
 The total count is derived from the global list length. No independent count variable is maintained.
@@ -500,7 +500,7 @@ The implementation must validate:
 - Four non-zero durations.
 - Non-empty title.
 - Title length of at most 64 bytes.
-- Non-empty delivery reference.
+- Non-empty submission reference.
 - Delivery-reference length of at most 256 bytes.
 - Non-empty dispute reason.
 - Dispute-reason length of at most 256 bytes.
@@ -536,6 +536,6 @@ Exact names for new custom errors remain an implementation-level naming decision
 - The UI should derive available actions from the current state, caller role, and current timestamp.
 - The UI should display inactive deadlines as not started when their stored value is zero.
 - The UI should convert user-friendly time units into seconds before calling the factory.
-- The UI should retrieve title, delivery reference, dispute reason, and resolution reason through contract reads rather than event data.
+- The UI should retrieve title, submission reference, dispute reason, and resolution reason through contract reads rather than event data.
 - Tests should treat the exact deadline timestamp as expired.
 - Tests should verify all transition events, state updates, pending balances, immutable data, time boundaries, access controls, invalid states, failed transfers, and factory registry consistency.

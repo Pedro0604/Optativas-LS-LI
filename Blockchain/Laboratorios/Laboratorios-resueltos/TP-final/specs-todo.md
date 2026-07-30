@@ -42,42 +42,42 @@
 
 - [ ] **6. Implementar la aceptación del acuerdo**
 
-  Implementar `accept()` para el worker, validar estado y ventana temporal, calcular `deliveryDeadline`, cambiar a `Active` y emitir `Accepted`.
+  Implementar `acceptEscrow()` para el worker, validar estado y ventana temporal, calcular `submissionDeadline`, cambiar a `PendingSubmission` y emitir `EscrowAccepted`.
 
-  **Referencias:** [Modelo temporal](./escrow-spec.md#time-model) · [`accept()`](./guia-resumen.md#accept) · [Reglas temporales](./guia-resumen.md#8-reglas-temporales)  
+  **Referencias:** [Modelo temporal](./escrow-spec.md#time-model) · [`acceptEscrow()`](./guia-resumen.md#accept) · [Reglas temporales](./guia-resumen.md#8-reglas-temporales)  
   **Historias abarcadas:** [HU 17–20, 23 y 28–29](./escrow-spec.md#user-stories)
 
 - [ ] **7. Implementar cancelación y vencimiento de aceptación**
 
-  Implementar `cancel()` para el owner antes del deadline y `expireAcceptance()` permissionless desde el deadline; ambos deben acreditar al owner y terminar en estados diferentes.
+  Implementar `cancelEscrow()` para el owner antes del deadline y `expireAcceptance()` permissionless desde el deadline; ambos deben acreditar al owner y terminar en estados diferentes.
 
-  **Referencias:** [Cancelación](./escrow-spec.md#cancellation-behavior) · [Expiraciones](./escrow-spec.md#expiration-behavior) · [`cancel()` y `expireAcceptance()`](./guia-resumen.md#11-funciones-de-escrow)  
+  **Referencias:** [Cancelación](./escrow-spec.md#cancellation-behavior) · [Expiraciones](./escrow-spec.md#expiration-behavior) · [`cancelEscrow()` y `expireAcceptance()`](./guia-resumen.md#11-funciones-de-escrow)  
   **Historias abarcadas:** [HU 21–27 y 87–91](./escrow-spec.md#user-stories)
 
 - [ ] **8. Implementar entrega y vencimiento de entrega**
 
   Implementar `submitWork()` con referencia obligatoria e inmutable, cálculo de `reviewDeadline` y transición a `PendingReview`; implementar `expireDelivery()` con devolución completa al owner.
 
-  **Referencias:** [Interfaz de entrega](./escrow-spec.md#delivery-interface) · [`submitWork()` y `expireDelivery()`](./guia-resumen.md#11-funciones-de-escrow) · [Datos textuales](./guia-resumen.md#10-variables-de-escrow)  
+  **Referencias:** [Interfaz de entrega](./escrow-spec.md#submission-interface) · [`submitWork()` y `expireDelivery()`](./guia-resumen.md#11-funciones-de-escrow) · [Datos textuales](./guia-resumen.md#10-variables-de-escrow)  
   **Historias abarcadas:** [HU 30–43, 95–96 y 136](./escrow-spec.md#user-stories)
 
 - [ ] **9. Implementar aprobación y vencimiento de revisión**
 
-  Implementar `approveWork()` antes del deadline y `expireReview()` desde el deadline; ambos deben acreditar el monto completo al worker, pero terminar en `Approved` y `ReviewExpired` respectivamente.
+  Implementar `approveWork()` antes del deadline y `expireReview()` desde el deadline; ambos deben acreditar el monto completo al worker, pero terminar en `WorkApproved` y `ReviewExpired` respectivamente.
 
   **Referencias:** [Interfaz de aprobación](./escrow-spec.md#approval-interface) · [`approveWork()` y `expireReview()`](./guia-resumen.md#11-funciones-de-escrow)  
   **Historias abarcadas:** [HU 44–48 y 87–91](./escrow-spec.md#user-stories)
 
 - [ ] **10. Implementar apertura de disputas**
 
-  Implementar `openDispute()` únicamente para el owner y antes de `reviewDeadline`; validar, almacenar e inmovilizar `disputeReason`; calcular `arbitrationDeadline` y pasar a `Disputed`.
+  Implementar `openDispute()` únicamente para el owner y antes de `reviewDeadline`; validar, almacenar e inmovilizar `disputeReason`; calcular `arbitrationDeadline` y pasar a `PendingArbitration`.
 
-  **Referencias:** [Interfaz de disputa](./escrow-spec.md#dispute-interface) · [`openDispute()`](./guia-resumen.md#opendispute-string-disputereason_) · [Estado `Disputed`](./guia-resumen.md#disputed)  
+  **Referencias:** [Interfaz de disputa](./escrow-spec.md#dispute-interface) · [`openDispute()`](./guia-resumen.md#opendispute-string-disputereason_) · [Estado `PendingArbitration`](./guia-resumen.md#disputed)  
   **Historias abarcadas:** [HU 49–55, 95–96 y 136](./escrow-spec.md#user-stories)
 
 - [ ] **11. Implementar resolución arbitral proporcional**
 
-  Implementar `resolveDispute()` para el árbitro antes del deadline, validar `workerAmount`, calcular el resto para el owner, almacenar `resolutionReason`, acreditar ambos saldos y pasar a `Resolved`.
+  Implementar `resolveDispute()` para el árbitro antes del deadline, validar `workerAmount`, calcular el resto para el owner, almacenar `resolutionReason`, acreditar ambos saldos y pasar a `DisputeResolved`.
 
   **Referencias:** [Resolución de disputas](./escrow-spec.md#dispute-interface) · [`resolveDispute()`](./guia-resumen.md#resolvedispute-uint256-workeramount-string-resolutionreason_) · [Invariantes contables](./guia-resumen.md#15-invariantes-contables)  
   **Historias abarcadas:** [HU 56–68, 95–99 y 138–139](./escrow-spec.md#user-stories)
