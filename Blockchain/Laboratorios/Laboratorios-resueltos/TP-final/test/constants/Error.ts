@@ -53,7 +53,7 @@ export const Error = {
    * @param deadline Deadline no expirada
    */
   DeadlineNotExpiredYet: "DeadlineNotExpiredYet",
-  
+
   /**
    * La duración no puede ser 0
    */
@@ -91,10 +91,22 @@ export const Error = {
   StringTooLong: "StringTooLong",
 
   // Errores de resolución de disputa
+  /**
+   * La cantidad en wei indicada para el worker excede la cantidad del contrato
+   *
+   * @param workerAmount La cantidad indicada para el worker
+   * @param escrowAmount La cantidad del escrow
+   */
   WorkerAmountExceedsEscrow: "WorkerAmountExceedsEscrow",
 
   // Errores de withdraws
+  /**
+   * No hay fondos para retirar
+   */
   NoFundsToWithdraw: "NoFundsToWithdraw",
+  /**
+   * El retiro falló
+   */
   WithdrawalFailed: "WithdrawalFailed",
 } as const;
 

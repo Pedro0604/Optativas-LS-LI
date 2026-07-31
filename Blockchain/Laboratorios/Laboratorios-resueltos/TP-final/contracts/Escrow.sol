@@ -276,10 +276,23 @@ contract Escrow {
     error StringTooLong(uint256 currentLength, uint256 maxLength);
 
     // Errores de resolución de disputa
+    /**
+     * La cantidad en wei indicada para el worker excede la cantidad del contrato
+     *
+     * @param workerAmount La cantidad indicada para el worker
+     * @param escrowAmount La cantidad del escrow
+     */
     error WorkerAmountExceedsEscrow(uint256 workerAmount, uint256 escrowAmount);
 
     // Errores de withdraws
+    /**
+     * No hay fondos para retirar
+     */
     error NoFundsToWithdraw();
+
+    /**
+     * El retiro falló
+     */
     error WithdrawalFailed();
 
     // Modificadores
@@ -303,6 +316,13 @@ contract Escrow {
     modifier onlyWorker() {
         if (msg.sender != worker) {
             revert OnlyWorkerAllowed();
+        }
+        _;
+    }
+
+    modifier onlyArbiter() {
+        if (msg.sender != arbiter) {
+            revert OnlyArbiterAllowed();
         }
         _;
     }
@@ -618,6 +638,47 @@ contract Escrow {
         pendingWithdrawals[worker] = amount;
         state = State.ReviewExpired;
         emit ReviewExpired();
+    }
+
+    /**
+     * Resuelve la disputa.
+     *
+     * Requisitos:
+     * - Solo lo puede ejecutar el arbitro.
+     * - Debe estar en estado PendingArbitration.
+     * - Solo se puede ejecutar antes de arbitrationDeadline.
+     * - La resolutionReason debe ocupar entre 1 y MAX_RESOLUTION_REASON_LENGTH bytes
+     *
+     * Efectos:
+     * - Transiciona de PendingArbitration a DisputeResolved.
+     * - Emite el evento DisputeResolved.
+     * - Calcula arbitrationDeadline.
+     *
+     * @param workerAmount Cantidad de dinero a acreditar al worker, el resto se acredita al owner
+     * @param resolutionReason_ Razón de la resolución
+     */
+    function resolveDispute(
+        uint256 workerAmount,
+        string calldata resolutionReason_
+    )
+        external
+        onlyArbiter
+        inState(State.PendingArbitration)
+        notExpired(arbitrationDeadline)
+        textLengthOk(resolutionReason_, MAX_RESOLUTION_REASON_LENGTH)
+    {
+        if (workerAmount > amount) {
+            revert WorkerAmountExceedsEscrow(workerAmount, amount);
+        }
+
+        state = State.DisputeResolved;
+        resolutionReason = resolutionReason_;
+
+        uint256 ownerAmount = amount - workerAmount;
+        pendingWithdrawals[owner] = ownerAmount;
+        pendingWithdrawals[worker] = workerAmount;
+
+        emit DisputeResolved(ownerAmount, workerAmount);
     }
 
     function acceptanceExpired() external view returns (bool expired_) {

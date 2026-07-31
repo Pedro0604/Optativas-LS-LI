@@ -1,4 +1,5 @@
 ### Next
+- Ver si parametrizar de alguna manera las diferentes funciones de transición o no (accept, approve, cancel, openDispute, submit, etc.)
 - Al finalizar el día actualizar specs-todo con lo hecho
 - Al finalizar toda la implementación:
     - Correlacionar funcionalidad con guia-resumen y escrow-spec (con chatGPT)

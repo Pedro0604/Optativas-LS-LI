@@ -1,3 +1,4 @@
+import { ethers, WeiPerEther } from "ethers";
 import type { defaultEscrowFixture } from "./fixtures.js";
 
 export type PendingAcceptanceContext = Awaited<
@@ -8,6 +9,8 @@ export const DEFAULT_SUBMISSION_REFERENCE = "ipfs://envio-de-referencia";
 
 export const DEFAULT_DISPUTE_REASON =
   "El trabajo enviado no resuelve todo lo pedido.";
+
+export const DEFAULT_RESOLUTION_REASON = "El owner está mintiendo.";
 
 /**
  * Acepta el escrow y lo lleva a PendingSubmission.
