@@ -61,12 +61,11 @@ const expirationCases = [
     deadlineName: "reviewDeadline",
     fixture: pendingReviewFixture,
   },
-  // TODO - DESCOMENTAR CUANDO ESTÉ LA FUNCIONALIDAD PARA LLEGAR A PENDING_ARBITRATION
-  // {
-  //   expiredFunctionName: "arbitrationExpired",
-  //   deadlineName: "arbitrationDeadline",
-  //   fixture: pendingArbitrationFixture,
-  // },
+  {
+    expiredFunctionName: "arbitrationExpired",
+    deadlineName: "arbitrationDeadline",
+    fixture: pendingArbitrationFixture,
+  },
 ] as const;
 
 describe("Escrow expiration views", function () {
