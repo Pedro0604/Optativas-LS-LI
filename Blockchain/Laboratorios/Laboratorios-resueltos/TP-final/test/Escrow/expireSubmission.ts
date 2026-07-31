@@ -23,7 +23,7 @@ describe("Escrow.expireSubmission", function () {
         .withArgs();
 
       expect(await escrow.state()).to.equal(State.SubmissionExpired);
-      expect(await escrow.arbitrationDeadline()).to.equal(0n);
+      expect(await escrow.reviewDeadline()).to.equal(0n);
       expect(await escrow.pendingWithdrawals(owner)).to.equal(amountInWei);
     });
 

@@ -442,29 +442,6 @@ contract Escrow {
     }
 
     /**
-     * Materializa la expiración del período de aceptación.
-     *
-     * Requisitos:
-     * - Puede ser ejecutado por cualquier cuenta.
-     * - Debe estar en estado PendingAcceptance.
-     * - Solo se puede ejecutar después de acceptanceDeadline.
-     *
-     * Efectos:
-     * - Acredita el amount completo al owner.
-     * - Transiciona de PendingAcceptance a AcceptanceExpired.
-     * - Emite el evento AcceptanceExpired.
-     */
-    function expireAcceptance()
-        external
-        inState(State.PendingAcceptance)
-        expired(acceptanceDeadline)
-    {
-        pendingWithdrawals[owner] = amount;
-        state = State.AcceptanceExpired;
-        emit AcceptanceExpired();
-    }
-
-    /**
      * Cancela el escrow antes de que sea aceptado
      *
      * Requisitos:
@@ -486,6 +463,29 @@ contract Escrow {
         pendingWithdrawals[owner] = amount;
         state = State.EscrowCancelled;
         emit EscrowCancelled();
+    }
+
+    /**
+     * Materializa la expiración del período de aceptación.
+     *
+     * Requisitos:
+     * - Puede ser ejecutado por cualquier cuenta.
+     * - Debe estar en estado PendingAcceptance.
+     * - Solo se puede ejecutar después de acceptanceDeadline.
+     *
+     * Efectos:
+     * - Acredita el amount completo al owner.
+     * - Transiciona de PendingAcceptance a AcceptanceExpired.
+     * - Emite el evento AcceptanceExpired.
+     */
+    function expireAcceptance()
+        external
+        inState(State.PendingAcceptance)
+        expired(acceptanceDeadline)
+    {
+        pendingWithdrawals[owner] = amount;
+        state = State.AcceptanceExpired;
+        emit AcceptanceExpired();
     }
 
     /**
@@ -595,6 +595,29 @@ contract Escrow {
         arbitrationDeadline = block.timestamp + arbitrationDuration * 1 seconds;
         disputeReason = disputeReason_;
         emit DisputeOpened(arbitrationDeadline);
+    }
+
+    /**
+     * Materializa la expiración del período de revisión.
+     *
+     * Requisitos:
+     * - Puede ser ejecutado por cualquier cuenta.
+     * - Debe estar en estado PendingReview.
+     * - Solo se puede ejecutar después de reviewDeadline.
+     *
+     * Efectos:
+     * - Acredita el amount completo al worker.
+     * - Transiciona de PendingReview a ReviewExpired.
+     * - Emite el evento ReviewExpired.
+     */
+    function expireReview()
+        external
+        inState(State.PendingReview)
+        expired(reviewDeadline)
+    {
+        pendingWithdrawals[worker] = amount;
+        state = State.ReviewExpired;
+        emit ReviewExpired();
     }
 
     function acceptanceExpired() external view returns (bool expired_) {
