@@ -1,5 +1,8 @@
 ### Next
-- Ver si parametrizar de alguna manera las diferentes funciones de transición o no (accept, approve, cancel, openDispute, submit, etc.)
+- Hacer tests de withdraw, además de lo normal testear:
+    - Retiro con cuenta sin fondos
+    - Hacer contrato solo para test que llame a withdraw desde dentro de su receive para ver si falla bien
+    - Hacer contrato solo para test que no tenga receive ni fallback
 - Al finalizar el día actualizar specs-todo con lo hecho
 - Al finalizar toda la implementación:
     - Correlacionar funcionalidad con guia-resumen y escrow-spec (con chatGPT)

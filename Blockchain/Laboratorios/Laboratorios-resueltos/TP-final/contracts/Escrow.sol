@@ -261,7 +261,7 @@ contract Escrow {
      */
     error StringTooLong(uint256 currentLength, uint256 maxLength);
 
-    // Errores de resolución de disputa
+    // Error de resolución de disputa
     /**
      * La cantidad en wei indicada para el worker excede la cantidad del contrato
      *
@@ -674,9 +674,39 @@ contract Escrow {
         uint256 workerAmount = amount - ownerAmount;
         pendingWithdrawals[owner] = ownerAmount;
         pendingWithdrawals[worker] = workerAmount;
-        
+
         state = State.ArbitrationExpired;
         emit ArbitrationExpired();
+    }
+
+    /**
+     * Realiza un retiro.
+     *
+     * Requisitos:
+     * - Tener ETH pendiente de retirar, sino revierte con NoFundsToWithdraw.
+     *
+     * Efectos:
+     * - Envía los fondos a msg.sender.
+     */
+    function withdraw() external {
+        uint256 pendingAmount = pendingWithdrawals[msg.sender];
+        if (pendingAmount == 0) {
+            revert NoFundsToWithdraw();
+        }
+
+        pendingWithdrawals[msg.sender] = 0; // Primero se pone en cero
+
+        // Luego se envía.
+        // Si msg.sender es un contrato malicioso que vuelve a llamar a withdraw
+        //  desde dentro de su receive o fallback, no hay problema porque cuando
+        //  se vuelva a ejecutar withdraw, pendingWithdrawals[msg.sender] ya va a
+        //  ser 0 por lo que va a revertir la ejecución
+        (bool success, ) = msg.sender.call{value: pendingAmount}("");
+        if (!success) {
+            pendingWithdrawals[msg.sender] = pendingAmount; // Se restaura el valor pendiente ya que no se concretó el envío
+            revert WithdrawalFailed();
+        }
+        emit FundsWithdrawn(msg.sender, pendingAmount);
     }
 
     function acceptanceExpired() external view returns (bool expired_) {
