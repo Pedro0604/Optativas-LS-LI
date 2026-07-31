@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { State } from "../constants/State.js";
 import { Error } from "../constants/Error.js";
 import { Event } from "../constants/Event.js";
-import { ethers, networkHelpers } from "../helpers/globals.js";
+import { ethers, networkHelpers, SECONDS_PER_DAY } from "../helpers/globals.js";
 import {
   defaultEscrowFixture,
   pendingArbitrationFixture,
@@ -14,6 +14,7 @@ import {
   setNextBlockAt,
   setNextBlockBefore,
 } from "../helpers/time.js";
+import { createEscrow } from "../helpers/createEscrow.js";
 
 const expirationCases = [
   {
@@ -46,17 +47,16 @@ const expirationCases = [
     expiredState: "ReviewExpired",
     beneficiary: "worker",
   },
-  // TODO - DESCOMENTAR CUANDO ESTÉ LA FUNCIONALIDAD PARA EXPIRAR ARBITRATION
-  //   {
-  //     fixture: pendingArbitrationFixture,
-  //     expireFunction: "expireArbitration",
-  //     deadlineFunction: "arbitrationDeadline",
-  //     notSetDeadline: null,
-  //     expirationEvent: "ArbitrationExpired",
-  //     pendingState: "PendingArbitration",
-  //     expiredState: "ArbitrationExpired",
-  //     beneficiary: "both",
-  //   },
+  {
+    fixture: pendingArbitrationFixture,
+    expireFunction: "expireArbitration",
+    deadlineFunction: "arbitrationDeadline",
+    notSetDeadline: null,
+    expirationEvent: "ArbitrationExpired",
+    pendingState: "PendingArbitration",
+    expiredState: "ArbitrationExpired",
+    beneficiary: "both",
+  },
 ] as const;
 
 describe("Escrow expiration functions", function () {
@@ -72,7 +72,7 @@ describe("Escrow expiration functions", function () {
   } of expirationCases) {
     describe(`Escrow.${expireFunction}`, function () {
       describe("successful expiration", function () {
-        it(`Should emit the ${Event[expirationEvent]} expirationEvent, change its state to State.${expiredState} and credit the full amount to the ${beneficiary}`, async function () {
+        it(`Should emit the ${Event[expirationEvent]} expirationEvent, change its state to State.${expiredState} and credit the amount to ${beneficiary}`, async function () {
           const { escrow, owner, worker, amountInWei } =
             await networkHelpers.loadFixture(fixture);
 
@@ -98,16 +98,17 @@ describe("Escrow expiration functions", function () {
                 amountInWei,
               );
               break;
-            // TODO - DESCOMENTAR CUANDO ESTÉ LA FUNCIONALIDAD PARA EXPIRAR ARBITRATION
-            // case "both":
-            //   const halfWei = amountInWei / 2n;
-            //   const isEven = amountInWei % 2n === 0n;
+            case "both":
+              const ownerAmount = amountInWei / 2n; // Es división entera, por lo que descarta el resto si amountInWei es impar
+              const workerAmount = amountInWei - ownerAmount; // Si amountInWei queda con 1 wei más que el owner
 
-            //   expect(await escrow.pendingWithdrawals(owner)).to.equal(halfWei);
-            //   expect(await escrow.pendingWithdrawals(worker)).to.equal(
-            //     isEven ? halfWei : halfWei + 1n,
-            //   );
-            // break;
+              expect(await escrow.pendingWithdrawals(owner)).to.equal(
+                ownerAmount,
+              );
+              expect(await escrow.pendingWithdrawals(worker)).to.equal(
+                workerAmount,
+              );
+              break;
           }
         });
 
@@ -152,6 +153,54 @@ describe("Escrow expiration functions", function () {
             .to.be.revertedWithCustomError(escrow, Error.DeadlineNotExpiredYet)
             .withArgs(deadline);
         });
+      });
+    });
+
+    describe(`Escrow.expireArbitration odd amount`, function () {
+      // Se crea este test porque el default siempre es par, entonces no se probaría nunca el caso impar
+      it(`Should credit 1 wei more to the worker when the amount is odd`, async function () {
+        const { escrowFactory, owner, worker, arbiter } =
+          await networkHelpers.loadFixture(defaultEscrowFixture);
+
+        const amountInWei = ethers.parseEther("1") + 1n; // Impar
+        await expect(
+          escrowFactory
+            .connect(owner)
+            .createEscrow(
+              worker.address,
+              arbiter.address,
+              SECONDS_PER_DAY * 10n,
+              SECONDS_PER_DAY * 10n,
+              SECONDS_PER_DAY * 10n,
+              SECONDS_PER_DAY * 10n,
+              "Título",
+              {
+                value: amountInWei,
+              },
+            ),
+        ).to.not.revert(ethers);
+
+        const escrowAddress = await escrowFactory.allEscrows(1); // El 0 es el default, el 1 es el de wei impar
+        const escrow = await ethers.getContractAt("Escrow", escrowAddress);
+
+        await expect(escrow.connect(worker).acceptEscrow()).to.not.revert(
+          ethers,
+        );
+        await expect(escrow.connect(worker).submitWork("Submit")).to.not.revert(
+          ethers,
+        );
+        await expect(
+          escrow.connect(owner).openDispute("Dispute"),
+        ).to.not.revert(ethers);
+
+        await setNextBlockAt(escrow.arbitrationDeadline());
+        await expect(escrow.expireArbitration()).to.not.revert(ethers);
+
+        const ownerAmount = amountInWei / 2n; // Es división entera, por lo que descarta el resto si amountInWei es impar
+        const workerAmount = amountInWei - ownerAmount; // Si amountInWei queda con 1 wei más que el owner
+
+        expect(await escrow.pendingWithdrawals(owner)).to.equal(ownerAmount);
+        expect(await escrow.pendingWithdrawals(worker)).to.equal(workerAmount);
       });
     });
   }

@@ -1,2 +1,2 @@
 // Contendrá flujos completos de creación -> aceptación -> entrega, etc.
-// TODO - Debería contener un flujo por cada Estado final.
+// TODO - Debería contener un flujo por cada Estado final. Algo como lo que está en expirationFunctions: "Escrow.expireArbitration odd amount"

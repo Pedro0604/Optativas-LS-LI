@@ -652,6 +652,33 @@ contract Escrow {
         emit DisputeResolved(ownerAmount, workerAmount);
     }
 
+    /**
+     * Materializa la expiración del período de arbitraje.
+     *
+     * Requisitos:
+     * - Puede ser ejecutado por cualquier cuenta.
+     * - Debe estar en estado PendingArbitration.
+     * - Solo se puede ejecutar después de arbitrationDeadline.
+     *
+     * Efectos:
+     * - Acredita la mitad del amount al worker y la otra mitad al owner (si es impar acredita 1 wei más worker).
+     * - Transiciona de PendingArbitration a ArbitrationExpired.
+     * - Emite el evento ArbitrationExpired.
+     */
+    function expireArbitration()
+        external
+        inState(State.PendingArbitration)
+        expired(arbitrationDeadline)
+    {
+        uint256 ownerAmount = amount / 2;
+        uint256 workerAmount = amount - ownerAmount;
+        pendingWithdrawals[owner] = ownerAmount;
+        pendingWithdrawals[worker] = workerAmount;
+        
+        state = State.ArbitrationExpired;
+        emit ArbitrationExpired();
+    }
+
     function acceptanceExpired() external view returns (bool expired_) {
         return isExpired(acceptanceDeadline);
     }
