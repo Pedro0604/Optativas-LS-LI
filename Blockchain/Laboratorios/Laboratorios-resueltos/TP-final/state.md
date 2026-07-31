@@ -42,7 +42,7 @@ PendingArbitration,
 ├── desde acceptanceDeadline
 ├── acredita 100 % al owner
 ├── emite AcceptanceExpired()
-└── pasa a AcceptanceExpired -->
+└── pasa a AcceptanceExpired
 PendingSubmission
 ├── submitWork(submissionReference)
 │ ├── solo worker
@@ -58,7 +58,7 @@ PendingSubmission
 ├── desde submissionDeadline
 ├── acredita 100 % al owner
 ├── emite SubmissionExpired()
-└── pasa a SubmissionExpired
+└── pasa a SubmissionExpired -->
 PendingReview
 ├── approveWork()
 │ ├── solo owner
@@ -139,7 +139,7 @@ event ArbitrationExpired();
 event FundsWithdrawn(
 address indexed account,
 uint256 amount
-); -->
+);
 
 ---
 
@@ -153,9 +153,9 @@ function expireAcceptance() external;
 
 function submitWork(
 string calldata submissionReference_
-) external; -->
+) external;
 
-function expireSubmission() external;
+function expireSubmission() external; -->
 
 function approveWork() external;
 
@@ -229,22 +229,22 @@ uint256 submissionDuration_,
 uint256 reviewDuration_,
 uint256 arbitrationDuration_,
 string calldata title_
-) external payable returns (address escrowAddress); -->
+) external payable returns (address escrowAddress);
 
 ---
 
 ## EscrowCreated
 
-<!-- event EscrowCreated(
-address indexed owner,
-address indexed worker,
-address indexed arbiter,
-address escrowAddress,
-uint256 amount,
-uint256 acceptanceDeadline,
-uint256 submissionDuration,
-uint256 reviewDuration,
-uint256 arbitrationDuration
+event EscrowCreated(
+    address indexed owner,
+    address indexed worker,
+    address indexed arbiter,
+    address escrowAddress,
+    uint256 amount,
+    uint256 acceptanceDeadline,
+    uint256 submissionDuration,
+    uint256 reviewDuration,
+    uint256 arbitrationDuration
 ); -->
 
 ---
@@ -259,8 +259,8 @@ public escrowsByArbitrator; -->
 <!-- - `PendingAcceptance` to `PendingSubmission` through `acceptEscrow()`.
 - `PendingAcceptance` to `EscrowCancelled` through `cancelEscrow()`.
 - `PendingAcceptance` to `AcceptanceExpired` through `expireAcceptance()`.
-- `PendingSubmission` to `PendingReview` through `submitWork()`. -->
-- `PendingSubmission` to `SubmissionExpired` through `expireSubmission()`.
+- `PendingSubmission` to `PendingReview` through `submitWork()`.
+- `PendingSubmission` to `SubmissionExpired` through `expireSubmission()`. -->
 - `PendingReview` to `WorkApproved` through `approveWork()`.
 - `PendingReview` to `PendingArbitration` through `openDispute()`.
 - `PendingReview` to `ReviewExpired` through `expireReview()`.

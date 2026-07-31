@@ -540,6 +540,30 @@ contract Escrow {
         emit SubmissionExpired();
     }
 
+    /**
+     * Aprueba el trabajo.
+     *
+     * Requisitos:
+     * - Solo lo puede ejecutar el owner.
+     * - Debe estar en estado PendingReview.
+     * - Solo se puede ejecutar antes de reviewDeadline.
+     *
+     * Efectos:
+     * - Acredita el amount completo al worker.
+     * - Transiciona de PendingReview a WorkApproved.
+     * - Emite el evento WorkApproved.
+     */
+    function approveWork()
+        external
+        onlyOwner
+        inState(State.PendingReview)
+        notExpired(reviewDeadline)
+    {
+        pendingWithdrawals[worker] = amount;
+        state = State.WorkApproved;
+        emit WorkApproved();
+    }
+
     function acceptanceExpired() external view returns (bool expired_) {
         return isExpired(acceptanceDeadline);
     }
