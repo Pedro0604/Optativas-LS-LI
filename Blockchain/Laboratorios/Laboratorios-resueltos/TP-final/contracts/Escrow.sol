@@ -58,7 +58,7 @@ contract Escrow {
     // Variables de estado
     // Constantes
     uint256 public constant MAX_TITLE_LENGTH = 64;
-    uint256 public constant MAX_DELIVERY_REFERENCE_LENGTH = 256;
+    uint256 public constant MAX_SUBMISSION_REFERENCE_LENGTH = 256;
     uint256 public constant MAX_DISPUTE_REASON_LENGTH = 256;
     uint256 public constant MAX_RESOLUTION_REASON_LENGTH = 256;
 
@@ -336,6 +336,19 @@ contract Escrow {
         _;
     }
 
+    modifier textLengthOk(string memory text, uint256 max) {
+        uint256 textLength = bytes(text).length;
+
+        if (textLength == 0) {
+            revert EmptyString();
+        }
+
+        if (textLength > max) {
+            revert StringTooLong({currentLength: textLength, maxLength: max});
+        }
+        _;
+    }
+
     // Funciones
     /**
      * @param owner_ Dueño del contrato
@@ -356,7 +369,7 @@ contract Escrow {
         uint256 reviewDuration_,
         uint256 arbitrationDuration_,
         string memory title_
-    ) payable {
+    ) payable textLengthOk(title_, MAX_TITLE_LENGTH) {
         if (msg.value == 0) {
             revert NoEthProvided();
         }
@@ -385,19 +398,6 @@ contract Escrow {
         ) {
             revert ZeroDuration(); // TODO - Revertir con errores específicos para cada uno(?
             // TODO - QUIZAS VALIDAR QUE ESTÉ ENTRE UN MIN Y UN MAX (12 HORAS Y 1 MES(?)
-        }
-
-        uint256 titleLength = bytes(title_).length;
-
-        if (titleLength == 0) {
-            revert EmptyString();
-        }
-
-        if (titleLength > MAX_TITLE_LENGTH) {
-            revert StringTooLong({
-                currentLength: titleLength,
-                maxLength: MAX_TITLE_LENGTH
-            });
         }
 
         amount = msg.value;
@@ -486,6 +486,35 @@ contract Escrow {
         pendingWithdrawals[owner] = amount;
         state = State.EscrowCancelled;
         emit EscrowCancelled();
+    }
+
+    /**
+     * Envía el trabajo.
+     *
+     * Requisitos:
+     * - Solo lo puede ejecutar el worker.
+     * - Debe estar en estado PendingSubmission.
+     * - Solo se puede ejecutar antes de submissionDeadline.
+     * - La submissionReference debe ocupar entre 1 y MAX_SUBMISSION_REFERENCE_LENGTH bytes
+     *
+     * Efectos:
+     * - Transiciona de PendingSubmission a PendingReview.
+     * - Emite el evento WorkSubmitted.
+     * - Calcula reviewDeadline.
+     */
+    function submitWork(
+        string calldata submissionReference_
+    )
+        external
+        onlyWorker
+        inState(State.PendingSubmission)
+        notExpired(submissionDeadline)
+        textLengthOk(submissionReference_, MAX_SUBMISSION_REFERENCE_LENGTH)
+    {
+        state = State.PendingReview;
+        reviewDeadline = block.timestamp + reviewDuration * 1 seconds;
+        submissionReference = submissionReference_;
+        emit WorkSubmitted(reviewDeadline);
     }
 
     function acceptanceExpired() external view returns (bool expired_) {

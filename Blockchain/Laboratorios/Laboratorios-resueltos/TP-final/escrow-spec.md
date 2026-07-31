@@ -2,7 +2,7 @@
 
 ## Problem Statement
 
-The user needs a smart-contract-based escrow system for hiring and paying a worker in ETH. The system must protect the owner from paying for work that is never delivered, protect the worker from an owner who refuses to approve completed work, and provide an independent arbitration path when the parties disagree.
+The user needs a smart-contract-based escrow system for hiring and paying a worker in ETH. The system must protect the owner from paying for work that is never submitted, protect the worker from an owner who refuses to approve completed work, and provide an independent arbitration path when the parties disagree.
 
 The current contracts support only escrow creation and worker acceptance. They do not yet define the complete lifecycle of an agreement, the full state machine, the deadlines that govern each stage, the dispute-resolution process, the withdrawal mechanism, or the events and function names that external applications will depend on.
 
@@ -248,7 +248,7 @@ The valid transitions are:
 - `PendingAcceptance` to `EscrowCancelled` through `cancelEscrow()`.
 - `PendingAcceptance` to `AcceptanceExpired` through `expireAcceptance()`.
 - `PendingSubmission` to `PendingReview` through `submitWork()`.
-- `PendingSubmission` to `SubmissionExpired` through `expireDelivery()`.
+- `PendingSubmission` to `SubmissionExpired` through `expireSubmission()`.
 - `PendingReview` to `WorkApproved` through `approveWork()`.
 - `PendingReview` to `PendingArbitration` through `openDispute()`.
 - `PendingReview` to `ReviewExpired` through `expireReview()`.
@@ -301,7 +301,7 @@ The amount:
 - Is stored as the immutable escrow amount.
 - Is transferred to the new escrow during creation.
 
-### Delivery interface
+### Submission interface
 
 The work-submission function is named `submitWork`.
 
@@ -372,7 +372,7 @@ It:
 - Allocates the full amount to the owner.
 - Moves the escrow to `AcceptanceExpired`.
 
-`expireDelivery`:
+`expireSubmission`:
 
 - Is permissionless.
 - Requires `PendingSubmission`.
@@ -501,7 +501,7 @@ The implementation must validate:
 - Non-empty title.
 - Title length of at most 64 bytes.
 - Non-empty submission reference.
-- Delivery-reference length of at most 256 bytes.
+- Submission-reference length of at most 256 bytes.
 - Non-empty dispute reason.
 - Dispute-reason length of at most 256 bytes.
 - Non-empty resolution reason.

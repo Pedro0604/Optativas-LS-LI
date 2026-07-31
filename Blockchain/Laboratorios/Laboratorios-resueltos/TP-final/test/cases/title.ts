@@ -1,57 +1,70 @@
-type TitleCase = {
+import { getUtf8ByteLength } from "../helpers/utils.js";
+
+function buildValueWithSuffix(totalByteLength: bigint, suffix: string): string {
+  const suffixByteLength = getUtf8ByteLength(suffix);
+
+  if (suffixByteLength > totalByteLength) {
+    throw new Error(
+      `El sufijo requiere ${suffixByteLength} bytes pero solo hay ${totalByteLength} disponibles`,
+    );
+  }
+
+  return "a".repeat(Number(totalByteLength - suffixByteLength)) + suffix;
+}
+
+type StringCase = {
   description: string;
-  buildTitle: (maxLength: bigint) => string;
+  buildValue: (maxLength: bigint) => string;
   expectedLength: (maxLength: bigint) => bigint;
 };
 
-export const validTitleCases: TitleCase[] = [
+export const validStringCases: StringCase[] = [
   {
     description: "one ASCII byte",
-    buildTitle: () => "a",
+    buildValue: () => "a",
     expectedLength: () => 1n,
   },
   {
-    description: "MAX_TITLE_LENGTH ASCII bytes",
-    buildTitle: (maxLength) => "a".repeat(Number(maxLength)),
+    description: "the maximum length using ASCII",
+    buildValue: (maxLength) => "a".repeat(Number(maxLength)),
     expectedLength: (maxLength) => maxLength,
   },
   {
-    description: "MAX_TITLE_LENGTH bytes using an accented character",
-    buildTitle: (maxLength) => "a".repeat(Number(maxLength - 2n)) + "á",
+    description: "the maximum length using an accented character",
+    buildValue: (maxLength) => buildValueWithSuffix(maxLength, "á"),
     expectedLength: (maxLength) => maxLength,
   },
   {
-    description: "MAX_TITLE_LENGTH bytes using an emoji",
-    buildTitle: (maxLength) => "a".repeat(Number(maxLength - 4n)) + "😎",
+    description: "the maximum length using an emoji",
+    buildValue: (maxLength) => buildValueWithSuffix(maxLength, "😎"),
     expectedLength: (maxLength) => maxLength,
   },
   {
-    description: "MAX_TITLE_LENGTH bytes using spaces",
-    buildTitle: (maxLength) => " ".repeat(Number(maxLength)),
+    description: "the maximum length using spaces",
+    buildValue: (maxLength) => " ".repeat(Number(maxLength)),
     expectedLength: (maxLength) => maxLength,
   },
   {
-    description: "MAX_TITLE_LENGTH bytes with a \\n",
-    buildTitle: (maxLength) =>
-      "a".repeat(Number(maxLength - 5n)) + "\n" + "a".repeat(4),
+    description: "the maximum length containing a newline",
+    buildValue: (maxLength) => buildValueWithSuffix(maxLength, "\n"),
     expectedLength: (maxLength) => maxLength,
   },
 ];
 
-export const tooLongTitleCases: TitleCase[] = [
+export const tooLongStringCases: StringCase[] = [
   {
     description: "ASCII",
-    buildTitle: (maxLength) => "a".repeat(Number(maxLength + 1n)),
+    buildValue: (maxLength) => "a".repeat(Number(maxLength + 1n)),
     expectedLength: (maxLength) => maxLength + 1n,
   },
   {
     description: "an accented character",
-    buildTitle: (maxLength) => "a".repeat(Number(maxLength - 1n)) + "á",
+    buildValue: (maxLength) => buildValueWithSuffix(maxLength + 1n, "á"),
     expectedLength: (maxLength) => maxLength + 1n,
   },
   {
     description: "an emoji",
-    buildTitle: (maxLength) => "a".repeat(Number(maxLength - 3n)) + "😎",
+    buildValue: (maxLength) => buildValueWithSuffix(maxLength + 1n, "😎"),
     expectedLength: (maxLength) => maxLength + 1n,
   },
 ];

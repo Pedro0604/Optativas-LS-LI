@@ -53,7 +53,7 @@ PendingSubmission
 │ ├── emite WorkSubmitted(reviewDeadline)
 │ └── pasa a PendingReview
 │
-└── expireDelivery()
+└── expireSubmission()
 ├── cualquier cuenta
 ├── desde submissionDeadline
 ├── acredita 100 % al owner
@@ -155,7 +155,7 @@ function submitWork(
 string calldata submissionReference_
 ) external;
 
-function expireDelivery() external;
+function expireSubmission() external;
 
 function approveWork() external;
 
@@ -184,7 +184,7 @@ Desde el deadline: block.timestamp >= deadline
 Las expiraciones solo ocurren mediante:
 
 - expireAcceptance();
-- expireDelivery();
+- expireSubmission();
 - expireReview();
 - expireArbitration();
 
@@ -211,7 +211,7 @@ ArbitrationExpired → 50/50, wei sobrante para worker
 ## Text lengths
 
 uint256 public constant MAX_TITLE_LENGTH = 64;
-uint256 public constant MAX_DELIVERY_REFERENCE_LENGTH = 256;
+uint256 public constant MAX_SUBMISSION_REFERENCE_LENGTH = 256;
 uint256 public constant MAX_DISPUTE_REASON_LENGTH = 256;
 uint256 public constant MAX_RESOLUTION_REASON_LENGTH = 256;
 
@@ -264,7 +264,7 @@ public isEscrow;
 - `PendingAcceptance` to `EscrowCancelled` through `cancelEscrow()`.
 - `PendingAcceptance` to `AcceptanceExpired` through `expireAcceptance()`.
 - `PendingSubmission` to `PendingReview` through `submitWork()`.
-- `PendingSubmission` to `SubmissionExpired` through `expireDelivery()`.
+- `PendingSubmission` to `SubmissionExpired` through `expireSubmission()`.
 - `PendingReview` to `WorkApproved` through `approveWork()`.
 - `PendingReview` to `PendingArbitration` through `openDispute()`.
 - `PendingReview` to `ReviewExpired` through `expireReview()`.

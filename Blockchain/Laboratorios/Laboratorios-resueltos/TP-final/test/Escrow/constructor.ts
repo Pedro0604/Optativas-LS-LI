@@ -5,7 +5,7 @@ import { Error } from "../constants/Error.js";
 import { ethers, networkHelpers } from "../helpers/globals.js";
 import { defaultEscrowFixture } from "../helpers/fixtures.js";
 import { createEscrow, sendCreateEscrow } from "../helpers/createEscrow.js";
-import { tooLongTitleCases, validTitleCases } from "../cases/title.js";
+import { tooLongStringCases, validStringCases } from "../cases/title.js";
 
 describe("Escrow.constructor through EscrowFactory.createEscrow", function () {
   describe("successful creation", function () {
@@ -69,13 +69,13 @@ describe("Escrow.constructor through EscrowFactory.createEscrow", function () {
     });
 
     describe("valid title length", function () {
-      for (const testCase of validTitleCases) {
+      for (const testCase of validStringCases) {
         it(`Should accept ${testCase.description}`, async function () {
           const { escrowFactory, owner, worker, arbiter, escrow } =
             await networkHelpers.loadFixture(defaultEscrowFixture);
 
           const maxLength = await escrow.MAX_TITLE_LENGTH();
-          const title = testCase.buildTitle(maxLength);
+          const title = testCase.buildValue(maxLength);
           const expectedLength = testCase.expectedLength(maxLength);
           expect(getUtf8ByteLength(title)).to.equal(expectedLength);
 
@@ -217,13 +217,13 @@ describe("Escrow.constructor through EscrowFactory.createEscrow", function () {
     });
 
     describe("title exceeding MAX_TITLE_LENGTH", function () {
-      for (const testCase of tooLongTitleCases) {
+      for (const testCase of tooLongStringCases) {
         it(`Should revert when title length exceeds MAX_TITLE_LENGTH using ${testCase.description}`, async function () {
           const { escrowFactory, owner, worker, arbiter, escrow } =
             await networkHelpers.loadFixture(defaultEscrowFixture);
 
           const maxLength = await escrow.MAX_TITLE_LENGTH();
-          const title = testCase.buildTitle(maxLength);
+          const title = testCase.buildValue(maxLength);
           const expectedLength = testCase.expectedLength(maxLength);
           const titleLength = getUtf8ByteLength(title);
           expect(titleLength).to.equal(expectedLength);

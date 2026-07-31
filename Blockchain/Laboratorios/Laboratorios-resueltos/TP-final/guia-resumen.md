@@ -144,7 +144,7 @@ Significa que:
 Transiciones posibles:
 
 - `submitWork(...)` → `PendingReview`;
-- `expireDelivery()` → `SubmissionExpired`.
+- `expireSubmission()` → `SubmissionExpired`.
 
 #### `PendingReview`
 
@@ -209,7 +209,7 @@ stateDiagram-v2
     PendingAcceptance --> AcceptanceExpired: expireAcceptance()
 
     PendingSubmission --> PendingReview: submitWork(reference)
-    PendingSubmission --> SubmissionExpired: expireDelivery()
+    PendingSubmission --> SubmissionExpired: expireSubmission()
 
     PendingReview --> WorkApproved: approveWork()
     PendingReview --> PendingArbitration: openDispute(reason)
@@ -237,7 +237,7 @@ stateDiagram-v2
 | `PendingAcceptance`  | `cancelEscrow()`                       | `owner`              | Antes de `acceptanceDeadline`  | `EscrowCancelled`    | 100% owner    |
 | `PendingAcceptance`  | `expireAcceptance()`                   | Cualquiera           | Desde `acceptanceDeadline`     | `AcceptanceExpired`  | 100% owner    |
 | `PendingSubmission`  | `submitWork(reference)`                | `worker`             | Antes de `submissionDeadline`  | `PendingReview`      | Ninguna       |
-| `PendingSubmission`  | `expireDelivery()`                     | Cualquiera           | Desde `submissionDeadline`     | `SubmissionExpired`  | 100% owner    |
+| `PendingSubmission`  | `expireSubmission()`                   | Cualquiera           | Desde `submissionDeadline`     | `SubmissionExpired`  | 100% owner    |
 | `PendingReview`      | `approveWork()`                        | `owner`              | Antes de `reviewDeadline`      | `WorkApproved`       | 100% worker   |
 | `PendingReview`      | `openDispute(reason)`                  | `owner`              | Antes de `reviewDeadline`      | `PendingArbitration` | Ninguna       |
 | `PendingReview`      | `expireReview()`                       | Cualquiera           | Desde `reviewDeadline`         | `ReviewExpired`      | 100% worker   |
@@ -358,7 +358,7 @@ Decisiones:
 
 ```solidity
 uint256 public constant MAX_TITLE_LENGTH = 64;
-uint256 public constant MAX_DELIVERY_REFERENCE_LENGTH = 256;
+uint256 public constant MAX_SUBMISSION_REFERENCE_LENGTH = 256;
 uint256 public constant MAX_DISPUTE_REASON_LENGTH = 256;
 uint256 public constant MAX_RESOLUTION_REASON_LENGTH = 256;
 ```
@@ -467,7 +467,7 @@ Efectos:
 - cambia a `PendingReview`;
 - emite `WorkSubmitted(reviewDeadline)`.
 
-### `expireDelivery()`
+### `expireSubmission()`
 
 Requisitos:
 
@@ -869,7 +869,7 @@ En el instante exacto:
 Probar que, aunque el estado todavía no se haya actualizado:
 
 - `acceptEscrow()` no puede ganar contra `expireAcceptance()` después del deadline;
-- `submitWork()` no puede ganar contra `expireDelivery()`;
+- `submitWork()` no puede ganar contra `expireSubmission()`;
 - `approveWork()` y `openDispute()` no pueden ganar contra `expireReview()`;
 - `resolveDispute()` no puede ganar contra `expireArbitration()`.
 

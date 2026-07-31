@@ -56,9 +56,9 @@
 
 - [ ] **8. Implementar entrega y vencimiento de entrega**
 
-  Implementar `submitWork()` con referencia obligatoria e inmutable, cálculo de `reviewDeadline` y transición a `PendingReview`; implementar `expireDelivery()` con devolución completa al owner.
+  Implementar `submitWork()` con referencia obligatoria e inmutable, cálculo de `reviewDeadline` y transición a `PendingReview`; implementar `expireSubmission()` con devolución completa al owner.
 
-  **Referencias:** [Interfaz de entrega](./escrow-spec.md#submission-interface) · [`submitWork()` y `expireDelivery()`](./guia-resumen.md#11-funciones-de-escrow) · [Datos textuales](./guia-resumen.md#10-variables-de-escrow)  
+  **Referencias:** [Interfaz de entrega](./escrow-spec.md#submission-interface) · [`submitWork()` y `expireSubmission()`](./guia-resumen.md#11-funciones-de-escrow) · [Datos textuales](./guia-resumen.md#10-variables-de-escrow)  
   **Historias abarcadas:** [HU 30–43, 95–96 y 136](./escrow-spec.md#user-stories)
 
 - [ ] **9. Implementar aprobación y vencimiento de revisión**
