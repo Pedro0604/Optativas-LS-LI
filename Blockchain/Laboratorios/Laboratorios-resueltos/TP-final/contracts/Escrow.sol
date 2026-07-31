@@ -261,7 +261,7 @@ contract Escrow {
      */
     error StringTooLong(uint256 currentLength, uint256 maxLength);
 
-    // Errores de resolución de disputa
+    // Error de resolución de disputa
     /**
      * La cantidad en wei indicada para el worker excede la cantidad del contrato
      *
@@ -344,7 +344,7 @@ contract Escrow {
     /**
      * @param owner_ Dueño del contrato
      * @param worker_ Dirección de quien realizará el trabajo y recibirá el pago
-     * @param worker_ Dirección de quien realizará el arbitraje de ser necesario
+     * @param arbiter_ Dirección de quien realizará el arbitraje de ser necesario
      * @param acceptanceDuration_ Duración del período de aceptación del escrow en segundos
      * @param submissionDuration_ Duración del período de elaboración del trabajo en segundos
      * @param reviewDuration_ Duración del período de revisión del trabajo en segundos
@@ -674,9 +674,43 @@ contract Escrow {
         uint256 workerAmount = amount - ownerAmount;
         pendingWithdrawals[owner] = ownerAmount;
         pendingWithdrawals[worker] = workerAmount;
-        
+
         state = State.ArbitrationExpired;
         emit ArbitrationExpired();
+    }
+
+    /**
+     * Realiza un retiro.
+     *
+     * Se usa el patrón Checks-Effects-Interactions para evitar vulnerabilidades,
+     * ver https://docs.soliditylang.org/en/latest/security-considerations.html#reentrancy
+     *
+     * Requisitos:
+     * - Tener ETH pendiente de retirar, sino revierte con NoFundsToWithdraw.
+     *
+     * Efectos:
+     * - Envía los fondos a msg.sender.
+     */
+    function withdraw() external {
+        // Checks
+        uint256 pendingAmount = pendingWithdrawals[msg.sender];
+        if (pendingAmount == 0) {
+            revert NoFundsToWithdraw();
+        }
+
+        // Efects
+        pendingWithdrawals[msg.sender] = 0; // Primero se pone en cero
+
+        // Interactions
+        // Si msg.sender es un contrato malicioso que vuelve a llamar a withdraw
+        //  desde dentro de su receive o fallback, no hay problema porque cuando
+        //  se vuelva a ejecutar withdraw, pendingWithdrawals[msg.sender] ya va a
+        //  ser 0 por lo que va a revertir la ejecución
+        (bool success, ) = msg.sender.call{value: pendingAmount}("");
+        if (!success) {
+            revert WithdrawalFailed(); // Como se revierte, el saldo pendiente se restaura.
+        }
+        emit FundsWithdrawn(msg.sender, pendingAmount);
     }
 
     function acceptanceExpired() external view returns (bool expired_) {
