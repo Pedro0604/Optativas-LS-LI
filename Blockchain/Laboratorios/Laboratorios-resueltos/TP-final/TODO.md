@@ -1,13 +1,18 @@
 ### Next
-- 
+- Extender chequeos de deadlines para que chequeen 1 seg antes, el mismo segundo y 1 seg después
+- Continuar con implementación de expireSubmission
+- Al finalizar el día actualizar specs-todo con lo hecho
+- Al finalizar toda la implementación:
+    - Correlacionar funcionalidad con guia-resumen y escrow-spec (con chatGPT)
+    - Chequear "Distribución de fondos en estados finales" en state.md
 
 ### Later
-- Reemplazar amountInEth por string o bigint para evitar problemas de precisión por number. Probar con valores de ETH no enteros para ver q tal.
+- 
 
 ### Antes de entrgar
-- docstrings de .sol y utils.ts (o similares)
+- docstrings de .sol y archivos .ts que no sean tests (archivos con funciones o types: constants/\*, helpers/\*, cases/\*, etc.)
 - revisar y aplicar o eliminar TODOs
-- Matchear state de Escrow.sol con state de utils.ts
+- Matchear state de Escrow.sol con state de State.ts y errores y eventos con Error.ts y Event.ts (pedir a chatGPT que matchee)
 
 ## Links
 Grilling: https://chatgpt.com/c/6a6a88a4-3b28-83e9-8cb8-8fe8a40804c0
@@ -19,9 +24,6 @@ https://chatgpt.com/s/t_6a642f3e2ed4819192445afe7d476234
 https://chatgpt.com/s/t_6a642ebc12048191b0cc14ae882c8c98
 https://docs.soliditylang.org/en/v0.8.36/style-guide.html
 https://docs.soliditylang.org/en/v0.8.36/genindex.html
-https://hardhat.org/docs/getting-started
-https://hardhat.org/docs/guides/testing/code-coverage
-https://hardhat.org/docs/guides/testing/gas-statistics#understanding-the-gas-statistics
 https://hardhat.org/docs/guides/testing/using-ethers#testing-a-function-that-reverts
 https://hardhat.org/docs/plugins/hardhat-ethers
 https://hardhat.org/docs/plugins/hardhat-ethers-chai-matchers#reverted-transactions

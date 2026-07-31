@@ -5,56 +5,56 @@
 
 ## Checklist
 
-- [ ] **1. Revisar el diseño actual y preparar el refactor**
+- [x] **1. Revisar el diseño actual y preparar el refactor**
 
   Comparar los contratos y helpers actuales con la arquitectura acordada, identificar interfaces que cambiarán y registrar qué tests existentes deberán adaptarse antes de agregar funcionalidad.
 
   **Referencias:** [Arquitectura y módulos](./escrow-spec.md#contract-modules) · [Arquitectura general](./guia-resumen.md#2-arquitectura-general) · [Orden sugerido de implementación](./guia-resumen.md#21-orden-sugerido-de-implementación)  
   **Historias abarcadas:** [HU 112–119 y 140](./escrow-spec.md#user-stories)
 
-- [ ] **2. Definir el enum completo y las variables de estado de `Escrow`**
+- [x] **2. Definir el enum completo y las variables de estado de `Escrow`**
 
   Incorporar los once estados definitivos, las direcciones de los tres participantes, duraciones, deadlines, strings almacenados, monto y mapping de retiros pendientes.
 
   **Referencias:** [Máquina de estados](./escrow-spec.md#state-machine) · [Estados](./guia-resumen.md#4-estados) · [Variables de Escrow](./guia-resumen.md#10-variables-de-escrow)  
   **Historias abarcadas:** [HU 27–29, 39, 42, 48, 66, 73, 84–91, 132, 135–140](./escrow-spec.md#user-stories)
 
-- [ ] **3. Implementar constantes y validaciones del constructor**
+- [x] **3. Implementar constantes y validaciones del constructor**
 
   Validar ETH, participantes, duraciones y título; guardar los datos inmutables; calcular `acceptanceDeadline`; dejar los demás deadlines en cero; iniciar el estado en `PendingAcceptance`.
 
   **Referencias:** [Validaciones y errores](./escrow-spec.md#validation-and-errors) · [Validaciones del constructor](./guia-resumen.md#17-validaciones-del-constructor) · [Participantes](./guia-resumen.md#3-participantes)  
   **Historias abarcadas:** [HU 1–18 y 115–117](./escrow-spec.md#user-stories)
 
-- [ ] **4. Actualizar la interfaz de creación de `EscrowFactory`**
+- [x] **4. Actualizar la interfaz de creación de `EscrowFactory`**
 
   Adaptar `createEscrow` para recibir árbitro, cuatro duraciones en segundos y título; enviar el ETH al constructor; devolver la dirección creada y mantener la creación atómica.
 
   **Referencias:** [Interfaz de creación](./escrow-spec.md#creation-interface) · [Interfaz de EscrowFactory](./guia-resumen.md#9-interfaz-de-escrowfactory) · [Atomicidad de la fábrica](./guia-resumen.md#18-atomicidad-de-la-fábrica)  
   **Historias abarcadas:** [HU 1–18, 100–105 y 112–119](./escrow-spec.md#user-stories)
 
-- [ ] **5. Completar los registros y consultas de la fábrica**
+- [x] **5. Completar los registros y consultas de la fábrica**
 
   Agregar `escrowsByArbitrator`, `isEscrow`, registro global y consultas de cantidades; evitar un contador duplicado y usar `allEscrows.length` como total.
 
   **Referencias:** [Registros de la fábrica](./escrow-spec.md#factory-registries) · [Registros y consultas](./guia-resumen.md#registros)  
   **Historias abarcadas:** [HU 106–111 y 130–131](./escrow-spec.md#user-stories)
 
-- [ ] **6. Implementar la aceptación del acuerdo**
+- [x] **6. Implementar la aceptación del acuerdo**
 
   Implementar `acceptEscrow()` para el worker, validar estado y ventana temporal, calcular `submissionDeadline`, cambiar a `PendingSubmission` y emitir `EscrowAccepted`.
 
   **Referencias:** [Modelo temporal](./escrow-spec.md#time-model) · [`acceptEscrow()`](./guia-resumen.md#accept) · [Reglas temporales](./guia-resumen.md#8-reglas-temporales)  
   **Historias abarcadas:** [HU 17–20, 23 y 28–29](./escrow-spec.md#user-stories)
 
-- [ ] **7. Implementar cancelación y vencimiento de aceptación**
+- [x] **7. Implementar cancelación y vencimiento de aceptación**
 
   Implementar `cancelEscrow()` para el owner antes del deadline y `expireAcceptance()` permissionless desde el deadline; ambos deben acreditar al owner y terminar en estados diferentes.
 
   **Referencias:** [Cancelación](./escrow-spec.md#cancellation-behavior) · [Expiraciones](./escrow-spec.md#expiration-behavior) · [`cancelEscrow()` y `expireAcceptance()`](./guia-resumen.md#11-funciones-de-escrow)  
   **Historias abarcadas:** [HU 21–27 y 87–91](./escrow-spec.md#user-stories)
 
-- [ ] **8. Implementar entrega y vencimiento de entrega**
+- [-] **8. Implementar entrega y vencimiento de entrega**
 
   Implementar `submitWork()` con referencia obligatoria e inmutable, cálculo de `reviewDeadline` y transición a `PendingReview`; implementar `expireSubmission()` con devolución completa al owner.
 
@@ -103,7 +103,7 @@
   **Referencias:** [Contabilidad de retiros](./escrow-spec.md#withdrawal-accounting) · [`withdraw()`](./guia-resumen.md#withdraw) · [Checks-effects-interactions](./guia-resumen.md#checks-effects-interactions) · [Reentrancia](./guia-resumen.md#reentrancia)  
   **Historias abarcadas:** [HU 74–83, 98, 128–129 y 137–139](./escrow-spec.md#user-stories)
 
-- [ ] **15. Definir todos los eventos y actualizar `EscrowCreated`**
+- [x] **15. Definir todos los eventos y actualizar `EscrowCreated`**
 
   Incorporar los eventos definitivos con los parámetros e índices acordados; no emitir strings ni actores deducibles; emitir deadlines cuando comienza cada etapa.
 
@@ -117,7 +117,7 @@
   **Referencias:** [Validaciones y errores](./escrow-spec.md#validation-and-errors) · [Custom errors recomendados](./guia-resumen.md#13-custom-errors-recomendados) · [Orden de actualización](./guia-resumen.md#16-orden-recomendado-de-actualización-de-estado)  
   **Historias abarcadas:** [HU 15, 20, 35–36, 38, 50–53, 61–65, 68, 78 y 85–91](./escrow-spec.md#user-stories)
 
-- [ ] **17. Actualizar fixtures, helpers y datos de prueba**
+- [x] **17. Actualizar fixtures, helpers y datos de prueba**
 
   Adaptar los helpers de despliegue y creación a los nuevos participantes, duraciones, eventos y estados; facilitar el avance controlado del tiempo y la creación de escrows en etapas específicas.
 

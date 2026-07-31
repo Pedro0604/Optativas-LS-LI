@@ -1,4 +1,4 @@
-## Estados
+<!-- ## Estados
 
 enum State {
 // Estados no finales
@@ -16,13 +16,13 @@ PendingArbitration,
     DisputeResolved,
     ArbitrationExpired
 
-}
+} -->
 
 ---
 
 ## Transiciones de estado
 
-PendingAcceptance
+<!-- PendingAcceptance
 ├── acceptEscrow()
 │ ├── solo worker
 │ ├── antes de acceptanceDeadline
@@ -42,7 +42,7 @@ PendingAcceptance
 ├── desde acceptanceDeadline
 ├── acredita 100 % al owner
 ├── emite AcceptanceExpired()
-└── pasa a AcceptanceExpired
+└── pasa a AcceptanceExpired -->
 PendingSubmission
 ├── submitWork(submissionReference)
 │ ├── solo worker
@@ -114,7 +114,7 @@ withdraw()
 
 ---
 
-## Eventos
+<!-- ## Eventos
 
 event EscrowAccepted(uint256 submissionDeadline);
 event EscrowCancelled();
@@ -139,13 +139,13 @@ event ArbitrationExpired();
 event FundsWithdrawn(
 address indexed account,
 uint256 amount
-);
+); -->
 
 ---
 
 ## Firmas de funciones
 
-function acceptEscrow() external;
+<!-- function acceptEscrow() external;
 
 function cancelEscrow() external;
 
@@ -153,7 +153,7 @@ function expireAcceptance() external;
 
 function submitWork(
 string calldata submissionReference_
-) external;
+) external; -->
 
 function expireSubmission() external;
 
@@ -208,20 +208,20 @@ ArbitrationExpired → 50/50, wei sobrante para worker
 
 --
 
-## Text lengths
+<!-- ## Text lengths
 
 uint256 public constant MAX_TITLE_LENGTH = 64;
 uint256 public constant MAX_SUBMISSION_REFERENCE_LENGTH = 256;
 uint256 public constant MAX_DISPUTE_REASON_LENGTH = 256;
 uint256 public constant MAX_RESOLUTION_REASON_LENGTH = 256;
 
-Mínimo 1
+Mínimo 1 -->
 
 ---
 
 ## createEscrow
 
-function createEscrow(
+<!-- function createEscrow(
 address worker_,
 address arbitrator_,
 uint256 acceptanceDuration_,
@@ -229,13 +229,13 @@ uint256 submissionDuration_,
 uint256 reviewDuration_,
 uint256 arbitrationDuration_,
 string calldata title_
-) external payable returns (address escrowAddress);
+) external payable returns (address escrowAddress); -->
 
 ---
 
 ## EscrowCreated
 
-event EscrowCreated(
+<!-- event EscrowCreated(
 address indexed owner,
 address indexed worker,
 address indexed arbiter,
@@ -245,25 +245,21 @@ uint256 acceptanceDeadline,
 uint256 submissionDuration,
 uint256 reviewDuration,
 uint256 arbitrationDuration
-);
+); -->
 
 ---
 
 ## Factory añade
 
-mapping(address arbiter => address[] escrows)
-public escrowsByArbitrator;
-
-y este?:
-mapping(address escrow => bool registered)
-public isEscrow;
+<!-- mapping(address arbiter => address[] escrows)
+public escrowsByArbitrator; -->
 
 ## Transiciones válidas
 
-- `PendingAcceptance` to `PendingSubmission` through `acceptEscrow()`.
+<!-- - `PendingAcceptance` to `PendingSubmission` through `acceptEscrow()`.
 - `PendingAcceptance` to `EscrowCancelled` through `cancelEscrow()`.
 - `PendingAcceptance` to `AcceptanceExpired` through `expireAcceptance()`.
-- `PendingSubmission` to `PendingReview` through `submitWork()`.
+- `PendingSubmission` to `PendingReview` through `submitWork()`. -->
 - `PendingSubmission` to `SubmissionExpired` through `expireSubmission()`.
 - `PendingReview` to `WorkApproved` through `approveWork()`.
 - `PendingReview` to `PendingArbitration` through `openDispute()`.
