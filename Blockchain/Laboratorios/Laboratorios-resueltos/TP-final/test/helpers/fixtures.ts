@@ -1,51 +1,66 @@
 import { createEscrow } from "./createEscrow.js";
 import { ethers } from "./globals.js";
+import {
+  advanceToPendingSubmission,
+  advanceToPendingReview,
+  advanceToPendingArbitration,
+} from "./transitions.js";
 
 /**
- * Despliega una nueva instancia de `EscrowFactory` y obtiene las cuentas
- * que se utilizarán como participantes durante los tests.
+ * Despliega una instancia de `EscrowFactory` y crea un escrow utilizando los valores predeterminados de `createEscrow`.
  *
- * Uso como fixture: `const deployResult = await networkHelpers.loadFixture(deployEscrowFactoryFixture);`
+ * Uso como fixture: `const deployAndCreateResult = await networkHelpers.loadFixture(defaultEscrowFixture);`
  *
- * @returns La factory desplegada y los signers predeterminados para el
- * owner, worker y una cuenta adicional.
+ * @returns La factory, los signers y los valores retornados por createEscrow.
  */
-export async function deployEscrowFactoryFixture() {
-  const [owner, worker, arbiter, otherAccount] = await ethers.getSigners();
+export async function defaultEscrowFixture() {
+  const [owner, worker, arbiter, ...otherAccounts] = await ethers.getSigners();
   const escrowFactory = await ethers.deployContract("EscrowFactory");
 
   await escrowFactory.waitForDeployment();
 
+  const createResult = await createEscrow({
+    escrowFactory: escrowFactory,
+    owner: owner,
+    workerAddress: worker.address,
+    arbiterAddress: arbiter.address,
+  });
+
   return {
-    escrowFactory,
     owner,
     worker,
     arbiter,
-    otherAccount,
+    otherAccounts,
+    escrowFactory,
+    ...createResult,
   };
 }
 
 /**
- * Despliega una instancia de `EscrowFactory` y crea un escrow utilizando
- * los valores predeterminados de `createEscrow`.
- *
- * Uso como fixture: `const deployAndCreateResult = await networkHelpers.loadFixture(deployEscrowFactoryWithDefaultEscrowFixture);`
- *
- * @returns La factory, los signers, la transacción de creación, la dirección
- * del escrow y los valores utilizados para crearlo.
+ * Despliega y acepta un escrow, dejándolo en PendingSubmission.
  */
-export async function deployEscrowFactoryWithDefaultEscrowFixture() {
-  const deployResult = await deployEscrowFactoryFixture();
+export async function pendingSubmissionFixture() {
+  const context = await defaultEscrowFixture();
 
-  const createResult = await createEscrow({
-    escrowFactory: deployResult.escrowFactory,
-    owner: deployResult.owner,
-    workerAddress: deployResult.worker.address,
-    arbiterAddress: deployResult.arbiter.address,
-  });
+  return advanceToPendingSubmission(context);
+}
 
-  return {
-    ...deployResult,
-    ...createResult,
-  };
+/**
+ * Despliega, acepta y entrega el trabajo,
+ * dejando el escrow en PendingReview.
+ */
+export async function pendingReviewFixture() {
+  const context = await pendingSubmissionFixture();
+
+  return advanceToPendingReview(context);
+}
+
+/**
+ * Despliega, acepta, entrega el trabajo y abre una disputa,
+ * dejando el escrow en PendingArbitration.
+ */
+export async function pendingArbitrationFixture() {
+  const context = await pendingReviewFixture();
+
+  return advanceToPendingArbitration(context);
 }

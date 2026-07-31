@@ -3,7 +3,7 @@ import { getUtf8ByteLength } from "../helpers/utils.js";
 import { State } from "../constants/State.js";
 import { Error } from "../constants/Error.js";
 import { ethers, networkHelpers } from "../helpers/globals.js";
-import { deployEscrowFactoryWithDefaultEscrowFixture } from "../helpers/fixtures.js";
+import { defaultEscrowFixture } from "../helpers/fixtures.js";
 import { createEscrow, sendCreateEscrow } from "../helpers/createEscrow.js";
 import { tooLongTitleCases, validTitleCases } from "../cases/title.js";
 
@@ -23,9 +23,7 @@ describe("Escrow.constructor through EscrowFactory.createEscrow", function () {
         submissionDuration,
         reviewDuration,
         arbitrationDuration,
-      } = await networkHelpers.loadFixture(
-        deployEscrowFactoryWithDefaultEscrowFixture,
-      );
+      } = await networkHelpers.loadFixture(defaultEscrowFixture);
 
       // Addresses ok
       expect(await escrow.owner()).to.equal(owner.address);
@@ -74,9 +72,7 @@ describe("Escrow.constructor through EscrowFactory.createEscrow", function () {
       for (const testCase of validTitleCases) {
         it(`Should accept ${testCase.description}`, async function () {
           const { escrowFactory, owner, worker, arbiter, escrow } =
-            await networkHelpers.loadFixture(
-              deployEscrowFactoryWithDefaultEscrowFixture,
-            );
+            await networkHelpers.loadFixture(defaultEscrowFixture);
 
           const maxLength = await escrow.MAX_TITLE_LENGTH();
           const title = testCase.buildTitle(maxLength);
@@ -100,7 +96,7 @@ describe("Escrow.constructor through EscrowFactory.createEscrow", function () {
   });
 
   describe("failing creation", function () {
-    // En los casos de fallo se usa el fixture deployEscrowFactoryWithDefaultEscrowFixture
+    // En los casos de fallo se usa el fixture defaultEscrowFixture
     // así se tiene acceso a `escrow` para poder acceder a los errores y constantes definidos
     // en el contrato
 
@@ -108,9 +104,7 @@ describe("Escrow.constructor through EscrowFactory.createEscrow", function () {
     // al esperarse que se mine el bloque solo dentro del expect().to.revert()
     it("Should revert when no eth is provided", async function () {
       const { escrowFactory, owner, worker, arbiter, escrow } =
-        await networkHelpers.loadFixture(
-          deployEscrowFactoryWithDefaultEscrowFixture,
-        );
+        await networkHelpers.loadFixture(defaultEscrowFixture);
 
       await expect(
         sendCreateEscrow({
@@ -125,9 +119,7 @@ describe("Escrow.constructor through EscrowFactory.createEscrow", function () {
 
     it("Should revert when the worker or arbiter address are address(0)", async function () {
       const { escrowFactory, owner, worker, arbiter, escrow } =
-        await networkHelpers.loadFixture(
-          deployEscrowFactoryWithDefaultEscrowFixture,
-        );
+        await networkHelpers.loadFixture(defaultEscrowFixture);
 
       await expect(
         sendCreateEscrow({
@@ -150,9 +142,7 @@ describe("Escrow.constructor through EscrowFactory.createEscrow", function () {
 
     it("Should revert when owner is the same account as worker", async function () {
       const { escrowFactory, owner, arbiter, escrow } =
-        await networkHelpers.loadFixture(
-          deployEscrowFactoryWithDefaultEscrowFixture,
-        );
+        await networkHelpers.loadFixture(defaultEscrowFixture);
 
       await expect(
         sendCreateEscrow({
@@ -166,9 +156,7 @@ describe("Escrow.constructor through EscrowFactory.createEscrow", function () {
 
     it("Should revert when owner or worker are the same account as arbiter", async function () {
       const { escrowFactory, owner, worker, escrow } =
-        await networkHelpers.loadFixture(
-          deployEscrowFactoryWithDefaultEscrowFixture,
-        );
+        await networkHelpers.loadFixture(defaultEscrowFixture);
 
       await expect(
         sendCreateEscrow({
@@ -191,9 +179,7 @@ describe("Escrow.constructor through EscrowFactory.createEscrow", function () {
 
     it("Should revert when any duration is zero", async function () {
       const { escrowFactory, owner, worker, arbiter, escrow } =
-        await networkHelpers.loadFixture(
-          deployEscrowFactoryWithDefaultEscrowFixture,
-        );
+        await networkHelpers.loadFixture(defaultEscrowFixture);
 
       const durationKeys = [
         "acceptanceDuration",
@@ -217,9 +203,7 @@ describe("Escrow.constructor through EscrowFactory.createEscrow", function () {
 
     it("Should revert when title is empty", async function () {
       const { escrowFactory, owner, worker, arbiter, escrow } =
-        await networkHelpers.loadFixture(
-          deployEscrowFactoryWithDefaultEscrowFixture,
-        );
+        await networkHelpers.loadFixture(defaultEscrowFixture);
 
       await expect(
         sendCreateEscrow({
@@ -236,9 +220,7 @@ describe("Escrow.constructor through EscrowFactory.createEscrow", function () {
       for (const testCase of tooLongTitleCases) {
         it(`Should revert when title length exceeds MAX_TITLE_LENGTH using ${testCase.description}`, async function () {
           const { escrowFactory, owner, worker, arbiter, escrow } =
-            await networkHelpers.loadFixture(
-              deployEscrowFactoryWithDefaultEscrowFixture,
-            );
+            await networkHelpers.loadFixture(defaultEscrowFixture);
 
           const maxLength = await escrow.MAX_TITLE_LENGTH();
           const title = testCase.buildTitle(maxLength);

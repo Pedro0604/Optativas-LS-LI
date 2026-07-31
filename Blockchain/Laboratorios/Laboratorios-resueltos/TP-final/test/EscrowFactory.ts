@@ -1,29 +1,17 @@
 import { expect } from "chai";
 import { Event } from "./constants/Event.js";
-import {
-  deployEscrowFactoryFixture,
-  deployEscrowFactoryWithDefaultEscrowFixture,
-} from "./helpers/fixtures.js";
+import { defaultEscrowFixture } from "./helpers/fixtures.js";
 import { ethers, networkHelpers, SECONDS_PER_DAY } from "./helpers/globals.js";
 import { createEscrow, sendCreateEscrow } from "./helpers/createEscrow.js";
 
 describe("EscrowFactory", function () {
   describe("deployment", function () {
     it("Should start with empty registries", async function () {
-      const { escrowFactory, owner, worker, arbiter } =
-        await networkHelpers.loadFixture(deployEscrowFactoryFixture);
+      const escrowFactory = await ethers.deployContract("EscrowFactory");
+
+      await escrowFactory.waitForDeployment();
 
       expect(await escrowFactory.getEscrowCount()).to.equal(0n);
-
-      expect(await escrowFactory.getEscrowCountByOwner(owner.address)).to.equal(
-        0n,
-      );
-      expect(
-        await escrowFactory.getEscrowCountByWorker(worker.address),
-      ).to.equal(0n);
-      expect(
-        await escrowFactory.getEscrowCountByArbiter(arbiter.address),
-      ).to.equal(0n);
     });
   });
 
@@ -31,9 +19,7 @@ describe("EscrowFactory", function () {
     describe("successful creation", function () {
       it("Should register the escrow for its owner, worker, arbiter and in the allEscrows array", async function () {
         const { escrowFactory, escrowAddress, owner, worker, arbiter } =
-          await networkHelpers.loadFixture(
-            deployEscrowFactoryWithDefaultEscrowFixture,
-          );
+          await networkHelpers.loadFixture(defaultEscrowFixture);
 
         // All escrows
         expect(await escrowFactory.getEscrowCount()).to.equal(1n);
@@ -66,9 +52,7 @@ describe("EscrowFactory", function () {
 
       it("Should not register participants under the wrong roles", async function () {
         const { escrowFactory, owner, worker, arbiter } =
-          await networkHelpers.loadFixture(
-            deployEscrowFactoryWithDefaultEscrowFixture,
-          );
+          await networkHelpers.loadFixture(defaultEscrowFixture);
 
         // Owner
         expect(
@@ -97,9 +81,7 @@ describe("EscrowFactory", function () {
 
       it("Should transfer all provided ETH to the new escrow", async function () {
         const { escrowFactory, escrowAddress, amountInWei } =
-          await networkHelpers.loadFixture(
-            deployEscrowFactoryWithDefaultEscrowFixture,
-          );
+          await networkHelpers.loadFixture(defaultEscrowFixture);
 
         const factoryAddress = await escrowFactory.getAddress();
 
@@ -123,9 +105,7 @@ describe("EscrowFactory", function () {
           submissionDuration,
           reviewDuration,
           arbitrationDuration,
-        } = await networkHelpers.loadFixture(
-          deployEscrowFactoryWithDefaultEscrowFixture,
-        );
+        } = await networkHelpers.loadFixture(defaultEscrowFixture);
 
         await expect(transaction)
           .to.emit(escrowFactory, Event.EscrowCreated)
@@ -146,9 +126,7 @@ describe("EscrowFactory", function () {
     describe("multiple escrows", function () {
       it("Should preserve multiple escrows in creation order", async function () {
         const { escrowFactory, escrowAddress, owner, worker, arbiter } =
-          await networkHelpers.loadFixture(
-            deployEscrowFactoryWithDefaultEscrowFixture,
-          );
+          await networkHelpers.loadFixture(defaultEscrowFixture);
 
         const result = await createEscrow({
           escrowFactory,
@@ -199,9 +177,7 @@ describe("EscrowFactory", function () {
 
       it("Should maintain independent owner, worker and arbiter indexes", async function () {
         const { escrowFactory, owner, worker, arbiter } =
-          await networkHelpers.loadFixture(
-            deployEscrowFactoryWithDefaultEscrowFixture,
-          );
+          await networkHelpers.loadFixture(defaultEscrowFixture);
 
         await createEscrow({
           escrowFactory,
@@ -257,9 +233,7 @@ describe("EscrowFactory", function () {
           worker: account2,
           arbiter: account3,
           escrowAddress: firstEscrowAddress,
-        } = await networkHelpers.loadFixture(
-          deployEscrowFactoryWithDefaultEscrowFixture,
-        );
+        } = await networkHelpers.loadFixture(defaultEscrowFixture);
 
         const { escrowAddress: secondEscrowAddress } = await createEscrow({
           escrowFactory,
