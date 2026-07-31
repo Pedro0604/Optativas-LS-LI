@@ -208,20 +208,6 @@ contract Escrow {
 
     // Errores de tiempo
     /**
-     * Solo se permite interactuar con esta función después del tiempo definido
-     *
-     * @param allowedAfterTime Tiempo a partir del cual se puede interactuar con la función
-     */
-    error OnlyAllowedAfterTime(uint256 allowedAfterTime);
-
-    /**
-     * Solo se permite interactuar con esta función antes del tiempo definido
-     *
-     * @param allowedBeforeTime Tiempo hasta el cual se puede interactuar con la función
-     */
-    error OnlyAllowedBeforeTime(uint256 allowedBeforeTime);
-
-    /**
      * La deadline ya expiró
      *
      * @param deadline Deadline expirada
@@ -323,21 +309,6 @@ contract Escrow {
     modifier onlyArbiter() {
         if (msg.sender != arbiter) {
             revert OnlyArbiterAllowed();
-        }
-        _;
-    }
-
-    // TODO - SI NO SON USADAS ONLY AFTER Y BEFORE, ELIMINARLAS Y ELIMINAR SUS ERRORES. ELIMINAR TAMBIEN LOS ERRORES DE ERRORS.TS
-    modifier onlyAfter(uint256 time) {
-        if (block.timestamp < time) {
-            revert OnlyAllowedAfterTime({allowedAfterTime: time});
-        }
-        _;
-    }
-
-    modifier onlyBefore(uint256 time) {
-        if (block.timestamp >= time) {
-            revert OnlyAllowedBeforeTime({allowedBeforeTime: time});
         }
         _;
     }

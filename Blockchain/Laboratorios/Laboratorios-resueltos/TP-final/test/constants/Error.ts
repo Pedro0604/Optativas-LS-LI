@@ -28,32 +28,17 @@ export const Error = {
 
   // Errores de tiempo
   /**
-   * Solo se permite interactuar con esta función después del tiempo definido
-   *
-   * @param allowedAfterTime Tiempo a partir del cual se puede interactuar con la función
-   */
-  OnlyAllowedAfterTime: "OnlyAllowedAfterTime",
-  /**
-   * Solo se permite interactuar con esta función antes del tiempo definido
-   *
-   * @param allowedBeforeTime Tiempo hasta el cual se puede interactuar con la función
-   */
-  OnlyAllowedBeforeTime: "OnlyAllowedBeforeTime",
-
-  /**
    * La deadline ya expiró
    *
    * @param deadline Deadline expirada
    */
   DeadlineAlreadyExpired: "DeadlineAlreadyExpired",
-
   /**
    * La deadline aún no expiró
    *
    * @param deadline Deadline no expirada
    */
   DeadlineNotExpiredYet: "DeadlineNotExpiredYet",
-
   /**
    * La duración no puede ser 0
    */
