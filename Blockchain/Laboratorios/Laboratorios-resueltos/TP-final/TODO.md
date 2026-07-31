@@ -3,11 +3,12 @@
     - Retiro con cuenta sin fondos
     - Hacer contrato solo para test que llame a withdraw desde dentro de su receive para ver si falla bien
     - Hacer contrato solo para test que no tenga receive ni fallback
-- Al finalizar el día actualizar specs-todo con lo hecho
+- Hacer lifecycle tests.
 - Al finalizar toda la implementación:
     - Correlacionar funcionalidad con guia-resumen y escrow-spec (con chatGPT)
     - Chequear "Distribución de fondos en estados finales" en state.md
     - /diagnose-bugs a ver si encuentra algo matcheando la spec
+- Luego setear skills y hacer desarrollo de frontend. Las partes de conexión con la MetaMask o Rainbow o lo que sea las hago.
 
 ### Later
 - 

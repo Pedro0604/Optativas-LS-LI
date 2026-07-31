@@ -251,7 +251,7 @@ contract Escrow {
     /**
      * El string no puede estar vacío
      */
-    error EmptyString(); // TODO - VER SI AGREGAR UN STRING DE REFERENCIA E.G.: TITLE, DISPUTE_REASON, ETC. O DIVIDIR EN UN ERROR EMPTY Y MAX PARA CADA TIPO DE STRING
+    error EmptyString();
 
     /**
      * El string no puede superar `maxLength` bytes (caracteres utf-8 ocupan 1 byte, caracteres con tilde, emojis y otros tipos de caracteres ocupan más de 1 byte)

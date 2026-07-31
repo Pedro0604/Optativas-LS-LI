@@ -1,4 +1,4 @@
-<!-- ## Estados
+## Estados
 
 enum State {
 // Estados no finales
@@ -15,14 +15,13 @@ PendingArbitration,
     ReviewExpired,
     DisputeResolved,
     ArbitrationExpired
-
-} -->
+}
 
 ---
 
 ## Transiciones de estado
 
-<!-- PendingAcceptance
+PendingAcceptance
 ├── acceptEscrow()
 │ ├── solo worker
 │ ├── antes de acceptanceDeadline
@@ -58,7 +57,7 @@ PendingSubmission
 ├── desde submissionDeadline
 ├── acredita 100 % al owner
 ├── emite SubmissionExpired()
-└── pasa a SubmissionExpired -->
+└── pasa a SubmissionExpired
 PendingReview
 ├── approveWork()
 │ ├── solo owner
@@ -114,7 +113,7 @@ withdraw()
 
 ---
 
-<!-- ## Eventos
+## Eventos
 
 event EscrowAccepted(uint256 submissionDeadline);
 event EscrowCancelled();
@@ -145,7 +144,7 @@ uint256 amount
 
 ## Firmas de funciones
 
-<!-- function acceptEscrow() external;
+function acceptEscrow() external;
 
 function cancelEscrow() external;
 
@@ -155,7 +154,7 @@ function submitWork(
 string calldata submissionReference_
 ) external;
 
-function expireSubmission() external; -->
+function expireSubmission() external;
 
 function approveWork() external;
 
@@ -208,20 +207,20 @@ ArbitrationExpired → 50/50, wei sobrante para worker
 
 --
 
-<!-- ## Text lengths
+## Text lengths
 
 uint256 public constant MAX_TITLE_LENGTH = 64;
 uint256 public constant MAX_SUBMISSION_REFERENCE_LENGTH = 256;
 uint256 public constant MAX_DISPUTE_REASON_LENGTH = 256;
 uint256 public constant MAX_RESOLUTION_REASON_LENGTH = 256;
 
-Mínimo 1 -->
+Mínimo 1
 
 ---
 
 ## createEscrow
 
-<!-- function createEscrow(
+function createEscrow(
 address worker_,
 address arbitrator_,
 uint256 acceptanceDuration_,
@@ -245,13 +244,13 @@ event EscrowCreated(
     uint256 submissionDuration,
     uint256 reviewDuration,
     uint256 arbitrationDuration
-); -->
+);
 
 ---
 
 ## Factory añade
 
-<!-- mapping(address arbiter => address[] escrows)
+mapping(address arbiter => address[] escrows)
 public escrowsByArbitrator; -->
 
 ## Transiciones válidas
@@ -260,7 +259,7 @@ public escrowsByArbitrator; -->
 - `PendingAcceptance` to `EscrowCancelled` through `cancelEscrow()`.
 - `PendingAcceptance` to `AcceptanceExpired` through `expireAcceptance()`.
 - `PendingSubmission` to `PendingReview` through `submitWork()`.
-- `PendingSubmission` to `SubmissionExpired` through `expireSubmission()`. -->
+- `PendingSubmission` to `SubmissionExpired` through `expireSubmission()`.
 - `PendingReview` to `WorkApproved` through `approveWork()`.
 - `PendingReview` to `PendingArbitration` through `openDispute()`.
 - `PendingReview` to `ReviewExpired` through `expireReview()`.
