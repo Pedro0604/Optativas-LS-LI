@@ -1,9 +1,9 @@
 ### Next
-- Continuar con implementación de expireSubmission
 - Al finalizar el día actualizar specs-todo con lo hecho
 - Al finalizar toda la implementación:
     - Correlacionar funcionalidad con guia-resumen y escrow-spec (con chatGPT)
     - Chequear "Distribución de fondos en estados finales" en state.md
+    - /diagnose-bugs a ver si encuentra algo matcheando la spec
 
 ### Later
 - 

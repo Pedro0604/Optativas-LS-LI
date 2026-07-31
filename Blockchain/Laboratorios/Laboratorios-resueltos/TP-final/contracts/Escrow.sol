@@ -517,6 +517,29 @@ contract Escrow {
         emit WorkSubmitted(reviewDeadline);
     }
 
+    /**
+     * Materializa la expiración del período de envío.
+     *
+     * Requisitos:
+     * - Puede ser ejecutado por cualquier cuenta.
+     * - Debe estar en estado PendingSubmission.
+     * - Solo se puede ejecutar después de submissionDeadline.
+     *
+     * Efectos:
+     * - Acredita el amount completo al owner.
+     * - Transiciona de PendingSubmission a SubmissionExpired.
+     * - Emite el evento SubmissionExpired.
+     */
+    function expireSubmission()
+        external
+        inState(State.PendingSubmission)
+        expired(submissionDeadline)
+    {
+        pendingWithdrawals[owner] = amount;
+        state = State.SubmissionExpired;
+        emit SubmissionExpired();
+    }
+
     function acceptanceExpired() external view returns (bool expired_) {
         return isExpired(acceptanceDeadline);
     }
