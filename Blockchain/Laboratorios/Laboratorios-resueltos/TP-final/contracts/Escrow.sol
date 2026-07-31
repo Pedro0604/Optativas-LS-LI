@@ -501,6 +501,8 @@ contract Escrow {
      * - Transiciona de PendingSubmission a PendingReview.
      * - Emite el evento WorkSubmitted.
      * - Calcula reviewDeadline.
+     *
+     * @param submissionReference_ Referencia de la entrega del trabajo
      */
     function submitWork(
         string calldata submissionReference_
@@ -562,6 +564,37 @@ contract Escrow {
         pendingWithdrawals[worker] = amount;
         state = State.WorkApproved;
         emit WorkApproved();
+    }
+
+    /**
+     * Aprueba el trabajo.
+     *
+     * Requisitos:
+     * - Solo lo puede ejecutar el owner.
+     * - Debe estar en estado PendingReview.
+     * - Solo se puede ejecutar antes de reviewDeadline.
+     * - La disputeReason debe ocupar entre 1 y MAX_DISPUTE_REASON_LENGTH bytes
+     *
+     * Efectos:
+     * - Transiciona de PendingReview a PendingArbitration.
+     * - Emite el evento DisputeOpened.
+     * - Calcula arbitrationDeadline.
+     *
+     * @param disputeReason_ Razón de la disputa
+     */
+    function openDispute(
+        string calldata disputeReason_
+    )
+        external
+        onlyOwner
+        inState(State.PendingReview)
+        notExpired(reviewDeadline)
+        textLengthOk(disputeReason_, MAX_DISPUTE_REASON_LENGTH)
+    {
+        state = State.PendingArbitration;
+        arbitrationDeadline = block.timestamp + arbitrationDuration * 1 seconds;
+        disputeReason = disputeReason_;
+        emit DisputeOpened(arbitrationDeadline);
     }
 
     function acceptanceExpired() external view returns (bool expired_) {
