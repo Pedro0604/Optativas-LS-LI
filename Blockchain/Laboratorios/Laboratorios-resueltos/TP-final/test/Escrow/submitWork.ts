@@ -4,7 +4,11 @@ import { Error } from "../constants/Error.js";
 import { Event } from "../constants/Event.js";
 import { ethers, networkHelpers } from "../helpers/globals.js";
 import { pendingSubmissionFixture } from "../helpers/fixtures.js";
-import { setNextBlockAt, setNextBlockBefore } from "../helpers/time.js";
+import {
+  setNextBlockAfter,
+  setNextBlockAt,
+  setNextBlockBefore,
+} from "../helpers/time.js";
 import { DEFAULT_SUBMISSION_REFERENCE } from "../helpers/transitions.js";
 import { tooLongStringCases, validStringCases } from "../cases/title.js";
 import { getUtf8ByteLength } from "../helpers/utils.js";
@@ -106,6 +110,21 @@ describe("Escrow.submitWork", function () {
       );
 
       const submissionDeadline = await setNextBlockAt(
+        escrow.submissionDeadline(),
+      );
+      await expect(
+        escrow.connect(worker).submitWork(DEFAULT_SUBMISSION_REFERENCE),
+      )
+        .to.be.revertedWithCustomError(escrow, Error.DeadlineAlreadyExpired)
+        .withArgs(submissionDeadline);
+    });
+
+    it(`Should revert at submissionDeadline + 1`, async function () {
+      const { escrow, worker } = await networkHelpers.loadFixture(
+        pendingSubmissionFixture,
+      );
+
+      const submissionDeadline = await setNextBlockAfter(
         escrow.submissionDeadline(),
       );
       await expect(

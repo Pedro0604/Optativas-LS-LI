@@ -1,5 +1,4 @@
 ### Next
-- Extender chequeos de deadlines para que chequeen 1 seg antes, el mismo segundo y 1 seg después
 - Continuar con implementación de expireSubmission
 - Al finalizar el día actualizar specs-todo con lo hecho
 - Al finalizar toda la implementación:

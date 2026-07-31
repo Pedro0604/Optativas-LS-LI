@@ -4,7 +4,11 @@ import { Error } from "../constants/Error.js";
 import { Event } from "../constants/Event.js";
 import { ethers, networkHelpers } from "../helpers/globals.js";
 import { defaultEscrowFixture } from "../helpers/fixtures.js";
-import { setNextBlockAt, setNextBlockBefore } from "../helpers/time.js";
+import {
+  setNextBlockAfter,
+  setNextBlockAt,
+  setNextBlockBefore,
+} from "../helpers/time.js";
 
 describe("Escrow.expireAcceptance", function () {
   describe("successful expiration", function () {
@@ -28,6 +32,18 @@ describe("Escrow.expireAcceptance", function () {
 
       await setNextBlockAt(escrow.acceptanceDeadline());
       await expect(escrow.connect(worker).expireAcceptance()).to.not.revert(
+        ethers,
+      );
+    });
+
+    it(`Should not revert at acceptanceDeadline + 1`, async function () {
+      const { escrow, owner } =
+        await networkHelpers.loadFixture(defaultEscrowFixture);
+
+      await setNextBlockAfter(
+        escrow.acceptanceDeadline(),
+      );
+      await expect(escrow.connect(owner).expireAcceptance()).to.not.revert(
         ethers,
       );
     });
