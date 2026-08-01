@@ -47,7 +47,6 @@ La fábrica debe:
 - registrar cada dirección creada;
 - asociar cada escrow con su `owner`, `worker` y `arbiter`;
 - permitir listar y contar los escrows;
-- permitir verificar si una dirección fue creada por la fábrica;
 - emitir el evento canónico de creación.
 
 La fábrica no debe:
@@ -302,26 +301,23 @@ function createEscrow(
 3. El constructor recibe `msg.value`.
 4. Si alguna validación falla, toda la transacción revierte.
 5. La fábrica registra la dirección en todos sus índices.
-6. La fábrica marca la dirección en `isEscrow`.
-7. La fábrica emite `EscrowCreated`.
+6. La fábrica emite `EscrowCreated`.
 
 ### Registros
 
 ```solidity
 mapping(address owner => address[] escrows) public escrowsByOwner;
 mapping(address worker => address[] escrows) public escrowsByWorker;
-mapping(address arbiter => address[] escrows) public escrowsByarbiter;
+mapping(address arbiter => address[] escrows) public escrowsByArbiter;
 
 address[] public allEscrows;
-
-mapping(address escrow => bool registered) public isEscrow;
 ```
 
 ### Consultas
 
 - `getEscrowCountByOwner(address)`
 - `getEscrowCountByWorker(address)`
-- `getEscrowCountByarbiter(address)`
+- `getEscrowCountByArbiter(address)`
 - `getEscrowCount()`
 
 No debe existir un contador global separado. El total es `allEscrows.length`.
@@ -335,7 +331,7 @@ event EscrowCreated(
   address indexed arbiter,
   address escrowAddress,
   uint256 amount,
-  uint256 acceptanceDeadline,
+  uint256 acceptanceDuration,
   uint256 submissionDuration,
   uint256 reviewDuration,
   uint256 arbitrationDuration
@@ -347,8 +343,8 @@ Decisiones:
 - `owner`, `worker` y `arbiter` son `indexed`;
 - `escrowAddress` no es `indexed`;
 - el título no se emite;
-- se emite el deadline absoluto de aceptación;
-- las demás etapas emiten sus duraciones porque sus deadlines todavía no existen.
+- se emiten las duraciones configuradas para todas las etapas;
+- el deadline absoluto de aceptación puede consultarse en el contrato `Escrow` creado.
 
 ---
 
@@ -839,7 +835,6 @@ Si cualquier paso revierte:
 
 - el contrato no debe quedar desplegado de forma útil;
 - no deben agregarse direcciones a los arrays;
-- `isEscrow` no debe modificarse;
 - la fábrica no debe retener ETH;
 - los registros existentes deben permanecer exactamente iguales.
 
@@ -1018,7 +1013,7 @@ Estos valores no están incluidos en eventos.
 9. Implementar `pendingWithdrawals` y `withdraw()`.
 10. Definir y emitir todos los eventos.
 11. Actualizar la interfaz de creación de la fábrica.
-12. Agregar registro por árbitro e `isEscrow`.
+12. Agregar registro por árbitro.
 13. Adaptar helpers y fixtures.
 14. Implementar tests por transición.
 15. Implementar los casos temporales, contables y de atomicidad menos obvios.
