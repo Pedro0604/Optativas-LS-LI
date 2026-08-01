@@ -54,49 +54,49 @@
   **Referencias:** [Cancelación](./escrow-spec.md#cancellation-behavior) · [Expiraciones](./escrow-spec.md#expiration-behavior) · [`cancelEscrow()` y `expireAcceptance()`](./guia-resumen.md#11-funciones-de-escrow)  
   **Historias abarcadas:** [HU 21–27 y 87–91](./escrow-spec.md#user-stories)
 
-- [-] **8. Implementar entrega y vencimiento de entrega**
+- [x] **8. Implementar entrega y vencimiento de entrega**
 
   Implementar `submitWork()` con referencia obligatoria e inmutable, cálculo de `reviewDeadline` y transición a `PendingReview`; implementar `expireSubmission()` con devolución completa al owner.
 
   **Referencias:** [Interfaz de entrega](./escrow-spec.md#submission-interface) · [`submitWork()` y `expireSubmission()`](./guia-resumen.md#11-funciones-de-escrow) · [Datos textuales](./guia-resumen.md#10-variables-de-escrow)  
   **Historias abarcadas:** [HU 30–43, 95–96 y 136](./escrow-spec.md#user-stories)
 
-- [ ] **9. Implementar aprobación y vencimiento de revisión**
+- [x] **9. Implementar aprobación y vencimiento de revisión**
 
   Implementar `approveWork()` antes del deadline y `expireReview()` desde el deadline; ambos deben acreditar el monto completo al worker, pero terminar en `WorkApproved` y `ReviewExpired` respectivamente.
 
   **Referencias:** [Interfaz de aprobación](./escrow-spec.md#approval-interface) · [`approveWork()` y `expireReview()`](./guia-resumen.md#11-funciones-de-escrow)  
   **Historias abarcadas:** [HU 44–48 y 87–91](./escrow-spec.md#user-stories)
 
-- [ ] **10. Implementar apertura de disputas**
+- [x] **10. Implementar apertura de disputas**
 
   Implementar `openDispute()` únicamente para el owner y antes de `reviewDeadline`; validar, almacenar e inmovilizar `disputeReason`; calcular `arbitrationDeadline` y pasar a `PendingArbitration`.
 
   **Referencias:** [Interfaz de disputa](./escrow-spec.md#dispute-interface) · [`openDispute()`](./guia-resumen.md#opendispute-string-disputereason_) · [Estado `PendingArbitration`](./guia-resumen.md#disputed)  
   **Historias abarcadas:** [HU 49–55, 95–96 y 136](./escrow-spec.md#user-stories)
 
-- [ ] **11. Implementar resolución arbitral proporcional**
+- [x] **11. Implementar resolución arbitral proporcional**
 
   Implementar `resolveDispute()` para el árbitro antes del deadline, validar `workerAmount`, calcular el resto para el owner, almacenar `resolutionReason`, acreditar ambos saldos y pasar a `DisputeResolved`.
 
   **Referencias:** [Resolución de disputas](./escrow-spec.md#dispute-interface) · [`resolveDispute()`](./guia-resumen.md#resolvedispute-uint256-workeramount-string-resolutionreason_) · [Invariantes contables](./guia-resumen.md#15-invariantes-contables)  
   **Historias abarcadas:** [HU 56–68, 95–99 y 138–139](./escrow-spec.md#user-stories)
 
-- [ ] **12. Implementar vencimiento del arbitraje**
+- [x] **12. Implementar vencimiento del arbitraje**
 
   Implementar `expireArbitration()` permissionless desde `arbitrationDeadline`, distribuir 50/50 y asignar al worker cualquier wei sobrante.
 
   **Referencias:** [Expiración arbitral](./escrow-spec.md#expiration-behavior) · [`expireArbitration()`](./guia-resumen.md#expirearbitration) · [Resumen de transiciones](./guia-resumen.md#7-resumen-de-transiciones)  
   **Historias abarcadas:** [HU 68–73, 87–91, 127 y 138–139](./escrow-spec.md#user-stories)
 
-- [ ] **13. Centralizar la acreditación de fondos**
+- [x] **13. Centralizar la acreditación de fondos**
 
   Implementar una lógica interna uniforme para acreditar `pendingWithdrawals` en todas las terminaciones, asegurando que cada camino asigne exactamente `amount` una sola vez.
 
   **Referencias:** [Contabilidad de retiros](./escrow-spec.md#withdrawal-accounting) · [Withdrawal pattern](./guia-resumen.md#14-withdrawal-pattern) · [Invariantes contables](./guia-resumen.md#15-invariantes-contables)  
   **Historias abarcadas:** [HU 41, 45–46, 57, 70–76 y 137–139](./escrow-spec.md#user-stories)
 
-- [ ] **14. Implementar `withdraw()` de forma segura**
+- [x] **14. Implementar `withdraw()` de forma segura**
 
   Retirar el saldo completo del llamante, revertir ante saldo cero, aplicar checks-effects-interactions, manejar fallos de transferencia y emitir `FundsWithdrawn` sin modificar el estado.
 
@@ -110,7 +110,7 @@
   **Referencias:** [Eventos](./escrow-spec.md#events) · [Eventos de Escrow](./guia-resumen.md#12-eventos) · [Evento de creación](./guia-resumen.md#evento-de-creación)  
   **Historias abarcadas:** [HU 67, 92–105, 118–119 y 133–134](./escrow-spec.md#user-stories)
 
-- [ ] **16. Completar custom errors y modificadores**
+- [x] **16. Completar custom errors y modificadores**
 
   Agregar errores específicos para árbitro, strings, montos, retiros y duraciones; revisar `onlyOwner`, `onlyWorker`, `onlyArbitrator`, `inState`, `onlyBefore` y `onlyAfter`.
 
@@ -124,21 +124,21 @@
   **Referencias:** [Orden sugerido](./guia-resumen.md#21-orden-sugerido-de-implementación) · [Máquina de estados](./escrow-spec.md#state-machine) · [Reglas temporales](./guia-resumen.md#8-reglas-temporales)  
   **Historias abarcadas:** [HU 120–131](./escrow-spec.md#user-stories)
 
-- [ ] **18. Implementar los tests funcionales de la máquina de estados**
+- [x] **18. Implementar los tests funcionales de la máquina de estados**
 
   Cubrir cada transición válida, permisos, estado de origen, estado destino, deadlines calculados, eventos emitidos, strings almacenados y distribución resultante.
 
   **Referencias:** [Máquina de estados](./escrow-spec.md#state-machine) · [Resumen de transiciones](./guia-resumen.md#7-resumen-de-transiciones) · [Tests no obvios](./guia-resumen.md#19-tests-no-obvios-o-especialmente-importantes)  
   **Historias abarcadas:** [HU 120–126 y 132–136](./escrow-spec.md#user-stories)
 
-- [ ] **19. Implementar tests exhaustivos de límites temporales**
+- [x] **19. Implementar tests exhaustivos de límites temporales**
 
   Probar cada acción y expiración un segundo antes, exactamente en y después del deadline; verificar que no existan ventanas superpuestas ni carreras lógicas después del vencimiento.
 
   **Referencias:** [Modelo temporal](./escrow-spec.md#time-model) · [Límites temporales exactos](./guia-resumen.md#191-límites-temporales-exactos) · [Carrera lógica](./guia-resumen.md#192-carrera-lógica-después-del-vencimiento)  
   **Historias abarcadas:** [HU 20, 22, 38, 50, 68, 86–91 y 122–123](./escrow-spec.md#user-stories)
 
-- [ ] **20. Implementar tests contables y de seguridad no triviales**
+- [x] **20. Implementar tests contables y de seguridad no triviales**
 
   Probar repartos extremos, división impar, retiros independientes, doble retiro, receptor que rechaza ETH, conservación de saldos y asignación única del monto.
 
