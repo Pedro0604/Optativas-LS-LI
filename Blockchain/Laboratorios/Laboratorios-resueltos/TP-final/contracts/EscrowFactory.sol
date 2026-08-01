@@ -35,7 +35,7 @@ contract EscrowFactory {
 
     /**
      * @param worker_ Dirección de quien realizará el trabajo y recibirá el pago
-     * @param worker_ Dirección de quien realizará el arbitraje de ser necesario
+     * @param arbiter_ Dirección de quien realizará el arbitraje de ser necesario
      * @param acceptanceDuration_ Duración del período de aceptación del escrow en segundos
      * @param submissionDuration_ Duración del período de elaboración del trabajo en segundos
      * @param reviewDuration_ Duración del período de revisión del trabajo en segundos
