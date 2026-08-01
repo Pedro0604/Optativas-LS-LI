@@ -163,38 +163,30 @@ describe("Escrow expiration functions", function () {
           await networkHelpers.loadFixture(defaultEscrowFixture);
 
         const amountInWei = ethers.parseEther("1") + 1n; // Impar
-        await expect(
-          escrowFactory
-            .connect(owner)
-            .createEscrow(
-              worker.address,
-              arbiter.address,
-              SECONDS_PER_DAY * 10n,
-              SECONDS_PER_DAY * 10n,
-              SECONDS_PER_DAY * 10n,
-              SECONDS_PER_DAY * 10n,
-              "Título",
-              {
-                value: amountInWei,
-              },
-            ),
-        ).to.not.revert(ethers);
+        await escrowFactory
+          .connect(owner)
+          .createEscrow(
+            worker.address,
+            arbiter.address,
+            SECONDS_PER_DAY * 10n,
+            SECONDS_PER_DAY * 10n,
+            SECONDS_PER_DAY * 10n,
+            SECONDS_PER_DAY * 10n,
+            "Título",
+            {
+              value: amountInWei,
+            },
+          );
 
         const escrowAddress = await escrowFactory.allEscrows(1); // El 0 es el default, el 1 es el de wei impar
         const escrow = await ethers.getContractAt("Escrow", escrowAddress);
 
-        await expect(escrow.connect(worker).acceptEscrow()).to.not.revert(
-          ethers,
-        );
-        await expect(escrow.connect(worker).submitWork("Submit")).to.not.revert(
-          ethers,
-        );
-        await expect(
-          escrow.connect(owner).openDispute("Dispute"),
-        ).to.not.revert(ethers);
+        await escrow.connect(worker).acceptEscrow();
+        await escrow.connect(worker).submitWork("Submit");
+        await escrow.connect(owner).openDispute("Dispute");
 
         await setNextBlockAt(escrow.arbitrationDeadline());
-        await expect(escrow.expireArbitration()).to.not.revert(ethers);
+        await escrow.expireArbitration();
 
         const ownerAmount = amountInWei / 2n; // Es división entera, por lo que descarta el resto si amountInWei es impar
         const workerAmount = amountInWei - ownerAmount; // Si amountInWei queda con 1 wei más que el owner
