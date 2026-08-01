@@ -60,7 +60,7 @@ The dispute flow will be:
 - If the arbiter does not act before the arbitration deadline, the funds are split 50/50, with any indivisible wei assigned to the worker.
 - Each beneficiary withdraws independently.
 
-The factory will register escrows globally and by owner, worker, and arbiter. It will also expose a boolean registry for verifying whether an address was created by the factory.
+The factory will register escrows globally and by owner, worker, and arbiter. No separate boolean registry is maintained; discovery relies on the role registries, the global list, and the canonical creation event.
 
 ## User Stories
 
@@ -156,7 +156,7 @@ The factory will register escrows globally and by owner, worker, and arbiter. It
 90. As a developer, I want actions valid only when the timestamp is strictly before the deadline, so that the deadline instant counts as expired.
 91. As a developer, I want expiration valid from the deadline timestamp onward, so that no time gap exists between action and expiration windows.
 92. As an indexer, I want events to describe completed actions, so that logs read as historical facts.
-93. As a developer, I want event names without an `Escrow` prefix, so that the ABI remains concise.
+93. As a developer, I want canonical and consistent event names, so that external clients can depend on a stable ABI.
 94. As an indexer, I want deadlines emitted when a new timed stage begins, so that I can schedule UI updates without extra reads.
 95. As an indexer, I want submission, dispute, and resolution strings omitted from events, so that dynamic text is not duplicated in logs.
 96. As an application, I want to read submission, dispute, and resolution strings directly from the contract, so that stored values remain the authoritative source.
@@ -166,7 +166,7 @@ The factory will register escrows globally and by owner, worker, and arbiter. It
 100. As an application, I want the factory creation event to identify the owner, worker, and arbiter as indexed fields, so that escrows can be discovered by role.
 101. As an application, I want the created escrow address in the factory event, so that I can interact with the new contract.
 102. As an application, I want the escrow amount in the factory event, so that I can display the funded value immediately.
-103. As an application, I want the acceptance deadline in the factory event, so that I know when the proposal expires.
+103. As an application, I want the acceptance duration in the factory event, so that I can display the configured agreement term immediately.
 104. As an application, I want the work, review, and arbitration durations in the factory event, so that I can display the agreement terms before those stages begin.
 105. As an application, I want the title stored in the escrow rather than duplicated in the creation event, so that dynamic text is read from one source.
 106. As an owner, I want the factory to list all escrows I created, so that I can find my agreements.
@@ -174,7 +174,7 @@ The factory will register escrows globally and by owner, worker, and arbiter. It
 108. As an arbiter, I want the factory to list all escrows assigned to me, so that I can find disputes I may need to resolve.
 109. As an application, I want a global escrow list, so that I can enumerate agreements without processing historical logs.
 110. As an application, I want the total escrow count derived from the global list, so that no duplicate counter must be maintained.
-111. As an application, I want to verify whether an address was created by the factory, so that I can reject unrelated or counterfeit contracts.
+111. As an application, I want escrow discovery to use the factory lists and canonical creation event, so that the factory does not maintain a duplicate boolean registry.
 112. As a developer, I want one escrow contract per agreement, so that funds and state remain isolated.
 113. As a developer, I want the factory to create and register escrows atomically, so that failed creation cannot leave partial registry entries.
 114. As a developer, I want the factory not to retain escrow funds, so that ETH is isolated in the created agreement.
@@ -184,7 +184,7 @@ The factory will register escrows globally and by owner, worker, and arbiter. It
 118. As a developer, I want only the factory to emit the system-level creation event, so that escrow discovery has one canonical source.
 119. As a developer, I do not want the escrow constructor to emit a duplicate creation event, so that indexers do not process two representations of the same creation.
 120. As a tester, I want every valid transition tested from its exact source state, so that the state machine matches the specification.
-121. As a tester, I want every invalid transition tested from all incompatible states, so that terminal and operational states cannot be bypassed.
+121. As a tester, I want every transition to be tested from an incompatible state, so that the shared exact-state validation is verified without duplicating the same assertion for every enum value.
 122. As a tester, I want deadline boundary tests at one second before, exactly at, and after each deadline, so that temporal semantics are verified.
 123. As a tester, I want cancellation and acceptance expiration tested independently, so that their terminal causes remain distinct.
 124. As a tester, I want submission expiration to allocate the complete amount to the owner, so that non-submission accounting is verified.
@@ -271,6 +271,15 @@ All terminal states are irreversible. No lifecycle transition is permitted after
 - An expiration is allowed when the current timestamp is greater than or equal to its deadline.
 - Late actions revert and do not implicitly materialize expiration.
 - Each expiration is processed through a dedicated function.
+
+The escrow also exposes read-only helpers for each timed stage:
+
+- `acceptanceExpired()`.
+- `submissionExpired()`.
+- `reviewExpired()`.
+- `arbitrationExpired()`.
+
+Each helper returns `false` while its deadline is zero and otherwise reports whether the current timestamp is greater than or equal to that deadline.
 
 ### Creation interface
 
@@ -400,7 +409,7 @@ It:
 
 ### Cancellation behavior
 
-The cancellation function is named `cancel`.
+The cancellation function is named `cancelEscrow`.
 
 It:
 
@@ -431,7 +440,7 @@ There is no unilateral or mutual cancellation after the worker accepts.
 
 ### Events
 
-Escrow lifecycle event names do not use an `Escrow` prefix.
+Escrow lifecycle events use the canonical names listed below. `EscrowAccepted` and `EscrowCancelled` retain the `Escrow` prefix; the remaining lifecycle events do not add it.
 
 The lifecycle events are:
 
@@ -464,7 +473,7 @@ The factory creation event carries:
 - Indexed arbiter.
 - Non-indexed escrow address.
 - Amount.
-- Acceptance deadline.
+- Acceptance duration.
 - Work duration.
 - Review duration.
 - Arbitration duration.
@@ -479,7 +488,8 @@ The factory maintains:
 - A list of escrow addresses by worker.
 - A list of escrow addresses by arbiter.
 - A global list of all escrow addresses.
-- A boolean escrow registry keyed by contract address.
+
+No boolean escrow registry is maintained.
 
 The factory exposes count queries for:
 

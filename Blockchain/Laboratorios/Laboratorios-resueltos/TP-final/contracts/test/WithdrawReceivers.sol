@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.36;
 
+// Este contrato es solo utilizado para test
+
 /**
  * Interfaz que representa las acciones necesarias de un Escrow
  */

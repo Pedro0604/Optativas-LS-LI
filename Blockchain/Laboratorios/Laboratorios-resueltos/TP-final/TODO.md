@@ -1,22 +1,18 @@
 ### Next
-- Hacer tests de withdraw, además de lo normal testear:
-    - Retiro con cuenta sin fondos
-    - Hacer contrato solo para test que llame a withdraw desde dentro de su receive para ver si falla bien
-    - Hacer contrato solo para test que no tenga receive ni fallback
-- Hacer lifecycle tests.
 - Al finalizar toda la implementación:
-    - Correlacionar funcionalidad con guia-resumen y escrow-spec (con chatGPT)
-    - Chequear "Distribución de fondos en estados finales" en state.md
     - /diagnose-bugs a ver si encuentra algo matcheando la spec
-- Luego setear skills y hacer desarrollo de frontend. Las partes de conexión con la MetaMask o Rainbow o lo que sea las hago.
+- Luego hacer desarrollo de frontend: /grill-with-docs o /wayfinder Quiero hacer la UI del sistema. Pensaba una SPA con react y tan stack router, qué pasos habría que seguir, qué se tiene que tener en cuenta, cómo se puede hacer la conexión con wallets para logearse, qué pestañas debería tener, etc.
+- Hacer lifecycle tests.
 
 ### Later
 - 
 
 ### Antes de entrgar
-- docstrings de .sol y archivos .ts que no sean tests (archivos con funciones o types: constants/\*, helpers/\*, cases/\*, etc.)
-- revisar y aplicar o eliminar TODOs
-- Matchear state de Escrow.sol con state de State.ts y errores y eventos con Error.ts y Event.ts (pedir a chatGPT que matchee)
+- Revisar 21, 22 y 23 de specs-todo
+- Revisar y aplicar o eliminar TODOs
+- Revisar docstrings de .sol para que todas las funciones tengan y que respete NatSpec, mejorarlo y asegurarse que es correcto para cada función.
+- Revisar que las funciones, constantes y types de archivos .ts tengan sus docstrings
+- Matchear state de Escrow.sol con state de State.ts y errores y eventos con Error.ts y Event.ts
 
 ## Links
 Grilling: https://chatgpt.com/c/6a6a88a4-3b28-83e9-8cb8-8fe8a40804c0

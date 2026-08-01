@@ -18,3 +18,7 @@ When writing or modifying tests, configuring `hardhat.config.ts`, or interacting
 
 - Hardhat 3 — https://hardhat.org/llms.txt
 - ethers.js — https://docs.ethers.org/v6/
+
+## Responses
+
+When writing a response to the user be concise, don't use extra words and sacrifice grammar for the sake of conciseness.
