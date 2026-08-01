@@ -2,6 +2,17 @@
   "name": "TP-final",
   "version": "1.0.0",
   "type": "module",
+  "scripts": {
+    "contracts:generate": "pnpm --filter @escrow/contracts generate",
+    "contracts:check": "pnpm --filter @escrow/contracts check",
+    "web:typecheck": "pnpm --filter @escrow/web typecheck",
+    "web:test": "pnpm --filter @escrow/web test",
+    "web:build": "pnpm --filter @escrow/web build",
+    "web:dev": "pnpm --filter @escrow/web dev",
+    "format": "prettier --write \"apps/web/**/*.{ts,tsx,css,json,html}\" \"packages/contracts/**/*.{js,mjs,json}\" package.json pnpm-workspace.yaml .prettierrc.json --ignore-unknown",
+    "format:check": "prettier --check \"apps/web/**/*.{ts,tsx,css,json,html}\" \"packages/contracts/**/*.{js,mjs,json}\" package.json pnpm-workspace.yaml .prettierrc.json --ignore-unknown",
+    "verify": "pnpm hardhat build && pnpm hardhat test && pnpm contracts:check && pnpm web:typecheck && pnpm web:test && pnpm web:build"
+  },
   "devDependencies": {
     "@nomicfoundation/hardhat-ethers": "^4.0.15",
     "@nomicfoundation/hardhat-ignition": "^3.1.8",

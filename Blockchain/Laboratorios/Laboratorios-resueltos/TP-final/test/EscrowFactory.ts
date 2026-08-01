@@ -326,6 +326,11 @@ describe("EscrowFactory", function () {
           }),
         ).to.revert(ethers);
 
+        // Una creación revertida no registra direcciones espurias.
+        expect(await escrowFactory.isEscrow(ethers.ZeroAddress)).to.be.false;
+        expect(await escrowFactory.isEscrow(firstEscrowAddress)).to.be.true;
+        expect(await escrowFactory.isEscrow(secondEscrowAddress)).to.be.true;
+
         // Los counts deben mantenerse
         expect(await escrowFactory.getEscrowCount()).to.equal(
           globalCountBefore,

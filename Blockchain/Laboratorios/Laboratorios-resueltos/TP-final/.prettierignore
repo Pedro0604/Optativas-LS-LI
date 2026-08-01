@@ -1,0 +1,12 @@
+node_modules
+artifacts
+cache
+coverage
+dist
+types
+.agents
+.scratch
+apps/web/src/routeTree.gen.ts
+packages/contracts/src/index.ts
+pnpm-lock.yaml
+*.md

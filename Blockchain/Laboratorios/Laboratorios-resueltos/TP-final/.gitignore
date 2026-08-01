@@ -31,3 +31,13 @@
 /snapshots
 
 .agents/
+
+apps/web/node_modules
+
+.pnpm-store
+
+apps/web/dist
+apps/web/.tanstack
+apps/web/tsconfig.tsbuildinfo
+
+.env

@@ -1,0 +1,35 @@
+{
+  "name": "@escrow/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "typecheck": "tsc -b --pretty false",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@escrow/contracts": "workspace:*",
+    "@tanstack/react-query": "^5.83.0",
+    "@tanstack/react-router": "^1.130.12",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "viem": "^2.33.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.11",
+    "@tanstack/router-plugin": "^1.130.12",
+    "@testing-library/jest-dom": "^6.6.4",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/react": "^19.1.9",
+    "@types/react-dom": "^19.1.7",
+    "@vitejs/plugin-react": "^4.7.0",
+    "jsdom": "^26.1.0",
+    "tailwindcss": "^4.1.11",
+    "typescript": "~6.0.3",
+    "vite": "^7.0.6",
+    "vitest": "^3.2.4"
+  }
+}

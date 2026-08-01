@@ -1,5 +1,7 @@
 ### Next
-- 
+- Usar tailwind
+- Desplegar contrato
+- Extraer del DiscoveryPage.tsx algun componente para el listado o algo así
 - Hacer lifecycle tests.
 
 ### Later
