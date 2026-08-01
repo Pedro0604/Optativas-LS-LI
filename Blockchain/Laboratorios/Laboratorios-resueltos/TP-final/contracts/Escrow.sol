@@ -558,7 +558,7 @@ contract Escrow {
     }
 
     /**
-     * Aprueba el trabajo.
+     * Abre una disputa.
      *
      * Requisitos:
      * - Solo lo puede ejecutar el owner.
@@ -619,11 +619,12 @@ contract Escrow {
      * - Debe estar en estado PendingArbitration.
      * - Solo se puede ejecutar antes de arbitrationDeadline.
      * - La resolutionReason debe ocupar entre 1 y MAX_RESOLUTION_REASON_LENGTH bytes
+     * - workerAmount debe ser igual o inferior al amount del escrow
      *
      * Efectos:
      * - Transiciona de PendingArbitration a DisputeResolved.
      * - Emite el evento DisputeResolved.
-     * - Calcula arbitrationDeadline.
+     * - Acredita workerAmount de wei al worker y el resto al owner 
      *
      * @param workerAmount Cantidad de dinero a acreditar al worker, el resto se acredita al owner
      * @param resolutionReason_ Razón de la resolución
