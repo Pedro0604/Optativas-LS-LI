@@ -19,6 +19,16 @@ When writing or modifying tests, configuring `hardhat.config.ts`, or interacting
 - Hardhat 3 — https://hardhat.org/llms.txt
 - ethers.js — https://docs.ethers.org/v6/
 
+## Agent skills
+
+### Issue tracker
+
+Issues are tracked as local Markdown files under `.scratch/`. See `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+Single-context domain documentation. See `docs/agents/domain.md`.
+
 ## Responses
 
 When writing a response to the user be concise, don't use extra words and sacrifice grammar for the sake of conciseness.

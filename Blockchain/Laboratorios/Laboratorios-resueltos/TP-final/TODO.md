@@ -1,9 +1,9 @@
 ### Next
-- Luego hacer desarrollo de frontend: /grill-with-docs o /wayfinder Quiero hacer la UI del sistema. Pensaba una SPA con react y tan stack router, qué pasos habría que seguir, qué se tiene que tener en cuenta, cómo se puede hacer la conexión con wallets para logearse, qué pestañas debería tener, etc.
+- 
 - Hacer lifecycle tests.
 
 ### Later
-- 
+- IEscrow.sol que tenga todos los eventos, errores y la interfaz con su NatSpec para que en Escrow.sol esté la implementación y no esté lleno de comentarios de specs (usar @inheritdoc) 
 
 ### Antes de entrgar
 - Revisar 21, 22 y 23 de specs-todo
