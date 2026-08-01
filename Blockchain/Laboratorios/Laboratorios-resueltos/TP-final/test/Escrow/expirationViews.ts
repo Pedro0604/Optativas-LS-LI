@@ -7,44 +7,6 @@ import {
 } from "../helpers/fixtures.js";
 import { networkHelpers } from "../helpers/globals.js";
 
-describe("Escrow expiration views", function () {
-  describe("Escrow.acceptanceExpired", function () {
-    it(`Should correctly calculate acceptanceExpired around acceptanceDeadline`, async function () {
-      const { escrow } = await networkHelpers.loadFixture(defaultEscrowFixture);
-
-      const acceptanceDeadline = await escrow.acceptanceDeadline();
-
-      await networkHelpers.time.increaseTo(acceptanceDeadline - 1n);
-      expect(await escrow.acceptanceExpired()).to.be.false;
-
-      await networkHelpers.time.increaseTo(acceptanceDeadline);
-      expect(await escrow.acceptanceExpired()).to.be.true;
-
-      await networkHelpers.time.increaseTo(acceptanceDeadline + 1n);
-      expect(await escrow.acceptanceExpired()).to.be.true;
-    });
-  });
-
-  describe("Escrow.submissionExpired", function () {
-    it(`Should correctly calculate submissionExpired around submissionDeadline`, async function () {
-      const { escrow } = await networkHelpers.loadFixture(
-        pendingSubmissionFixture,
-      );
-
-      const submissionDeadline = await escrow.submissionDeadline();
-
-      await networkHelpers.time.increaseTo(submissionDeadline - 1n);
-      expect(await escrow.submissionExpired()).to.be.false;
-
-      await networkHelpers.time.increaseTo(submissionDeadline);
-      expect(await escrow.submissionExpired()).to.be.true;
-
-      await networkHelpers.time.increaseTo(submissionDeadline + 1n);
-      expect(await escrow.submissionExpired()).to.be.true;
-    });
-  });
-});
-
 const expirationCases = [
   {
     expiredFunctionName: "acceptanceExpired",

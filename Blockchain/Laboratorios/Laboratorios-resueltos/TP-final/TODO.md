@@ -1,6 +1,4 @@
 ### Next
-- Al finalizar toda la implementación:
-    - /diagnose-bugs a ver si encuentra algo matcheando la spec
 - Luego hacer desarrollo de frontend: /grill-with-docs o /wayfinder Quiero hacer la UI del sistema. Pensaba una SPA con react y tan stack router, qué pasos habría que seguir, qué se tiene que tener en cuenta, cómo se puede hacer la conexión con wallets para logearse, qué pestañas debería tener, etc.
 - Hacer lifecycle tests.
 
@@ -16,7 +14,6 @@
 
 ## Links
 Grilling: https://chatgpt.com/c/6a6a88a4-3b28-83e9-8cb8-8fe8a40804c0
-Descarga de spec: https://chatgpt.com/c/6a6ac139-0cc8-83e9-ac85-77e5e851a73d
 
 https://asignaturas.info.unlp.edu.ar/course/view.php?id=141
 https://chatgpt.com/share/6a5a20b3-3318-83e9-9559-db9facc90955
@@ -28,4 +25,3 @@ https://hardhat.org/docs/guides/testing/using-ethers#testing-a-function-that-rev
 https://hardhat.org/docs/plugins/hardhat-ethers
 https://hardhat.org/docs/plugins/hardhat-ethers-chai-matchers#reverted-transactions
 https://hardhat.org/docs/plugins/hardhat-network-helpers#time
-https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/access/Ownable.sol

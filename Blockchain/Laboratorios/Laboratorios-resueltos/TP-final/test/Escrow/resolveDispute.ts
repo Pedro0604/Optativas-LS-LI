@@ -86,7 +86,7 @@ describe("Escrow.resolveDispute", function () {
 
           const [workerAmount] = getWorkerAndOwnerAmounts(amountInWei);
 
-          const maxLength = await escrow.MAX_DISPUTE_REASON_LENGTH();
+          const maxLength = await escrow.MAX_RESOLUTION_REASON_LENGTH();
           const reason = testCase.buildValue(maxLength);
           const expectedLength = testCase.expectedLength(maxLength);
 
@@ -217,15 +217,15 @@ describe("Escrow.resolveDispute", function () {
       ).to.be.revertedWithCustomError(escrow, EscrowError.EmptyString);
     });
 
-    describe("resolutionReason exceeding MAX_DISPUTE_REASON_LENGTH", function () {
+    describe("resolutionReason exceeding MAX_RESOLUTION_REASON_LENGTH", function () {
       for (const testCase of tooLongStringCases) {
-        it(`Should revert when resolutionReason length exceeds MAX_DISPUTE_REASON_LENGTH using ${testCase.description}`, async function () {
+        it(`Should revert when resolutionReason length exceeds MAX_RESOLUTION_REASON_LENGTH using ${testCase.description}`, async function () {
           const { escrow, arbiter, amountInWei } =
             await networkHelpers.loadFixture(pendingArbitrationFixture);
 
           const [workerAmount] = getWorkerAndOwnerAmounts(amountInWei);
 
-          const maxLength = await escrow.MAX_DISPUTE_REASON_LENGTH();
+          const maxLength = await escrow.MAX_RESOLUTION_REASON_LENGTH();
           const reason = testCase.buildValue(maxLength);
           const expectedLength = testCase.expectedLength(maxLength);
           const reasonLength = getUtf8ByteLength(reason);

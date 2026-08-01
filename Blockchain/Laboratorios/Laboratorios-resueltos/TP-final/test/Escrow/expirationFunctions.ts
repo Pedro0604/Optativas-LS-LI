@@ -157,47 +157,47 @@ describe("Escrow expiration functions", function () {
         });
       });
     });
+  }
 
-    describe(`Escrow.expireArbitration odd amount`, function () {
-      // Se crea este test porque el default siempre es par, entonces no se probaría nunca el caso impar
-      it(`Should credit 1 wei more to the worker when the amount is odd`, async function () {
-        const { escrowFactory, owner, worker, arbiter } =
-          await networkHelpers.loadFixture(defaultEscrowFixture);
+  describe(`Escrow.expireArbitration odd amount`, function () {
+    // Se crea este test porque el default siempre es par, entonces no se probaría nunca el caso impar
+    it(`Should credit 1 wei more to the worker when the amount is odd`, async function () {
+      const { escrowFactory, owner, worker, arbiter } =
+        await networkHelpers.loadFixture(defaultEscrowFixture);
 
-        const amountInWei = ethers.parseEther("1") + 1n; // Impar
-        await escrowFactory
-          .connect(owner)
-          .createEscrow(
-            worker.address,
-            arbiter.address,
-            SECONDS_PER_DAY * 10n,
-            SECONDS_PER_DAY * 10n,
-            SECONDS_PER_DAY * 10n,
-            SECONDS_PER_DAY * 10n,
-            "Título",
-            {
-              value: amountInWei,
-            },
-          );
-
-        const escrowAddress = await escrowFactory.allEscrows(1); // El 0 es el default, el 1 es el de wei impar
-        const escrow = await ethers.getContractAt("Escrow", escrowAddress);
-
-        await escrow.connect(worker).acceptEscrow();
-        await escrow.connect(worker).submitWork("Submit");
-        await escrow.connect(owner).openDispute("Dispute");
-
-        await setNextBlockAt(escrow.arbitrationDeadline());
-        await escrow.expireArbitration();
-
-        const [workerAmount, ownerAmount] = getWorkerAndOwnerAmounts(
-          amountInWei,
-          50n,
+      const amountInWei = ethers.parseEther("1") + 1n; // Impar
+      await escrowFactory
+        .connect(owner)
+        .createEscrow(
+          worker.address,
+          arbiter.address,
+          SECONDS_PER_DAY * 10n,
+          SECONDS_PER_DAY * 10n,
+          SECONDS_PER_DAY * 10n,
+          SECONDS_PER_DAY * 10n,
+          "Título",
+          {
+            value: amountInWei,
+          },
         );
 
-        expect(await escrow.pendingWithdrawals(owner)).to.equal(ownerAmount);
-        expect(await escrow.pendingWithdrawals(worker)).to.equal(workerAmount);
-      });
+      const escrowAddress = await escrowFactory.allEscrows(1); // El 0 es el default, el 1 es el de wei impar
+      const escrow = await ethers.getContractAt("Escrow", escrowAddress);
+
+      await escrow.connect(worker).acceptEscrow();
+      await escrow.connect(worker).submitWork("Submit");
+      await escrow.connect(owner).openDispute("Dispute");
+
+      await setNextBlockAt(escrow.arbitrationDeadline());
+      await escrow.expireArbitration();
+
+      const [workerAmount, ownerAmount] = getWorkerAndOwnerAmounts(
+        amountInWei,
+        50n,
+      );
+
+      expect(await escrow.pendingWithdrawals(owner)).to.equal(ownerAmount);
+      expect(await escrow.pendingWithdrawals(worker)).to.equal(workerAmount);
     });
-  }
+  });
 });
