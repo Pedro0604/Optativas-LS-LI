@@ -10,28 +10,11 @@ import {
   setNextBlockBefore,
 } from "../helpers/time.js";
 import { tooLongStringCases, validStringCases } from "../cases/title.js";
-import { getUtf8ByteLength } from "../helpers/utils.js";
+import {
+  getUtf8ByteLength,
+  getWorkerAndOwnerAmounts,
+} from "../helpers/utils.js";
 import { DEFAULT_RESOLUTION_REASON } from "../helpers/transitions.js";
-
-/**
- * Obtiene la cantidad del owner y worker para el porcentaje indicado
- *
- * @param amountInWei Cantidad total del contrato
- * @param workerPercent Porcentaje para el worker (de 0 a 100)
- * @returns [workerAmount, ownerAmount]
- */
-function getWorkerAndOwnerAmounts(
-  amountInWei: bigint,
-  workerPercent = 70n,
-): [workerAmount: bigint, ownerAmount: bigint] {
-  if (workerPercent < 0n || workerPercent > 100n) {
-    throw new RangeError("workerPercent tiene que estar entre 0 y 100");
-  }
-
-  const workerAmount = (amountInWei * workerPercent) / 100n;
-
-  return [workerAmount, amountInWei - workerAmount];
-}
 
 describe("Escrow.resolveDispute", function () {
   describe("successful resolution", function () {

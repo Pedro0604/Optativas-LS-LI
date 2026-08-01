@@ -14,7 +14,7 @@ import {
   setNextBlockAt,
   setNextBlockBefore,
 } from "../helpers/time.js";
-import { createEscrow } from "../helpers/createEscrow.js";
+import { getWorkerAndOwnerAmounts } from "../helpers/utils.js";
 
 const expirationCases = [
   {
@@ -99,8 +99,10 @@ describe("Escrow expiration functions", function () {
               );
               break;
             case "both":
-              const ownerAmount = amountInWei / 2n; // Es división entera, por lo que descarta el resto si amountInWei es impar
-              const workerAmount = amountInWei - ownerAmount; // Si amountInWei queda con 1 wei más que el owner
+              const [workerAmount, ownerAmount] = getWorkerAndOwnerAmounts(
+                amountInWei,
+                50n,
+              );
 
               expect(await escrow.pendingWithdrawals(owner)).to.equal(
                 ownerAmount,
@@ -188,8 +190,10 @@ describe("Escrow expiration functions", function () {
         await setNextBlockAt(escrow.arbitrationDeadline());
         await escrow.expireArbitration();
 
-        const ownerAmount = amountInWei / 2n; // Es división entera, por lo que descarta el resto si amountInWei es impar
-        const workerAmount = amountInWei - ownerAmount; // Si amountInWei queda con 1 wei más que el owner
+        const [workerAmount, ownerAmount] = getWorkerAndOwnerAmounts(
+          amountInWei,
+          50n,
+        );
 
         expect(await escrow.pendingWithdrawals(owner)).to.equal(ownerAmount);
         expect(await escrow.pendingWithdrawals(worker)).to.equal(workerAmount);
