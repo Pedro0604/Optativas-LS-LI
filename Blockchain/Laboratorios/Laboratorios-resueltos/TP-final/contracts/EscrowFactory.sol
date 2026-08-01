@@ -7,6 +7,7 @@ contract EscrowFactory {
     mapping(address owner => address[] escrows) public escrowsByOwner;
     mapping(address worker => address[] escrows) public escrowsByWorker;
     mapping(address arbiter => address[] escrows) public escrowsByArbiter;
+    mapping(address escrow => bool registered) public isEscrow;
     address[] public allEscrows;
 
     /**
@@ -67,6 +68,7 @@ contract EscrowFactory {
         escrowsByOwner[msg.sender].push(escrowAddress);
         escrowsByWorker[worker_].push(escrowAddress);
         escrowsByArbiter[arbiter_].push(escrowAddress);
+        isEscrow[escrowAddress] = true;
         allEscrows.push(escrowAddress);
 
         emit EscrowCreated({

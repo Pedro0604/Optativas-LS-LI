@@ -60,7 +60,7 @@ The dispute flow will be:
 - If the arbiter does not act before the arbitration deadline, the funds are split 50/50, with any indivisible wei assigned to the worker.
 - Each beneficiary withdraws independently.
 
-The factory will register escrows globally and by owner, worker, and arbiter. No separate boolean registry is maintained; discovery relies on the role registries, the global list, and the canonical creation event.
+The factory will register escrows globally and by owner, worker, and arbiter. It also maintains an `isEscrow` boolean registry so applications can verify in constant time whether an address was created by that factory.
 
 ## User Stories
 
@@ -174,7 +174,7 @@ The factory will register escrows globally and by owner, worker, and arbiter. No
 108. As an arbiter, I want the factory to list all escrows assigned to me, so that I can find disputes I may need to resolve.
 109. As an application, I want a global escrow list, so that I can enumerate agreements without processing historical logs.
 110. As an application, I want the total escrow count derived from the global list, so that no duplicate counter must be maintained.
-111. As an application, I want escrow discovery to use the factory lists and canonical creation event, so that the factory does not maintain a duplicate boolean registry.
+111. As an application, I want to query `isEscrow(address)`, so that I can verify without iterating the global list whether an address is an escrow created by the factory.
 112. As a developer, I want one escrow contract per agreement, so that funds and state remain isolated.
 113. As a developer, I want the factory to create and register escrows atomically, so that failed creation cannot leave partial registry entries.
 114. As a developer, I want the factory not to retain escrow funds, so that ETH is isolated in the created agreement.
@@ -488,8 +488,9 @@ The factory maintains:
 - A list of escrow addresses by worker.
 - A list of escrow addresses by arbiter.
 - A global list of all escrow addresses.
+- A public `isEscrow` boolean mapping keyed by escrow address.
 
-No boolean escrow registry is maintained.
+`isEscrow` is set to `true` for every escrow successfully created by the factory. It returns `false` for addresses not created by that factory, including independently deployed `Escrow` contracts. Entries are never unset.
 
 The factory exposes count queries for:
 
@@ -527,7 +528,7 @@ Exact names for new custom errors remain an implementation-level naming decision
 
 ### Atomicity and consistency
 
-- Escrow deployment, registry updates, and creation-event emission occur in one transaction.
+- Escrow deployment, array and `isEscrow` registry updates, and creation-event emission occur in one transaction.
 - If escrow construction fails, no registry entries or events persist.
 - If registry logic or event emission reverts, the deployment and value transfer also revert.
 - A failed creation must leave existing arrays, mappings, balances, counts, and escrow entries unchanged.

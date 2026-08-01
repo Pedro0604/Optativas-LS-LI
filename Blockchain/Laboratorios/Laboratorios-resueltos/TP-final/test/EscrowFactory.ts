@@ -17,13 +17,16 @@ describe("EscrowFactory", function () {
 
   describe("createEscrow", function () {
     describe("successful creation", function () {
-      it("Should register the escrow for its owner, worker, arbiter and in the allEscrows array", async function () {
+      it("Should register the escrow for its owner, worker, arbiter, in the allEscrows array and check IsEscrow returns true", async function () {
         const { escrowFactory, escrowAddress, owner, worker, arbiter } =
           await networkHelpers.loadFixture(defaultEscrowFixture);
 
         // All escrows
         expect(await escrowFactory.getEscrowCount()).to.equal(1n);
         expect(await escrowFactory.allEscrows(0)).to.equal(escrowAddress);
+
+        // IsEscrow
+        expect(await escrowFactory.isEscrow(escrowAddress)).to.be.true;
 
         // Owner
         expect(
@@ -137,6 +140,10 @@ describe("EscrowFactory", function () {
         const secondEscrowAddress = result.escrowAddress;
 
         expect(escrowAddress).not.to.equal(secondEscrowAddress);
+
+        // Ambos son escrows
+        expect(await escrowFactory.isEscrow(escrowAddress)).to.be.true;
+        expect(await escrowFactory.isEscrow(secondEscrowAddress)).to.be.true;
 
         // 2 escrows en total
         expect(

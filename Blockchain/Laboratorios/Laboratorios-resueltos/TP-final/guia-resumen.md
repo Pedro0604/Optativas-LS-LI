@@ -45,6 +45,7 @@ La fábrica debe:
 - crear contratos `Escrow`;
 - transferir el `msg.value` al constructor del nuevo escrow;
 - registrar cada dirección creada;
+- identificar mediante `isEscrow(address)` las instancias creadas por la fábrica;
 - asociar cada escrow con su `owner`, `worker` y `arbiter`;
 - permitir listar y contar los escrows;
 - emitir el evento canónico de creación.
@@ -309,9 +310,12 @@ function createEscrow(
 mapping(address owner => address[] escrows) public escrowsByOwner;
 mapping(address worker => address[] escrows) public escrowsByWorker;
 mapping(address arbiter => address[] escrows) public escrowsByArbiter;
+mapping(address escrow => bool registered) public isEscrow;
 
 address[] public allEscrows;
 ```
+
+Al crear una instancia, la fábrica establece `isEscrow[escrowAddress] = true`. La consulta devuelve `true` únicamente para direcciones de escrows creados exitosamente por esa fábrica y `false` para cualquier otra dirección. Este registro permite validar una dirección en tiempo constante sin recorrer `allEscrows`.
 
 ### Consultas
 
@@ -954,6 +958,15 @@ Una misma cuenta puede actuar como:
 
 Probar que cada creación se registra únicamente en el mapping correspondiente a su rol dentro de ese acuerdo.
 
+### 19.12 Identificación con `isEscrow`
+
+Comprobar que:
+
+- la dirección de cada escrow creado por la fábrica devuelve `true`;
+- una dirección que no fue creada por la fábrica devuelve `false`;
+- varios escrows creados quedan identificados independientemente;
+- una creación fallida no marca ninguna dirección ni altera las marcas existentes.
+
 ---
 
 ## 20. Consideraciones para la interfaz web
@@ -1013,7 +1026,7 @@ Estos valores no están incluidos en eventos.
 9. Implementar `pendingWithdrawals` y `withdraw()`.
 10. Definir y emitir todos los eventos.
 11. Actualizar la interfaz de creación de la fábrica.
-12. Agregar registro por árbitro.
+12. Agregar registros por árbitro y `isEscrow`.
 13. Adaptar helpers y fixtures.
 14. Implementar tests por transición.
 15. Implementar los casos temporales, contables y de atomicidad menos obvios.
