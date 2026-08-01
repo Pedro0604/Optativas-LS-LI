@@ -25,3 +25,10 @@ https://hardhat.org/docs/guides/testing/using-ethers#testing-a-function-that-rev
 https://hardhat.org/docs/plugins/hardhat-ethers
 https://hardhat.org/docs/plugins/hardhat-ethers-chai-matchers#reverted-transactions
 https://hardhat.org/docs/plugins/hardhat-network-helpers#time
+
+## Futurisimo
+- Comisión de arbiter
+- Arbiters designados por creador de EscrowFactory?
+- Despliegues de Escrow solo desde EscrowFactory?
+- Comisión del sistema
+- Referencias y razones de entrega, disputa y resolucion que sean bytes32 hash 
