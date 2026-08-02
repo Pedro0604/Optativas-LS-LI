@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
+import { WagmiProvider } from "wagmi";
 import { ConfigurationError } from "./config";
 import "./styles.css";
 import { Panel } from "./ui/Panel";
@@ -31,11 +32,14 @@ try {
     defaultOptions: { queries: { staleTime: 15_000, retry: 1 } },
   });
   const router = createRouter({ routeTree, context: { queryClient, config } });
+  const walletConfig = (await import("./wallet/wagmi")).createWalletConfig(config);
 
   ReactDOM.createRoot(element).render(
     <React.StrictMode>
       <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
+        <WagmiProvider config={walletConfig} reconnectOnMount>
+          <RouterProvider router={router} />
+        </WagmiProvider>
       </QueryClientProvider>
     </React.StrictMode>,
   );

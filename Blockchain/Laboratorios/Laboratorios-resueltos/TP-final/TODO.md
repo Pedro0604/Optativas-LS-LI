@@ -1,9 +1,10 @@
 ### Next
-- hacer issue 3
+- revisar issue 3
+- hacer issue 4
 - Hacer lifecycle tests.
 
 ### Bugs
-- Cuando se selecciona una nueva opción en el select de filtro de estados, no cambia hasta que termina de cargarse los datos, por lo que se queda colgado sin mostrar ningún indicador de carga.
+- 
 
 ### Later
 - IEscrow.sol que tenga todos los eventos, errores y la interfaz con su NatSpec para que en Escrow.sol esté la implementación y no esté lleno de comentarios de specs (usar @inheritdoc) 

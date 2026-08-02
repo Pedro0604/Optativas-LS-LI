@@ -1,5 +1,6 @@
 import { createRootRouteWithContext, Link, Outlet } from "@tanstack/react-router";
 import type { RouterContext } from "../routerContext";
+import { WalletControls } from "../wallet/WalletControls";
 
 export const Route = createRootRouteWithContext<RouterContext>()({
   component: () => (
@@ -11,7 +12,10 @@ export const Route = createRootRouteWithContext<RouterContext>()({
         >
           Pacto
         </Link>
-        <span className="text-xs font-semibold tracking-wide text-primary">● Sepolia</span>
+        <div className="flex items-center gap-4">
+          <span className="text-xs font-semibold tracking-wide text-primary">● Sepolia</span>
+          <WalletControls />
+        </div>
       </header>
       <main className="mx-auto w-[min(1120px,calc(100%-2rem))]">
         <Outlet />

@@ -21,8 +21,7 @@ export function DiscoveryPage() {
   if (query.data !== undefined) lastData.current = query.data;
   const data = query.data ?? lastData.current;
 
-  if (query.isPending && data === undefined)
-    return <Panel role="status">Cargando escrows…</Panel>;
+  if (query.isPending && data === undefined) return <Panel role="status">Cargando escrows…</Panel>;
 
   if (query.isError && data === undefined)
     return (
@@ -86,11 +85,7 @@ export function DiscoveryPage() {
         className={isUpdating ? "opacity-55 transition-opacity" : "transition-opacity"}
         aria-busy={isUpdating}
       >
-        <EscrowList
-          items={data.items}
-          chainTime={data.blockTime}
-          onRetry={() => query.refetch()}
-        />
+        <EscrowList items={data.items} chainTime={data.blockTime} onRetry={() => query.refetch()} />
         <Pagination page={data.page} pageCount={data.pageCount} onPageChange={changePage} />
       </div>
     </>
