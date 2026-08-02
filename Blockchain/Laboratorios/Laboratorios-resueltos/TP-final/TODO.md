@@ -1,9 +1,13 @@
 ### Next
 - verificar issue 2
-- Que en vez de decir "Plazo aún no iniciado" diga tantos minutos/horas/dias desde la aceptación, la entrega, la apertura de la disputa. 
 - componente address que permita copiar la address y mostrarla completa o recortada
 - hacer issue 3
+- Que en vez de decir "Plazo aún no iniciado" diga tantos minutos/horas/dias desde la aceptación, la entrega, la apertura de la disputa. 
+- Añadir una cuenta regresiva hasta la próxima deadline.
 - Hacer lifecycle tests.
+
+### Bugs
+- Cuando se selecciona una nueva opción en el select de filtro de estados, no cambia hasta que termina de cargarse los datos, por lo que se queda colgado sin mostrar ningún indicador de carga.
 
 ### Later
 - IEscrow.sol que tenga todos los eventos, errores y la interfaz con su NatSpec para que en Escrow.sol esté la implementación y no esté lleno de comentarios de specs (usar @inheritdoc) 
