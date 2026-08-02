@@ -148,7 +148,11 @@ export async function fetchEscrowPage(
       };
     })
     .filter(
-      (item) => state === undefined || state === "all" || item.kind === "error" || item.summary.state === state,
+      (item) =>
+        state === undefined ||
+        state === "all" ||
+        item.kind === "error" ||
+        item.summary.state === state,
     );
   const block = await blockPromise;
   return { count, page: safePage, pageCount, blockTime: block.timestamp, items };

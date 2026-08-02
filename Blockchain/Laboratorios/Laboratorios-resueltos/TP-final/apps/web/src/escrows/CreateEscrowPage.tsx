@@ -7,7 +7,10 @@ import { formatEther, getAddress } from "viem";
 import { config, publicClient } from "../runtime";
 import { Button } from "../ui/Button";
 import { Panel } from "../ui/Panel";
-import { useDiscardDirtyFormOnWalletChange, useResetAccountSensitiveState } from "../wallet/accountChange";
+import {
+  useDiscardDirtyFormOnWalletChange,
+  useResetAccountSensitiveState,
+} from "../wallet/accountChange";
 import { canWrite } from "../wallet/wallet";
 import { WalletControls } from "../wallet/WalletControls";
 import {
@@ -38,7 +41,15 @@ type TransactionState =
   | { kind: "submitted"; hash: `0x${string}` }
   | { kind: "failure"; message: string; detail?: string; hash?: `0x${string}` };
 
-function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
+function Field({
+  label,
+  error,
+  children,
+}: {
+  label: string;
+  error?: string;
+  children: React.ReactNode;
+}) {
   return (
     <label className="grid gap-1.5 text-sm font-semibold">
       {label}
@@ -73,7 +84,9 @@ function DurationField({
           className="rounded-lg border border-line bg-surface px-3 py-2 text-ink"
           aria-label={`${label} unidad`}
           value={value.unit}
-          onChange={(event) => onChange({ ...value, unit: event.target.value as FriendlyDuration["unit"] })}
+          onChange={(event) =>
+            onChange({ ...value, unit: event.target.value as FriendlyDuration["unit"] })
+          }
         >
           {Object.entries(durationUnits).map(([unit, data]) => (
             <option key={unit} value={unit}>
@@ -165,7 +178,8 @@ export function CreateEscrowPage() {
         setTransaction({
           kind: "failure",
           hash,
-          message: "La transacción fue confirmada, pero la dirección emitida no es un escrow canónico.",
+          message:
+            "La transacción fue confirmada, pero la dirección emitida no es un escrow canónico.",
         });
         return;
       }
@@ -189,36 +203,92 @@ export function CreateEscrowPage() {
       <section className="border-t border-line pt-8">
         <p className="text-xs font-bold tracking-[0.12em] text-primary uppercase">Nuevo escrow</p>
         <h1 className="mt-2 font-display text-4xl font-bold">Crear y financiar un escrow</h1>
-        <p className="mt-3 text-muted">Prepará los términos. La wallet se solicita recién al revisar.</p>
+        <p className="mt-3 text-muted">
+          Prepará los términos. La wallet se solicita recién al revisar.
+        </p>
       </section>
 
       {!reviewing ? (
-        <form onSubmit={(event) => { event.preventDefault(); openReview(); }}>
-        <Panel className="grid gap-5">
-          <Field label="Título" error={errors.title}>
-            <input aria-label="Título" className="rounded-lg border border-line bg-surface px-3 py-2 text-ink" value={draft.title} onChange={(event) => update("title", event.target.value)} />
-            <span className="text-xs font-normal text-muted">{titleBytes}/{titleMaxBytes} bytes UTF-8</span>
-          </Field>
-          <Field label="Monto (ETH)" error={errors.amountEth}>
-            <input aria-label="Monto (ETH)" className="rounded-lg border border-line bg-surface px-3 py-2 text-ink" inputMode="decimal" placeholder="0.0" value={draft.amountEth} onChange={(event) => update("amountEth", event.target.value)} />
-          </Field>
-          <div className="grid gap-5 md:grid-cols-2">
-            <Field label="Dirección del worker" error={errors.worker}>
-              <input aria-label="Dirección del worker" className="rounded-lg border border-line bg-surface px-3 py-2 font-mono text-ink" spellCheck={false} value={draft.worker} onChange={(event) => update("worker", event.target.value)} />
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            openReview();
+          }}
+        >
+          <Panel className="grid gap-5">
+            <Field label="Título" error={errors.title}>
+              <input
+                aria-label="Título"
+                className="rounded-lg border border-line bg-surface px-3 py-2 text-ink"
+                value={draft.title}
+                onChange={(event) => update("title", event.target.value)}
+              />
+              <span className="text-xs font-normal text-muted">
+                {titleBytes}/{titleMaxBytes} bytes UTF-8
+              </span>
             </Field>
-            <Field label="Dirección del árbitro" error={errors.arbiter}>
-              <input aria-label="Dirección del árbitro" className="rounded-lg border border-line bg-surface px-3 py-2 font-mono text-ink" spellCheck={false} value={draft.arbiter} onChange={(event) => update("arbiter", event.target.value)} />
+            <Field label="Monto (ETH)" error={errors.amountEth}>
+              <input
+                aria-label="Monto (ETH)"
+                className="rounded-lg border border-line bg-surface px-3 py-2 text-ink"
+                inputMode="decimal"
+                placeholder="0.0"
+                value={draft.amountEth}
+                onChange={(event) => update("amountEth", event.target.value)}
+              />
             </Field>
-          </div>
-          <div className="grid gap-5 md:grid-cols-2">
-            <DurationField label="Aceptación" value={draft.acceptance} error={errors.acceptance} onChange={(value) => update("acceptance", value)} />
-            <DurationField label="Entrega" value={draft.submission} error={errors.submission} onChange={(value) => update("submission", value)} />
-            <DurationField label="Revisión" value={draft.review} error={errors.review} onChange={(value) => update("review", value)} />
-            <DurationField label="Arbitraje" value={draft.arbitration} error={errors.arbitration} onChange={(value) => update("arbitration", value)} />
-          </div>
-          <p className="rounded-lg border border-accent/40 bg-accent/10 p-3 text-sm text-accent">El título y todas las direcciones se publicarán de forma inmutable. No incluyas datos personales, credenciales ni secretos.</p>
-          <Button type="submit">Revisar creación</Button>
-        </Panel>
+            <div className="grid gap-5 md:grid-cols-2">
+              <Field label="Dirección del worker" error={errors.worker}>
+                <input
+                  aria-label="Dirección del worker"
+                  className="rounded-lg border border-line bg-surface px-3 py-2 font-mono text-ink"
+                  spellCheck={false}
+                  value={draft.worker}
+                  onChange={(event) => update("worker", event.target.value)}
+                />
+              </Field>
+              <Field label="Dirección del árbitro" error={errors.arbiter}>
+                <input
+                  aria-label="Dirección del árbitro"
+                  className="rounded-lg border border-line bg-surface px-3 py-2 font-mono text-ink"
+                  spellCheck={false}
+                  value={draft.arbiter}
+                  onChange={(event) => update("arbiter", event.target.value)}
+                />
+              </Field>
+            </div>
+            <div className="grid gap-5 md:grid-cols-2">
+              <DurationField
+                label="Aceptación"
+                value={draft.acceptance}
+                error={errors.acceptance}
+                onChange={(value) => update("acceptance", value)}
+              />
+              <DurationField
+                label="Entrega"
+                value={draft.submission}
+                error={errors.submission}
+                onChange={(value) => update("submission", value)}
+              />
+              <DurationField
+                label="Revisión"
+                value={draft.review}
+                error={errors.review}
+                onChange={(value) => update("review", value)}
+              />
+              <DurationField
+                label="Arbitraje"
+                value={draft.arbitration}
+                error={errors.arbitration}
+                onChange={(value) => update("arbitration", value)}
+              />
+            </div>
+            <p className="rounded-lg border border-accent/40 bg-accent/10 p-3 text-sm text-accent">
+              El título y todas las direcciones se publicarán de forma inmutable. No incluyas datos
+              personales, credenciales ni secretos.
+            </p>
+            <Button type="submit">Revisar creación</Button>
+          </Panel>
         </form>
       ) : (
         <Panel className="grid gap-5">
@@ -228,28 +298,112 @@ export function CreateEscrowPage() {
           </div>
           {ready ? (
             <dl className="grid gap-3 break-all text-sm">
-              <div><dt className="text-muted">Título</dt><dd>{draft.title}</dd></div>
-              <div><dt className="text-muted">Fondos exactos</dt><dd>{formatEther(ready.value)} ETH ({ready.value.toString()} wei)</dd></div>
-              <div><dt className="text-muted">Worker</dt><dd className="font-mono">{ready.args[0]}</dd></div>
-              <div><dt className="text-muted">Árbitro</dt><dd className="font-mono">{ready.args[1]}</dd></div>
-              {(["Aceptación", "Entrega", "Revisión", "Arbitraje"] as const).map((label, index) => <div key={label}><dt className="text-muted">{label}</dt><dd>{ready.args[index + 2].toString()} segundos</dd></div>)}
+              <div>
+                <dt className="text-muted">Título</dt>
+                <dd>{draft.title}</dd>
+              </div>
+              <div>
+                <dt className="text-muted">Fondos exactos</dt>
+                <dd>
+                  {formatEther(ready.value)} ETH ({ready.value.toString()} wei)
+                </dd>
+              </div>
+              <div>
+                <dt className="text-muted">Worker</dt>
+                <dd className="font-mono">{ready.args[0]}</dd>
+              </div>
+              <div>
+                <dt className="text-muted">Árbitro</dt>
+                <dd className="font-mono">{ready.args[1]}</dd>
+              </div>
+              {(["Aceptación", "Entrega", "Revisión", "Arbitraje"] as const).map((label, index) => (
+                <div key={label}>
+                  <dt className="text-muted">{label}</dt>
+                  <dd>{ready.args[index + 2].toString()} segundos</dd>
+                </div>
+              ))}
             </dl>
           ) : (
-            <p role="alert" className="text-danger">Corregí los datos antes de continuar. Al conectar se validarán también contra el owner.</p>
+            <p role="alert" className="text-danger">
+              Corregí los datos antes de continuar. Al conectar se validarán también contra el
+              owner.
+            </p>
           )}
-          <p className="rounded-lg border border-accent/40 bg-accent/10 p-3 text-sm text-accent">Estos datos son públicos e inmutables. La simulación verifica la llamada antes de pedir la firma; la wallet es la confirmación final.</p>
+          <p className="rounded-lg border border-accent/40 bg-accent/10 p-3 text-sm text-accent">
+            Estos datos son públicos e inmutables. La simulación verifica la llamada antes de pedir
+            la firma; la wallet es la confirmación final.
+          </p>
           {!isConnected ? (
-            <div className="grid gap-3"><p>Conectá una wallet para continuar con la revisión.</p><WalletControls /></div>
+            <div className="grid gap-3">
+              <p>Conectá una wallet para continuar con la revisión.</p>
+              <WalletControls />
+            </div>
           ) : !canWrite(chainId) ? (
-            <p role="alert" className="text-accent">Tu wallet debe usar Sepolia para crear el escrow.</p>
+            <p role="alert" className="text-accent">
+              Tu wallet debe usar Sepolia para crear el escrow.
+            </p>
           ) : (
-            <Button disabled={!ready || transaction.kind === "simulating" || transaction.kind === "wallet" || transaction.kind === "submitted"} onClick={submit}>
-              {transaction.kind === "simulating" ? "Simulando…" : transaction.kind === "wallet" ? "Esperando confirmación…" : transaction.kind === "submitted" ? "Esperando confirmación on-chain…" : "Simular y firmar"}
+            <Button
+              disabled={
+                !ready ||
+                transaction.kind === "simulating" ||
+                transaction.kind === "wallet" ||
+                transaction.kind === "submitted"
+              }
+              onClick={submit}
+            >
+              {transaction.kind === "simulating"
+                ? "Simulando…"
+                : transaction.kind === "wallet"
+                  ? "Esperando confirmación…"
+                  : transaction.kind === "submitted"
+                    ? "Esperando confirmación on-chain…"
+                    : "Simular y firmar"}
             </Button>
           )}
-          {transaction.kind === "submitted" && <p role="status">Transacción enviada: <a className="text-primary underline" href={`${config.explorerUrl}/tx/${transaction.hash}`} target="_blank" rel="noopener noreferrer">{transaction.hash}</a></p>}
-          {transaction.kind === "failure" && <div role="alert" className="grid gap-2 text-danger"><p>{transaction.message}</p>{transaction.hash && <a className="text-primary underline" href={`${config.explorerUrl}/tx/${transaction.hash}`} target="_blank" rel="noopener noreferrer">Ver transacción confirmada</a>}{transaction.detail && <details className="text-xs text-muted"><summary>Detalle técnico</summary><pre className="mt-2 whitespace-pre-wrap">{transaction.detail}</pre></details>}</div>}
-          <Button variant="ghost" onClick={() => { setReviewing(false); setTransaction({ kind: "idle" }); }}>Editar datos</Button>
+          {transaction.kind === "submitted" && (
+            <p role="status">
+              Transacción enviada:{" "}
+              <a
+                className="text-primary underline"
+                href={`${config.explorerUrl}/tx/${transaction.hash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {transaction.hash}
+              </a>
+            </p>
+          )}
+          {transaction.kind === "failure" && (
+            <div role="alert" className="grid gap-2 text-danger">
+              <p>{transaction.message}</p>
+              {transaction.hash && (
+                <a
+                  className="text-primary underline"
+                  href={`${config.explorerUrl}/tx/${transaction.hash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Ver transacción confirmada
+                </a>
+              )}
+              {transaction.detail && (
+                <details className="text-xs text-muted">
+                  <summary>Detalle técnico</summary>
+                  <pre className="mt-2 whitespace-pre-wrap">{transaction.detail}</pre>
+                </details>
+              )}
+            </div>
+          )}
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setReviewing(false);
+              setTransaction({ kind: "idle" });
+            }}
+          >
+            Editar datos
+          </Button>
         </Panel>
       )}
     </div>

@@ -1,6 +1,7 @@
 export type TransactionHash = `0x${string}`;
 
-const knownRevertPattern = /OnlyWorkerAllowed|OnlyOwnerAllowed|OnlyArbiterAllowed|InvalidState|DeadlineAlreadyExpired|DeadlineNotExpiredYet|ZeroDuration|NoEthProvided|ZeroAddress|CannotHireYourself|ArbiterCannotParticipate|EmptyString|StringTooLong|WorkerAmountExceedsEscrow|NoFundsToWithdraw|WithdrawalFailed/i;
+const knownRevertPattern =
+  /OnlyWorkerAllowed|OnlyOwnerAllowed|OnlyArbiterAllowed|InvalidState|DeadlineAlreadyExpired|DeadlineNotExpiredYet|ZeroDuration|NoEthProvided|ZeroAddress|CannotHireYourself|ArbiterCannotParticipate|EmptyString|StringTooLong|WorkerAmountExceedsEscrow|NoFundsToWithdraw|WithdrawalFailed/i;
 const pendingEscrows = new Set<string>();
 
 export type TransactionState =
@@ -27,7 +28,8 @@ function errorDetail(error: unknown) {
 export function translateTransactionError(error: unknown) {
   const detail = errorDetail(error);
   if (/OnlyWorkerAllowed/i.test(detail)) return "Solo el worker puede aceptar este escrow.";
-  if (/InvalidState/i.test(detail)) return "El escrow ya no está en el estado requerido para esta acción.";
+  if (/InvalidState/i.test(detail))
+    return "El escrow ya no está en el estado requerido para esta acción.";
   if (/DeadlineAlreadyExpired/i.test(detail)) return "El plazo de esta acción ya venció.";
   if (/DeadlineNotExpiredYet/i.test(detail)) return "El plazo todavía no venció.";
   if (/OnlyOwnerAllowed/i.test(detail)) return "Solo el owner puede realizar esta acción.";
@@ -36,10 +38,12 @@ export function translateTransactionError(error: unknown) {
   if (/NoEthProvided/i.test(detail)) return "El escrow debe financiarse con ETH.";
   if (/ZeroAddress/i.test(detail)) return "Las direcciones de participantes no pueden ser cero.";
   if (/CannotHireYourself/i.test(detail)) return "El owner no puede ser el worker.";
-  if (/ArbiterCannotParticipate/i.test(detail)) return "El árbitro no puede participar como owner ni worker.";
+  if (/ArbiterCannotParticipate/i.test(detail))
+    return "El árbitro no puede participar como owner ni worker.";
   if (/EmptyString/i.test(detail)) return "El texto obligatorio no puede estar vacío.";
   if (/StringTooLong/i.test(detail)) return "El texto supera la longitud permitida.";
-  if (/WorkerAmountExceedsEscrow/i.test(detail)) return "El monto asignado al worker excede los fondos del escrow.";
+  if (/WorkerAmountExceedsEscrow/i.test(detail))
+    return "El monto asignado al worker excede los fondos del escrow.";
   if (/NoFundsToWithdraw/i.test(detail)) return "No hay fondos disponibles para retirar.";
   if (/WithdrawalFailed/i.test(detail)) return "No se pudieron transferir los fondos.";
   return "No se pudo completar la transacción. Intentá nuevamente.";
@@ -55,7 +59,9 @@ function failureState(error: unknown, hash?: TransactionHash): TransactionState 
 }
 
 /** Shared simulation → signature → receipt flow. Consumers own query invalidation after confirmation. */
-export async function runTransaction<Request>(input: RunTransactionInput<Request>): Promise<TransactionState> {
+export async function runTransaction<Request>(
+  input: RunTransactionInput<Request>,
+): Promise<TransactionState> {
   let hash: TransactionHash | undefined;
   try {
     input.onState?.({ kind: "simulating" });

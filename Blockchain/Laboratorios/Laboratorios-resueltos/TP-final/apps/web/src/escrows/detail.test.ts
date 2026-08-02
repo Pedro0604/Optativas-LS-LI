@@ -107,10 +107,13 @@ describe("escrow detail projection", () => {
       kind: "wallet-required",
     });
     expect(
-      actionAvailability(projectEscrow(snapshot, 100n, { account: snapshot.arbiter, chainId: 11155111 }), {
-        account: snapshot.arbiter,
-        chainId: 11155111,
-      }),
+      actionAvailability(
+        projectEscrow(snapshot, 100n, { account: snapshot.arbiter, chainId: 11155111 }),
+        {
+          account: snapshot.arbiter,
+          chainId: 11155111,
+        },
+      ),
     ).toEqual({ kind: "available", actions: ["Finalizar aceptación vencida"] });
   });
 

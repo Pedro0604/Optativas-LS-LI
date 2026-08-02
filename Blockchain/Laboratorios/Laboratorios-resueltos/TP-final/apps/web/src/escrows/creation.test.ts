@@ -61,13 +61,21 @@ describe("escrow creation", () => {
 
   it("decodes the factory event and rejects receipts without a creation event", () => {
     const escrow = "0x0000000000000000000000000000000000000004" as const;
-    const event = escrowFactoryAbi.find((item) => item.type === "event" && item.name === "EscrowCreated")!;
+    const event = escrowFactoryAbi.find(
+      (item) => item.type === "event" && item.name === "EscrowCreated",
+    )!;
     const logs = [
       {
         address: factory,
-        topics: encodeEventTopics({ abi: [event], eventName: "EscrowCreated", args: { owner, worker, arbiter } }),
+        topics: encodeEventTopics({
+          abi: [event],
+          eventName: "EscrowCreated",
+          args: { owner, worker, arbiter },
+        }),
         data: encodeAbiParameters(
-          parseAbiParameters("address escrowAddress, uint256 amount, uint256 acceptanceDuration, uint256 submissionDuration, uint256 reviewDuration, uint256 arbitrationDuration"),
+          parseAbiParameters(
+            "address escrowAddress, uint256 amount, uint256 acceptanceDuration, uint256 submissionDuration, uint256 reviewDuration, uint256 arbitrationDuration",
+          ),
           [escrow, 1n, 1n, 1n, 1n, 1n],
         ),
       },

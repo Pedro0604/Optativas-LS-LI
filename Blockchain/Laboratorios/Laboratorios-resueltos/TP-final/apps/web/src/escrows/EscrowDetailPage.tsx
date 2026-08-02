@@ -191,15 +191,26 @@ export function EscrowDetailPage() {
         <Panel as="section" className="grid gap-4">
           <div>
             <h2 className="font-display text-2xl font-bold">Aceptar escrow</h2>
-            <p className="text-muted">La aceptación inicia el plazo de entrega y no puede deshacerse.</p>
+            <p className="text-muted">
+              La aceptación inicia el plazo de entrega y no puede deshacerse.
+            </p>
           </div>
           {!reviewingAcceptance ? (
             <Button onClick={() => setReviewingAcceptance(true)}>Revisar aceptación</Button>
           ) : (
             <div className="grid gap-3 rounded-lg border border-line p-4">
-              <p>Vas a aceptar este escrow como worker. Primero simularemos la transacción; tu wallet confirma la firma final.</p>
+              <p>
+                Vas a aceptar este escrow como worker. Primero simularemos la transacción; tu wallet
+                confirma la firma final.
+              </p>
               <div className="flex flex-wrap gap-3">
-                <Button disabled={isTransactionPending(transaction) || isEscrowTransactionPending(snapshot.address)} onClick={accept}>
+                <Button
+                  disabled={
+                    isTransactionPending(transaction) ||
+                    isEscrowTransactionPending(snapshot.address)
+                  }
+                  onClick={accept}
+                >
                   {transaction.kind === "simulating"
                     ? "Simulando…"
                     : transaction.kind === "wallet"
@@ -208,18 +219,48 @@ export function EscrowDetailPage() {
                         ? "Esperando confirmación on-chain…"
                         : "Simular y firmar aceptación"}
                 </Button>
-                <Button variant="ghost" disabled={isTransactionPending(transaction)} onClick={() => setReviewingAcceptance(false)}>Volver</Button>
+                <Button
+                  variant="ghost"
+                  disabled={isTransactionPending(transaction)}
+                  onClick={() => setReviewingAcceptance(false)}
+                >
+                  Volver
+                </Button>
               </div>
             </div>
           )}
           {transaction.kind === "submitted" && (
-            <p role="status">Transacción enviada: <a className="text-primary underline" href={`${config.explorerUrl}/tx/${transaction.hash}`} target="_blank" rel="noopener noreferrer">{transaction.hash}</a></p>
+            <p role="status">
+              Transacción enviada:{" "}
+              <a
+                className="text-primary underline"
+                href={`${config.explorerUrl}/tx/${transaction.hash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {transaction.hash}
+              </a>
+            </p>
           )}
-          {(transaction.kind === "rejected" || transaction.kind === "reverted" || transaction.kind === "unknown-failure") && (
+          {(transaction.kind === "rejected" ||
+            transaction.kind === "reverted" ||
+            transaction.kind === "unknown-failure") && (
             <div role="alert" className="grid gap-2 text-danger">
               <p>{transaction.message}</p>
-              {transaction.hash && <a className="text-primary underline" href={`${config.explorerUrl}/tx/${transaction.hash}`} target="_blank" rel="noopener noreferrer">Ver transacción</a>}
-              <details className="text-xs text-muted"><summary>Detalle técnico</summary><pre className="mt-2 whitespace-pre-wrap">{transaction.detail}</pre></details>
+              {transaction.hash && (
+                <a
+                  className="text-primary underline"
+                  href={`${config.explorerUrl}/tx/${transaction.hash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Ver transacción
+                </a>
+              )}
+              <details className="text-xs text-muted">
+                <summary>Detalle técnico</summary>
+                <pre className="mt-2 whitespace-pre-wrap">{transaction.detail}</pre>
+              </details>
             </div>
           )}
         </Panel>

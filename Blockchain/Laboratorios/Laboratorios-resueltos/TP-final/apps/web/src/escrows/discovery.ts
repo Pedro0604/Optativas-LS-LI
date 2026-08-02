@@ -32,27 +32,33 @@ export async function fetchDiscovery(
   page: number,
   state: StateFilter,
 ) {
-  return fetchEscrowPage(client, factory, page, {
-    count: async (pageClient, pageFactory) =>
-      Number(
-        await pageClient.readContract({
-          address: pageFactory,
-          abi: escrowFactoryAbi,
-          functionName: "getEscrowCount",
-        }),
-      ),
-    addresses: async (pageClient, pageFactory, indexes, blockNumber) =>
-      (await pageClient.multicall({
-        allowFailure: false,
-        blockNumber,
-        contracts: indexes.map((index) => ({
-          address: pageFactory,
-          abi: escrowFactoryAbi,
-          functionName: "allEscrows",
-          args: [index],
-        })),
-      })) as unknown as Address[],
-  }, state);
+  return fetchEscrowPage(
+    client,
+    factory,
+    page,
+    {
+      count: async (pageClient, pageFactory) =>
+        Number(
+          await pageClient.readContract({
+            address: pageFactory,
+            abi: escrowFactoryAbi,
+            functionName: "getEscrowCount",
+          }),
+        ),
+      addresses: async (pageClient, pageFactory, indexes, blockNumber) =>
+        (await pageClient.multicall({
+          allowFailure: false,
+          blockNumber,
+          contracts: indexes.map((index) => ({
+            address: pageFactory,
+            abi: escrowFactoryAbi,
+            functionName: "allEscrows",
+            args: [index],
+          })),
+        })) as unknown as Address[],
+    },
+    state,
+  );
 }
 
 export const displayEth = (amount: bigint) => `${formatEther(amount)} ETH`;

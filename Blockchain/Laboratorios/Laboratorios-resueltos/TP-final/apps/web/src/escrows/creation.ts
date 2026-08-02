@@ -44,7 +44,10 @@ function parseDuration(duration: FriendlyDuration) {
 }
 
 /** Validates the browser draft with the same invariants as Escrow's constructor. */
-export function createEscrowRequest(draft: EscrowDraft, owner?: Address): CreationValidation | CreationInvalid {
+export function createEscrowRequest(
+  draft: EscrowDraft,
+  owner?: Address,
+): CreationValidation | CreationInvalid {
   const errors: CreationInvalid["errors"] = {};
   const titleBytes = new TextEncoder().encode(draft.title).length;
   if (!titleBytes) errors.title = "El título es obligatorio.";
@@ -103,7 +106,12 @@ export function createEscrowRequest(draft: EscrowDraft, owner?: Address): Creati
 /** Extracts the canonical address emitted by the configured factory, if present. */
 export function decodeCreatedEscrow(logs: readonly Log[], factory: Address) {
   const factoryLogs = logs.filter((log) => log.address.toLowerCase() === factory.toLowerCase());
-  const event = parseEventLogs({ abi: escrowFactoryAbi, logs: factoryLogs, eventName: "EscrowCreated", strict: false })[0];
+  const event = parseEventLogs({
+    abi: escrowFactoryAbi,
+    logs: factoryLogs,
+    eventName: "EscrowCreated",
+    strict: false,
+  })[0];
   return event?.args.escrowAddress;
 }
 
@@ -116,7 +124,8 @@ export function translateCreationError(error: unknown) {
   if (/ZeroDuration/i.test(detail)) return "Cada duración debe ser mayor a cero.";
   if (/ZeroAddress/i.test(detail)) return "Worker y árbitro no pueden ser la dirección cero.";
   if (/CannotHireYourself/i.test(detail)) return "El owner no puede ser el worker.";
-  if (/ArbiterCannotParticipate/i.test(detail)) return "El árbitro debe ser distinto de owner y worker.";
+  if (/ArbiterCannotParticipate/i.test(detail))
+    return "El árbitro debe ser distinto de owner y worker.";
   if (/EmptyString/i.test(detail)) return "El título es obligatorio.";
   if (/StringTooLong/i.test(detail)) return "El título supera el máximo de 64 bytes.";
   return "No se pudo crear el escrow. Revisá los datos e intentá nuevamente.";

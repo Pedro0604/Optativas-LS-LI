@@ -33,7 +33,12 @@ describe("canAcceptEscrow", () => {
 
   it("rejects an escrow outside pending acceptance", () => {
     expect(
-      canAcceptEscrow({ ...snapshot, state: EscrowState.PendingSubmission }, snapshot.worker, 99n, 11155111),
+      canAcceptEscrow(
+        { ...snapshot, state: EscrowState.PendingSubmission },
+        snapshot.worker,
+        99n,
+        11155111,
+      ),
     ).toEqual({ ok: false, message: "El escrow ya no está pendiente de aceptación." });
   });
 });
