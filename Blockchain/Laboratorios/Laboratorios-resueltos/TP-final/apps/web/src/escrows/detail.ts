@@ -113,12 +113,14 @@ export function projectEscrow(snapshot: EscrowSnapshot, blockTime: bigint): Escr
   const activeDeadline = operational
     ? snapshot.deadlines[stageDefinitions[currentIndex].key]
     : undefined;
+
   const deadlineElapsed =
     activeDeadline !== undefined && activeDeadline > 0n && blockTime >= activeDeadline;
   const timeline = stageDefinitions.map(({ key, label }, index): LifecycleStage => {
     const deadline = snapshot.deadlines[key];
     const status: LifecycleStage["status"] =
       index < currentIndex ? "completed" : index === currentIndex ? "current" : "future";
+
     return {
       key,
       label,
@@ -127,11 +129,13 @@ export function projectEscrow(snapshot: EscrowSnapshot, blockTime: bigint): Escr
       deadlineElapsed: index === currentIndex && deadlineElapsed,
     };
   });
+
   const actions = operational
     ? deadlineElapsed
       ? [expirationActions[currentIndex]]
       : actionsByState[snapshot.state as (typeof operationalStates)[number]]
     : [];
+
   return {
     stateLabel: escrowStateMetadata[snapshot.state].label,
     terminalOutcome: terminalOutcomes[snapshot.state],
@@ -167,7 +171,9 @@ export async function fetchEscrowDetail(client: PublicClient, factory: Address, 
     args: [address],
     blockNumber,
   });
+
   if (!registered) return { kind: "not-found" as const };
+
   const [values, block] = await Promise.all([
     client.multicall({
       allowFailure: false,
@@ -176,6 +182,7 @@ export async function fetchEscrowDetail(client: PublicClient, factory: Address, 
     }),
     client.getBlock({ blockNumber }),
   ]);
+
   const [
     title,
     amount,
@@ -190,7 +197,7 @@ export async function fetchEscrowDetail(client: PublicClient, factory: Address, 
     submissionReference,
     disputeReason,
     resolutionReason,
-  ] = values as unknown as [
+  ] = values as [
     string,
     bigint,
     Address,
@@ -205,6 +212,7 @@ export async function fetchEscrowDetail(client: PublicClient, factory: Address, 
     string,
     string,
   ];
+  
   return {
     kind: "success" as const,
     blockTime: block.timestamp,

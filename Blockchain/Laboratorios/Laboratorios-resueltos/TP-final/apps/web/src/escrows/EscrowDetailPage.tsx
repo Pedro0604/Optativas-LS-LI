@@ -59,6 +59,7 @@ export function EscrowDetailPage() {
   const query = useQuery(
     escrowDetailQuery(publicClient, config.factoryAddress, address as Address),
   );
+
   if (query.isPending) return <Panel role="status">Cargando detalle…</Panel>;
   if (query.isError)
     return (
@@ -68,6 +69,7 @@ export function EscrowDetailPage() {
         <Button onClick={() => query.refetch()}>Reintentar</Button>
       </Panel>
     );
+
   if (query.data.kind === "not-found")
     return (
       <Panel role="alert">
@@ -87,7 +89,7 @@ export function EscrowDetailPage() {
     <div className="grid gap-6">
       <section className="border-t border-line pt-8">
         <p className="text-xs font-bold tracking-[0.12em] text-primary uppercase">
-          Escrow canónico
+          Escrow
         </p>
         <h1 className="my-3 font-display text-[clamp(2.4rem,7vw,5rem)] leading-none font-bold">
           {snapshot.title}
