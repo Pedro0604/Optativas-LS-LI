@@ -1,5 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useNavigate, useSearch } from "@tanstack/react-router";
+import { useRef } from "react";
 import { config, publicClient } from "../runtime";
 import { Button } from "../ui/Button";
 import { Pagination } from "../ui/Pagination";
@@ -11,13 +12,19 @@ import { EscrowStateFilter } from "./EscrowStateFilter";
 export function DiscoveryPage() {
   const search = useSearch({ from: "/" });
   const navigate = useNavigate({ from: "/" });
-  const query = useQuery(
-    discoveryQuery(publicClient, config.factoryAddress, search.page, search.state),
-  );
+  const query = useQuery({
+    ...discoveryQuery(publicClient, config.factoryAddress, search.page, search.state),
+    placeholderData: keepPreviousData,
+  });
+  const lastData = useRef(query.data);
 
-  if (query.isPending) return <Panel role="status">Cargando escrows…</Panel>;
+  if (query.data !== undefined) lastData.current = query.data;
+  const data = query.data ?? lastData.current;
 
-  if (query.isError)
+  if (query.isPending && data === undefined)
+    return <Panel role="status">Cargando escrows…</Panel>;
+
+  if (query.isError && data === undefined)
     return (
       <Panel as="section" role="alert">
         <h2>No pudimos cargar los escrows</h2>
@@ -26,7 +33,10 @@ export function DiscoveryPage() {
       </Panel>
     );
 
-  const data = query.data;
+  if (data === undefined) return null;
+
+  const isUpdating = query.isFetching;
+  const updateFailed = query.isError;
   const changePage = (page: number) =>
     navigate({ search: (previous: typeof search) => ({ ...previous, page }) });
 
@@ -55,10 +65,34 @@ export function DiscoveryPage() {
             })
           }
         />
+        {isUpdating && (
+          <span className="inline-flex items-center gap-2 text-sm text-muted" role="status">
+            <span
+              className="size-4 animate-spin rounded-full border-2 border-primary/30 border-t-primary"
+              aria-hidden="true"
+            />
+            Actualizando…
+          </span>
+        )}
         <span className="text-sm text-muted">{data.count} escrows registrados</span>
       </section>
-      <EscrowList items={data.items} chainTime={data.blockTime} onRetry={() => query.refetch()} />
-      <Pagination page={data.page} pageCount={data.pageCount} onPageChange={changePage} />
+      {updateFailed && (
+        <Panel as="section" className="mb-4 flex items-center justify-between gap-4" role="alert">
+          <p>No pudimos actualizar los escrows. Se muestran los resultados anteriores.</p>
+          <Button onClick={() => query.refetch()}>Reintentar</Button>
+        </Panel>
+      )}
+      <div
+        className={isUpdating ? "opacity-55 transition-opacity" : "transition-opacity"}
+        aria-busy={isUpdating}
+      >
+        <EscrowList
+          items={data.items}
+          chainTime={data.blockTime}
+          onRetry={() => query.refetch()}
+        />
+        <Pagination page={data.page} pageCount={data.pageCount} onPageChange={changePage} />
+      </div>
     </>
   );
 }
