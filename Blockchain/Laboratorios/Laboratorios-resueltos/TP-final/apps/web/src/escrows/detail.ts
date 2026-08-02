@@ -1,5 +1,6 @@
 import { escrowAbi, escrowFactoryAbi } from "@escrow/contracts";
 import { getAddress, isAddress, type Address, type PublicClient } from "viem";
+import { canWrite } from "../wallet/wallet";
 import {
   EscrowState,
   escrowStateMetadata,
@@ -40,6 +41,8 @@ export type EscrowProjection = {
   availableActions: string[];
   timeline: LifecycleStage[];
 };
+
+export type EscrowActionContext = { account?: Address; chainId?: number };
 
 type EscrowDetailResult =
   { kind: "not-found" } | { kind: "success"; blockTime: bigint; snapshot: EscrowSnapshot };
@@ -118,7 +121,39 @@ export function resolveEscrowAddress(
   return address === value ? { kind: "canonical", address } : { kind: "redirect", address };
 }
 
-export function projectEscrow(snapshot: EscrowSnapshot, blockTime: bigint): EscrowProjection {
+function actionsForAccount(
+  actions: string[],
+  snapshot: EscrowSnapshot,
+  context?: EscrowActionContext,
+) {
+  if (!context) return actions;
+  if (!context.account || !canWrite(context.chainId)) return [];
+  const account = context.account.toLowerCase();
+  if (actions[0]?.startsWith("Finalizar")) return actions;
+  const role =
+    account === snapshot.owner.toLowerCase()
+      ? "owner"
+      : account === snapshot.worker.toLowerCase()
+        ? "worker"
+        : account === snapshot.arbiter.toLowerCase()
+          ? "arbiter"
+          : undefined;
+  return actions.filter((action) =>
+    (action === "Aceptar" || action === "Enviar trabajo")
+      ? role === "worker"
+      : (action === "Cancelar" || action === "Aprobar trabajo" || action === "Abrir disputa")
+        ? role === "owner"
+        : action === "Resolver disputa"
+          ? role === "arbiter"
+          : false,
+  );
+}
+
+export function projectEscrow(
+  snapshot: EscrowSnapshot,
+  blockTime: bigint,
+  context?: EscrowActionContext,
+): EscrowProjection {
   const currentIndex = stateStage.get(snapshot.state)!;
   const operational = operationalStates.includes(
     snapshot.state as (typeof operationalStates)[number],
@@ -154,7 +189,7 @@ export function projectEscrow(snapshot: EscrowSnapshot, blockTime: bigint): Escr
     };
   });
 
-  const actions = operational
+  const baseActions = operational
     ? deadlineElapsed
       ? [expirationActions[currentIndex]]
       : actionsByState[snapshot.state as (typeof operationalStates)[number]]
@@ -165,7 +200,7 @@ export function projectEscrow(snapshot: EscrowSnapshot, blockTime: bigint): Escr
     terminalOutcome: terminalOutcomes[snapshot.state],
     activeDeadline: activeDeadline && activeDeadline > 0n ? activeDeadline : undefined,
     deadlineElapsed,
-    availableActions: actions,
+    availableActions: actionsForAccount(baseActions, snapshot, context),
     timeline,
   };
 }

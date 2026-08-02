@@ -4,7 +4,7 @@
 
 **Blocked by:** 02 — Canonical escrow detail and lifecycle timeline; 03 — Injected wallet connection and Sepolia writes.
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] Detail actions are derived from snapshot, connected account, block time, and wallet network rather than duplicated page conditionals.
 - [ ] An eligible worker can review and simulate acceptance before the wallet prompt.
@@ -15,3 +15,6 @@
 - [ ] Known custom errors map to actionable Spanish messages; unknown errors retain copyable technical detail.
 - [ ] Integration tests cover eligibility, wrong role, wrong state, wrong network, deadline race, rejection, revert, success, and per-escrow concurrency.
 
+## Answer
+
+Se implementó la aceptación del worker con revisión, simulación, firma y confirmación. El coordinador reutilizable expone estados de transacción, errores traducidos, enlace al explorador, detalle técnico y bloqueo por dirección de escrow; tras confirmar se invalidan detalle y listados sin transición optimista.

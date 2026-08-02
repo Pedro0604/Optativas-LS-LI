@@ -57,6 +57,16 @@ describe("escrow detail projection", () => {
     );
   });
 
+  it("derives actions from the connected role and wallet network", () => {
+    expect(projectEscrow(snapshot, 1n, { account: snapshot.worker, chainId: 11155111 }).availableActions).toEqual([
+      "Aceptar",
+    ]);
+    expect(projectEscrow(snapshot, 1n, { account: snapshot.owner, chainId: 11155111 }).availableActions).toEqual([
+      "Cancelar",
+    ]);
+    expect(projectEscrow(snapshot, 1n, { account: snapshot.worker, chainId: 1 }).availableActions).toEqual([]);
+  });
+
   it.each([
     EscrowState.EscrowCancelled,
     EscrowState.AcceptanceExpired,

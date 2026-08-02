@@ -1,6 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
 import type { Address } from "viem";
+import { escrowAbi } from "@escrow/contracts";
+import { useAccount, useWriteContract } from "wagmi";
 import { config, publicClient } from "../runtime";
 import { Badge } from "../ui/Badge";
 import { Button, actionClassName } from "../ui/Button";
@@ -9,6 +12,13 @@ import { AddressDisplay } from "../ui/AddressDisplay";
 import { displayEth } from "./discovery";
 import { escrowDetailQuery, projectEscrow, safeSubmissionUrl } from "./detail";
 import { formatDeadlineDate, formatDeadlineDistance, formatDuration, useChainTime } from "./time";
+import { canAcceptEscrow } from "./acceptance";
+import {
+  isEscrowTransactionPending,
+  isTransactionPending,
+  runEscrowTransaction,
+  type TransactionState,
+} from "../transactions/coordinator";
 
 function AddressRow({ label, address }: { label: string; address: Address }) {
   return (
@@ -55,12 +65,17 @@ function Evidence({
 
 export function EscrowDetailPage() {
   const { address } = useParams({ from: "/escrows/$address" });
+  const { address: account, chainId } = useAccount();
+  const { writeContractAsync } = useWriteContract();
+  const queryClient = useQueryClient();
+  const [reviewingAcceptance, setReviewingAcceptance] = useState(false);
+  const [transaction, setTransaction] = useState<TransactionState>({ kind: "idle" });
   const query = useQuery(
     escrowDetailQuery(publicClient, config.factoryAddress, address as Address),
   );
   const successfulResult = query.data && "snapshot" in query.data ? query.data : undefined;
   const initialProjection = successfulResult
-    ? projectEscrow(successfulResult.snapshot, successfulResult.blockTime)
+    ? projectEscrow(successfulResult.snapshot, successfulResult.blockTime, { account, chainId })
     : undefined;
   const now = useChainTime(successfulResult?.blockTime ?? 0n, initialProjection?.activeDeadline);
 
@@ -88,7 +103,32 @@ export function EscrowDetailPage() {
     );
 
   const { snapshot } = query.data;
-  const projection = projectEscrow(snapshot, now);
+  const projection = projectEscrow(snapshot, now, { account, chainId });
+  const acceptance = canAcceptEscrow(snapshot, account, now, chainId);
+
+  async function accept() {
+    if (!account || !acceptance.ok) return;
+    const result = await runEscrowTransaction(snapshot.address, {
+      simulate: () =>
+        publicClient.simulateContract({
+          account,
+          address: snapshot.address,
+          abi: escrowAbi,
+          functionName: "acceptEscrow",
+        }),
+      write: writeContractAsync,
+      wait: (hash) => publicClient.waitForTransactionReceipt({ hash }),
+      onState: setTransaction,
+    });
+    if (result.kind === "confirmed") {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["escrow", snapshot.address] }),
+        queryClient.invalidateQueries({ queryKey: ["escrows"] }),
+        queryClient.invalidateQueries({ queryKey: ["my-escrows"] }),
+      ]);
+      setReviewingAcceptance(false);
+    }
+  }
   return (
     <div className="grid gap-6">
       <section className="border-t border-line pt-8">
@@ -134,6 +174,43 @@ export function EscrowDetailPage() {
           )}
         </Panel>
       </div>
+      {projection.availableActions.includes("Aceptar") && (
+        <Panel as="section" className="grid gap-4">
+          <div>
+            <h2 className="font-display text-2xl font-bold">Aceptar escrow</h2>
+            <p className="text-muted">La aceptación inicia el plazo de entrega y no puede deshacerse.</p>
+          </div>
+          {!reviewingAcceptance ? (
+            <Button onClick={() => setReviewingAcceptance(true)}>Revisar aceptación</Button>
+          ) : (
+            <div className="grid gap-3 rounded-lg border border-line p-4">
+              <p>Vas a aceptar este escrow como worker. Primero simularemos la transacción; tu wallet confirma la firma final.</p>
+              <div className="flex flex-wrap gap-3">
+                <Button disabled={isTransactionPending(transaction) || isEscrowTransactionPending(snapshot.address)} onClick={accept}>
+                  {transaction.kind === "simulating"
+                    ? "Simulando…"
+                    : transaction.kind === "wallet"
+                      ? "Esperando confirmación…"
+                      : transaction.kind === "submitted"
+                        ? "Esperando confirmación on-chain…"
+                        : "Simular y firmar aceptación"}
+                </Button>
+                <Button variant="ghost" disabled={isTransactionPending(transaction)} onClick={() => setReviewingAcceptance(false)}>Volver</Button>
+              </div>
+            </div>
+          )}
+          {transaction.kind === "submitted" && (
+            <p role="status">Transacción enviada: <a className="text-primary underline" href={`${config.explorerUrl}/tx/${transaction.hash}`} target="_blank" rel="noopener noreferrer">{transaction.hash}</a></p>
+          )}
+          {(transaction.kind === "rejected" || transaction.kind === "reverted" || transaction.kind === "unknown-failure") && (
+            <div role="alert" className="grid gap-2 text-danger">
+              <p>{transaction.message}</p>
+              {transaction.hash && <a className="text-primary underline" href={`${config.explorerUrl}/tx/${transaction.hash}`} target="_blank" rel="noopener noreferrer">Ver transacción</a>}
+              <details className="text-xs text-muted"><summary>Detalle técnico</summary><pre className="mt-2 whitespace-pre-wrap">{transaction.detail}</pre></details>
+            </div>
+          )}
+        </Panel>
+      )}
       <Panel as="section">
         <h2 className="font-display text-2xl font-bold">Ciclo de vida</h2>
         <ol className="mt-5 grid gap-3 md:grid-cols-4">
