@@ -1,9 +1,5 @@
 ### Next
-- verificar issue 2
-- componente address que permita copiar la address y mostrarla completa o recortada
 - hacer issue 3
-- Que en vez de decir "Plazo aún no iniciado" diga tantos minutos/horas/dias desde la aceptación, la entrega, la apertura de la disputa. 
-- Añadir una cuenta regresiva hasta la próxima deadline.
 - Hacer lifecycle tests.
 
 ### Bugs

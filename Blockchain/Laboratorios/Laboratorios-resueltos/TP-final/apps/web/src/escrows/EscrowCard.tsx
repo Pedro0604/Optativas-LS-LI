@@ -1,9 +1,10 @@
 import { Link } from "@tanstack/react-router";
-import { displayEth, shortAddress, type EscrowSummary } from "./discovery";
+import { displayEth, type EscrowSummary } from "./discovery";
 import { escrowStateMetadata } from "./EscrowState";
 import { Badge } from "../ui/Badge";
 import { actionClassName } from "../ui/Button";
 import { Panel } from "../ui/Panel";
+import { AddressDisplay } from "../ui/AddressDisplay";
 
 type EscrowCardProps = { summary: EscrowSummary };
 
@@ -18,20 +19,20 @@ export function EscrowCard({ summary }: EscrowCardProps) {
       <dl className="my-4 border-y border-line py-3">
         <div className="flex justify-between gap-4">
           <dt className="text-muted">Owner</dt>
-          <dd className="m-0 font-mono text-sm" title={summary.owner}>
-            {shortAddress(summary.owner)}
+          <dd className="m-0">
+            <AddressDisplay address={summary.owner} format="short" />
           </dd>
         </div>
         <div className="flex justify-between gap-4">
           <dt className="text-muted">Worker</dt>
-          <dd className="m-0 font-mono text-sm" title={summary.worker}>
-            {shortAddress(summary.worker)}
+          <dd className="m-0">
+            <AddressDisplay address={summary.worker} format="short" />
           </dd>
         </div>
         <div className="flex justify-between gap-4">
           <dt className="text-muted">Árbitro</dt>
-          <dd className="m-0 font-mono text-sm" title={summary.arbiter}>
-            {shortAddress(summary.arbiter)}
+          <dd className="m-0">
+            <AddressDisplay address={summary.arbiter} format="short" />
           </dd>
         </div>
       </dl>

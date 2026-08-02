@@ -212,7 +212,7 @@ export async function fetchEscrowDetail(client: PublicClient, factory: Address, 
     string,
     string,
   ];
-  
+
   return {
     kind: "success" as const,
     blockTime: block.timestamp,

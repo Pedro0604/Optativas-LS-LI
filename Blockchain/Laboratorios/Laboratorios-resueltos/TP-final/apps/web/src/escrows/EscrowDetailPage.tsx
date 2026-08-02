@@ -5,6 +5,7 @@ import { config, publicClient } from "../runtime";
 import { Badge } from "../ui/Badge";
 import { Button, actionClassName } from "../ui/Button";
 import { Panel } from "../ui/Panel";
+import { AddressDisplay } from "../ui/AddressDisplay";
 import { displayEth } from "./discovery";
 import { escrowDetailQuery, projectEscrow, safeSubmissionUrl } from "./detail";
 
@@ -17,7 +18,9 @@ function AddressRow({ label, address }: { label: string; address: Address }) {
   return (
     <div>
       <dt className="text-sm text-muted">{label}</dt>
-      <dd className="mt-1 break-all font-mono text-sm select-all">{address}</dd>
+      <dd className="mt-1">
+        <AddressDisplay address={address} format="long" />
+      </dd>
     </div>
   );
 }
@@ -88,13 +91,11 @@ export function EscrowDetailPage() {
   return (
     <div className="grid gap-6">
       <section className="border-t border-line pt-8">
-        <p className="text-xs font-bold tracking-[0.12em] text-primary uppercase">
-          Escrow
-        </p>
+        <p className="text-xs font-bold tracking-[0.12em] text-primary uppercase">Escrow</p>
         <h1 className="my-3 font-display text-[clamp(2.4rem,7vw,5rem)] leading-none font-bold">
           {snapshot.title}
         </h1>
-        <p className="break-all font-mono text-sm text-muted select-all">{snapshot.address}</p>
+        <AddressDisplay address={snapshot.address} format="long" />
         <div className="mt-4 flex flex-wrap gap-2">
           <Badge>{projection.stateLabel}</Badge>
           {projection.deadlineElapsed && (

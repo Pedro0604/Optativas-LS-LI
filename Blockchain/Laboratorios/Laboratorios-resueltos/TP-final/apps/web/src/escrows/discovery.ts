@@ -164,7 +164,6 @@ export async function fetchDiscovery(
   return { count, page: safePage, pageCount, items };
 }
 
-export const shortAddress = (address: Address) => `${address.slice(0, 6)}…${address.slice(-4)}`;
 export const displayEth = (amount: bigint) => `${formatEther(amount)} ETH`;
 
 export function discoveryQuery(
