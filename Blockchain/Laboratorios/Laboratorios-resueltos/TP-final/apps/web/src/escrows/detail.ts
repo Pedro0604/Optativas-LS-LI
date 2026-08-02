@@ -16,6 +16,7 @@ export type EscrowSnapshot = {
   arbiter: Address;
   state: EscrowState;
   deadlines: EscrowDeadlines;
+  durations: Pick<EscrowDeadlines, "submission" | "review" | "arbitration">;
   submissionReference: string;
   disputeReason: string;
   resolutionReason: string;
@@ -25,7 +26,9 @@ export type LifecycleStage = {
   key: keyof EscrowDeadlines;
   label: string;
   deadline: bigint;
-  status: "completed" | "current" | "future";
+  duration?: bigint;
+  startsAfter?: string;
+  status: "completed" | "current" | "future" | "expired";
   deadlineElapsed: boolean;
 };
 
@@ -38,6 +41,9 @@ export type EscrowProjection = {
   timeline: LifecycleStage[];
 };
 
+type EscrowDetailResult =
+  { kind: "not-found" } | { kind: "success"; blockTime: bigint; snapshot: EscrowSnapshot };
+
 const operationalStates = [
   EscrowState.PendingAcceptance,
   EscrowState.PendingSubmission,
@@ -47,10 +53,17 @@ const operationalStates = [
 
 const stageDefinitions = [
   { key: "acceptance", label: "Aceptación" },
-  { key: "submission", label: "Entrega" },
-  { key: "review", label: "Revisión" },
-  { key: "arbitration", label: "Arbitraje" },
+  { key: "submission", label: "Entrega", startsAfter: "la aceptación" },
+  { key: "review", label: "Revisión", startsAfter: "la entrega" },
+  { key: "arbitration", label: "Arbitraje", startsAfter: "la apertura de la disputa" },
 ] as const;
+
+const expirationStates = new Set<EscrowState>([
+  EscrowState.AcceptanceExpired,
+  EscrowState.SubmissionExpired,
+  EscrowState.ReviewExpired,
+  EscrowState.ArbitrationExpired,
+]);
 
 const stateStage = new Map<EscrowState, number>([
   [EscrowState.PendingAcceptance, 0],
@@ -116,15 +129,26 @@ export function projectEscrow(snapshot: EscrowSnapshot, blockTime: bigint): Escr
 
   const deadlineElapsed =
     activeDeadline !== undefined && activeDeadline > 0n && blockTime >= activeDeadline;
-  const timeline = stageDefinitions.map(({ key, label }, index): LifecycleStage => {
+  const timeline = stageDefinitions.map((definition, index): LifecycleStage => {
+    const { key, label } = definition;
     const deadline = snapshot.deadlines[key];
     const status: LifecycleStage["status"] =
-      index < currentIndex ? "completed" : index === currentIndex ? "current" : "future";
+      index < currentIndex
+        ? "completed"
+        : index > currentIndex
+          ? "future"
+          : operational
+            ? "current"
+            : expirationStates.has(snapshot.state)
+              ? "expired"
+              : "completed";
 
     return {
       key,
       label,
       deadline,
+      duration: key === "acceptance" ? undefined : snapshot.durations[key],
+      startsAfter: "startsAfter" in definition ? definition.startsAfter : undefined,
       status,
       deadlineElapsed: index === currentIndex && deadlineElapsed,
     };
@@ -157,12 +181,19 @@ const detailFunctions = [
   "submissionDeadline",
   "reviewDeadline",
   "arbitrationDeadline",
+  "submissionDuration",
+  "reviewDuration",
+  "arbitrationDuration",
   "submissionReference",
   "disputeReason",
   "resolutionReason",
 ] as const;
 
-export async function fetchEscrowDetail(client: PublicClient, factory: Address, address: Address) {
+export async function fetchEscrowDetail(
+  client: PublicClient,
+  factory: Address,
+  address: Address,
+): Promise<EscrowDetailResult> {
   const blockNumber = await client.getBlockNumber();
   const registered = await client.readContract({
     address: factory,
@@ -194,6 +225,9 @@ export async function fetchEscrowDetail(client: PublicClient, factory: Address, 
     submission,
     review,
     arbitration,
+    submissionDuration,
+    reviewDuration,
+    arbitrationDuration,
     submissionReference,
     disputeReason,
     resolutionReason,
@@ -204,6 +238,9 @@ export async function fetchEscrowDetail(client: PublicClient, factory: Address, 
     Address,
     Address,
     unknown,
+    bigint,
+    bigint,
+    bigint,
     bigint,
     bigint,
     bigint,
@@ -225,6 +262,11 @@ export async function fetchEscrowDetail(client: PublicClient, factory: Address, 
       arbiter,
       state: parseEscrowState(state),
       deadlines: { acceptance, submission, review, arbitration },
+      durations: {
+        submission: submissionDuration,
+        review: reviewDuration,
+        arbitration: arbitrationDuration,
+      },
       submissionReference,
       disputeReason,
       resolutionReason,
@@ -236,6 +278,7 @@ export function escrowDetailQuery(client: PublicClient, factory: Address, addres
   return {
     queryKey: ["escrow", address] as const,
     queryFn: () => fetchEscrowDetail(client, factory, address),
+    refetchInterval: 30_000,
   };
 }
 

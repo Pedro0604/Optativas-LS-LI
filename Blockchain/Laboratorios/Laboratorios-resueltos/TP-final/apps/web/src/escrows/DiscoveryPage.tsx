@@ -57,7 +57,7 @@ export function DiscoveryPage() {
         />
         <span className="text-sm text-muted">{data.count} escrows registrados</span>
       </section>
-      <EscrowList items={data.items} onRetry={() => query.refetch()} />
+      <EscrowList items={data.items} chainTime={data.blockTime} onRetry={() => query.refetch()} />
       <Pagination page={data.page} pageCount={data.pageCount} onPageChange={changePage} />
     </>
   );

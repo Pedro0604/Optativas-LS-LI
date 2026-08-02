@@ -101,3 +101,7 @@ export function parseEscrowState(value: unknown): EscrowState {
 export function phaseDeadlineFor(state: EscrowState, deadlines: EscrowDeadlines): bigint {
   return deadlines[escrowStateMetadata[state].deadlineKind];
 }
+
+export function isOperationalEscrowState(state: EscrowState): boolean {
+  return state >= EscrowState.PendingAcceptance && state <= EscrowState.PendingArbitration;
+}

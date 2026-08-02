@@ -34,7 +34,13 @@ export type EscrowItem =
   | { kind: "success"; address: Address; summary: EscrowSummary }
   | { kind: "error"; address: Address; error: string };
 
-export type DiscoveryPage = { count: number; page: number; pageCount: number; items: EscrowItem[] };
+export type DiscoveryPage = {
+  count: number;
+  page: number;
+  pageCount: number;
+  blockTime: bigint;
+  items: EscrowItem[];
+};
 
 /** Calcula una página desde el final del registro para mostrar primero los escrows más nuevos. */
 export function reverseIndexes(count: number, page: number, size = PAGE_SIZE): bigint[] {
@@ -70,6 +76,7 @@ export async function fetchDiscovery(
   const pageCount = Math.max(1, Math.ceil(count / PAGE_SIZE));
   const safePage = Math.min(page, pageCount);
   const blockNumber = await client.getBlockNumber();
+  const blockPromise = client.getBlock({ blockNumber });
   const indexes = reverseIndexes(count, safePage);
 
   const addressResults = await client.multicall({
@@ -161,7 +168,8 @@ export async function fetchDiscovery(
       };
     })
     .filter((item) => state === "all" || item.kind === "error" || item.summary.state === state);
-  return { count, page: safePage, pageCount, items };
+  const block = await blockPromise;
+  return { count, page: safePage, pageCount, blockTime: block.timestamp, items };
 }
 
 export const displayEth = (amount: bigint) => `${formatEther(amount)} ETH`;
@@ -175,5 +183,6 @@ export function discoveryQuery(
   return {
     queryKey: ["escrows", page, state] as const,
     queryFn: () => fetchDiscovery(client, factory, page, state),
+    refetchInterval: 30_000,
   };
 }

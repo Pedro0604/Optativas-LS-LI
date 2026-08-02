@@ -5,10 +5,11 @@ import { Panel } from "../ui/Panel";
 
 type EscrowListProps = {
   items: EscrowItem[];
+  chainTime: bigint;
   onRetry: () => void;
 };
 
-export function EscrowList({ items, onRetry }: EscrowListProps) {
+export function EscrowList({ items, chainTime, onRetry }: EscrowListProps) {
   if (items.length === 0) {
     return (
       <Panel className="px-4 py-16 text-center">
@@ -22,7 +23,7 @@ export function EscrowList({ items, onRetry }: EscrowListProps) {
     <ul className="grid list-none grid-cols-[repeat(auto-fit,minmax(min(100%,310px),1fr))] gap-4 p-0">
       {items.map((item) =>
         item.kind === "success" ? (
-          <EscrowCard key={item.address} summary={item.summary} />
+          <EscrowCard key={item.address} summary={item.summary} chainTime={chainTime} />
         ) : (
           <EscrowReadErrorCard
             key={item.address}

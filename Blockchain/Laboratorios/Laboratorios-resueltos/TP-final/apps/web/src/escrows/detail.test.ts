@@ -19,6 +19,7 @@ const snapshot: EscrowSnapshot = {
   arbiter: "0x0000000000000000000000000000000000000004",
   state: EscrowState.PendingAcceptance,
   deadlines: { acceptance: 100n, submission: 0n, review: 0n, arbitration: 0n },
+  durations: { submission: 3_600n, review: 5_400n, arbitration: 183_600n },
   submissionReference: "",
   disputeReason: "",
   resolutionReason: "",
@@ -33,6 +34,10 @@ describe("escrow detail projection", () => {
     expect(
       result.timeline.slice(1).every((stage) => stage.deadline === 0n && stage.status === "future"),
     ).toBe(true);
+    expect(result.timeline[1]).toMatchObject({
+      duration: 3_600n,
+      startsAfter: "la aceptación",
+    });
   });
 
   it.each([
@@ -66,6 +71,18 @@ describe("escrow detail projection", () => {
     expect(result.terminalOutcome).toBeTruthy();
     expect(result.availableActions).toEqual([]);
     expect(result.activeDeadline).toBeUndefined();
+  });
+
+  it("distinguishes processed expirations from other terminal outcomes", () => {
+    const deadlines = { acceptance: 100n, submission: 200n, review: 0n, arbitration: 0n };
+    expect(
+      projectEscrow({ ...snapshot, state: EscrowState.SubmissionExpired, deadlines }, 220n)
+        .timeline[1].status,
+    ).toBe("expired");
+    expect(
+      projectEscrow({ ...snapshot, state: EscrowState.WorkApproved, deadlines }, 220n).timeline[2]
+        .status,
+    ).toBe("completed");
   });
 });
 

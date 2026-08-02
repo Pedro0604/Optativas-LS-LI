@@ -44,11 +44,12 @@ describe("EscrowStateFilter", () => {
 
 describe("EscrowCard", () => {
   it("renders the escrow summary, deadline and detail link", () => {
-    render(<EscrowCard summary={summary} />);
+    render(<EscrowCard summary={summary} chainTime={1_799_999_880n} />);
 
     expect(screen.getByRole("heading", { name: "Diseño" })).toBeInTheDocument();
     expect(screen.getByText("1 ETH")).toBeInTheDocument();
     expect(screen.getByText(/Fecha límite:/)).toBeInTheDocument();
+    expect(screen.getByText("Vence en 2 minutos")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Ver detalle" })).toHaveAttribute(
       "href",
       `/escrows/${address}`,
@@ -56,15 +57,27 @@ describe("EscrowCard", () => {
   });
 
   it("omits the deadline when the summary has none", () => {
-    render(<EscrowCard summary={{ ...summary, deadline: 0n }} />);
+    render(<EscrowCard summary={{ ...summary, deadline: 0n }} chainTime={1n} />);
 
+    expect(screen.queryByText(/Fecha límite:/)).not.toBeInTheDocument();
+  });
+
+  it("does not render a countdown for a terminal escrow", () => {
+    render(
+      <EscrowCard
+        summary={{ ...summary, state: EscrowState.AcceptanceExpired }}
+        chainTime={1_800_000_100n}
+      />,
+    );
+
+    expect(screen.queryByText(/Venció hace/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Fecha límite:/)).not.toBeInTheDocument();
   });
 });
 
 describe("EscrowList", () => {
   it("renders its empty state", () => {
-    render(<EscrowList items={[]} onRetry={vi.fn()} />);
+    render(<EscrowList items={[]} chainTime={1n} onRetry={vi.fn()} />);
 
     expect(
       screen.getByRole("heading", { name: "No hay escrows para mostrar" }),
@@ -77,7 +90,7 @@ describe("EscrowList", () => {
       { kind: "success", address, summary },
       { kind: "error", address: participant, error: "No se pudo leer este escrow." },
     ];
-    render(<EscrowList items={items} onRetry={onRetry} />);
+    render(<EscrowList items={items} chainTime={1n} onRetry={onRetry} />);
 
     expect(screen.getByRole("heading", { name: "Diseño" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Lectura fallida" })).toBeInTheDocument();

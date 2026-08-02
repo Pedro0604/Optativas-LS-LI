@@ -56,6 +56,7 @@ describe("public discovery reads", () => {
     const client = {
       readContract: vi.fn().mockResolvedValue(0n),
       getBlockNumber: vi.fn().mockResolvedValue(10n),
+      getBlock: vi.fn().mockResolvedValue({ timestamp: 1n }),
       multicall: vi.fn().mockResolvedValue([]),
     };
     await expect(fetchDiscovery(client as never, factory, 1, "all")).resolves.toMatchObject({
@@ -81,6 +82,7 @@ describe("public discovery reads", () => {
     const client = {
       readContract: vi.fn().mockResolvedValue(2n),
       getBlockNumber: vi.fn().mockResolvedValue(77n),
+      getBlock: vi.fn().mockResolvedValue({ timestamp: 70n }),
       multicall: vi
         .fn()
         .mockResolvedValueOnce([escrow, factory])
@@ -108,6 +110,7 @@ describe("public discovery reads", () => {
     const client = {
       readContract: vi.fn().mockResolvedValue(1n),
       getBlockNumber: vi.fn().mockResolvedValue(77n),
+      getBlock: vi.fn().mockResolvedValue({ timestamp: 70n }),
       multicall: vi
         .fn()
         .mockResolvedValueOnce([escrow])

@@ -8,11 +8,7 @@ import { Panel } from "../ui/Panel";
 import { AddressDisplay } from "../ui/AddressDisplay";
 import { displayEth } from "./discovery";
 import { escrowDetailQuery, projectEscrow, safeSubmissionUrl } from "./detail";
-
-const date = (timestamp: bigint) =>
-  new Intl.DateTimeFormat("es-AR", { dateStyle: "medium", timeStyle: "short" }).format(
-    new Date(Number(timestamp) * 1000),
-  );
+import { formatDeadlineDate, formatDeadlineDistance, formatDuration, useChainTime } from "./time";
 
 function AddressRow({ label, address }: { label: string; address: Address }) {
   return (
@@ -62,6 +58,11 @@ export function EscrowDetailPage() {
   const query = useQuery(
     escrowDetailQuery(publicClient, config.factoryAddress, address as Address),
   );
+  const successfulResult = query.data && "snapshot" in query.data ? query.data : undefined;
+  const initialProjection = successfulResult
+    ? projectEscrow(successfulResult.snapshot, successfulResult.blockTime)
+    : undefined;
+  const now = useChainTime(successfulResult?.blockTime ?? 0n, initialProjection?.activeDeadline);
 
   if (query.isPending) return <Panel role="status">Cargando detalle…</Panel>;
   if (query.isError)
@@ -86,8 +87,8 @@ export function EscrowDetailPage() {
       </Panel>
     );
 
-  const { snapshot, blockTime } = query.data;
-  const projection = projectEscrow(snapshot, blockTime);
+  const { snapshot } = query.data;
+  const projection = projectEscrow(snapshot, now);
   return (
     <div className="grid gap-6">
       <section className="border-t border-line pt-8">
@@ -145,15 +146,37 @@ export function EscrowDetailPage() {
               <Badge>
                 {stage.deadlineElapsed
                   ? "Actual · vencida, sin finalizar"
-                  : stage.status === "completed"
-                    ? "Completada"
-                    : stage.status === "current"
-                      ? "Actual"
-                      : "No iniciada"}
+                  : stage.status === "expired"
+                    ? "Finalizada por vencimiento"
+                    : stage.status === "completed"
+                      ? "Completada"
+                      : stage.status === "current"
+                        ? "Actual"
+                        : "No iniciada"}
               </Badge>
-              <p className="mt-3 text-sm text-muted">
-                {stage.deadline === 0n ? "Plazo aún no iniciado" : date(stage.deadline)}
-              </p>
+              {stage.deadline === 0n ? (
+                <div className="mt-3 text-sm text-muted">
+                  <p>Duración al iniciar: {formatDuration(stage.duration ?? 0n)}</p>
+                  <p>Comienza con {stage.startsAfter}.</p>
+                </div>
+              ) : stage.status === "current" ? (
+                <div className="mt-3 text-sm text-muted">
+                  <p className={stage.deadlineElapsed ? "font-semibold text-accent" : undefined}>
+                    {formatDeadlineDistance(stage.deadline, now)}
+                    {stage.deadlineElapsed ? " · sin finalizar" : ""}
+                  </p>
+                  <p>Fecha límite: {formatDeadlineDate(stage.deadline)}</p>
+                </div>
+              ) : stage.status === "expired" ? (
+                <div className="mt-3 text-sm text-muted">
+                  <p>{formatDeadlineDistance(stage.deadline, now)}</p>
+                  <p>Fecha límite: {formatDeadlineDate(stage.deadline)}</p>
+                </div>
+              ) : (
+                <p className="mt-3 text-sm text-muted">
+                  El plazo terminaba el {formatDeadlineDate(stage.deadline)}
+                </p>
+              )}
             </li>
           ))}
         </ol>

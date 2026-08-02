@@ -5,10 +5,14 @@ import { Badge } from "../ui/Badge";
 import { actionClassName } from "../ui/Button";
 import { Panel } from "../ui/Panel";
 import { AddressDisplay } from "../ui/AddressDisplay";
+import { isOperationalEscrowState } from "./EscrowState";
+import { formatDeadlineDate, formatDeadlineDistance, useChainTime } from "./time";
 
-type EscrowCardProps = { summary: EscrowSummary };
+type EscrowCardProps = { summary: EscrowSummary; chainTime: bigint };
 
-export function EscrowCard({ summary }: EscrowCardProps) {
+export function EscrowCard({ summary, chainTime }: EscrowCardProps) {
+  const activeDeadline = isOperationalEscrowState(summary.state) ? summary.deadline : undefined;
+  const now = useChainTime(chainTime, activeDeadline);
   return (
     <Panel as="li" className="flex flex-col">
       <div className="flex items-start justify-between gap-3">
@@ -36,16 +40,18 @@ export function EscrowCard({ summary }: EscrowCardProps) {
           </dd>
         </div>
       </dl>
-      {summary.deadline > 0n && (
-        <p className="text-sm text-muted">
-          Fecha límite:{" "}
-          <time dateTime={new Date(Number(summary.deadline) * 1000).toISOString()}>
-            {new Intl.DateTimeFormat("es-AR", {
-              dateStyle: "medium",
-              timeStyle: "short",
-            }).format(Number(summary.deadline) * 1000)}
-          </time>
-        </p>
+      {activeDeadline !== undefined && activeDeadline > 0n && (
+        <div className="text-sm text-muted">
+          <p className={now >= activeDeadline ? "font-semibold text-accent" : undefined}>
+            {formatDeadlineDistance(activeDeadline, now)}
+          </p>
+          <p>
+            Fecha límite:{" "}
+            <time dateTime={new Date(Number(activeDeadline) * 1000).toISOString()}>
+              {formatDeadlineDate(activeDeadline)}
+            </time>
+          </p>
+        </div>
       )}
       <Link
         to="/escrows/$address"
