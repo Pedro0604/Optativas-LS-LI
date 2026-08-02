@@ -13,7 +13,7 @@ Etapa autoritativa del ciclo de vida de un escrow, almacenada en la blockchain. 
 _Avoid_: UI status, transaction status
 
 **Available action**:
-Transición que una cuenta puede intentar según el estado del escrow, su rol y el plazo vigente. El contrato conserva la autoridad final para aceptarla o rechazarla.
+Transición que una cuenta puede intentar según el estado del escrow, su rol y el plazo vigente. Un participante o visitor puede no tener ninguna sin que el escrow sea terminal. El contrato conserva la autoridad final para aceptarla o rechazarla.
 _Avoid_: Permission, authorized button
 
 **Unfinalized expiration**:

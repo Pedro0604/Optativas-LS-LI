@@ -44,6 +44,13 @@ export type EscrowProjection = {
 
 export type EscrowActionContext = { account?: Address; chainId?: number };
 
+export type ActionAvailability =
+  | { kind: "available"; actions: string[] }
+  | { kind: "terminal" }
+  | { kind: "wallet-required" }
+  | { kind: "wrong-network" }
+  | { kind: "unavailable" };
+
 type EscrowDetailResult =
   { kind: "not-found" } | { kind: "success"; blockTime: bigint; snapshot: EscrowSnapshot };
 
@@ -139,9 +146,9 @@ function actionsForAccount(
           ? "arbiter"
           : undefined;
   return actions.filter((action) =>
-    (action === "Aceptar" || action === "Enviar trabajo")
+    action === "Aceptar" || action === "Enviar trabajo"
       ? role === "worker"
-      : (action === "Cancelar" || action === "Aprobar trabajo" || action === "Abrir disputa")
+      : action === "Cancelar" || action === "Aprobar trabajo" || action === "Abrir disputa"
         ? role === "owner"
         : action === "Resolver disputa"
           ? role === "arbiter"
@@ -203,6 +210,19 @@ export function projectEscrow(
     availableActions: actionsForAccount(baseActions, snapshot, context),
     timeline,
   };
+}
+
+/** Describe por qué la interfaz puede o no mostrar una acción del ciclo de vida. */
+export function actionAvailability(
+  projection: EscrowProjection,
+  context?: EscrowActionContext,
+): ActionAvailability {
+  if (projection.terminalOutcome) return { kind: "terminal" };
+  if (projection.availableActions.length)
+    return { kind: "available", actions: projection.availableActions };
+  if (!context?.account) return { kind: "wallet-required" };
+  if (!canWrite(context.chainId)) return { kind: "wrong-network" };
+  return { kind: "unavailable" };
 }
 
 const detailFunctions = [

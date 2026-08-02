@@ -10,7 +10,7 @@ import { Button, actionClassName } from "../ui/Button";
 import { Panel } from "../ui/Panel";
 import { AddressDisplay } from "../ui/AddressDisplay";
 import { displayEth } from "./discovery";
-import { escrowDetailQuery, projectEscrow, safeSubmissionUrl } from "./detail";
+import { actionAvailability, escrowDetailQuery, projectEscrow, safeSubmissionUrl } from "./detail";
 import { formatDeadlineDate, formatDeadlineDistance, formatDuration, useChainTime } from "./time";
 import { canAcceptEscrow } from "./acceptance";
 import {
@@ -104,6 +104,7 @@ export function EscrowDetailPage() {
 
   const { snapshot } = query.data;
   const projection = projectEscrow(snapshot, now, { account, chainId });
+  const availability = actionAvailability(projection, { account, chainId });
   const acceptance = canAcceptEscrow(snapshot, account, now, chainId);
 
   async function accept() {
@@ -129,6 +130,7 @@ export function EscrowDetailPage() {
       setReviewingAcceptance(false);
     }
   }
+
   return (
     <div className="grid gap-6">
       <section className="border-t border-line pt-8">
@@ -158,14 +160,25 @@ export function EscrowDetailPage() {
         </Panel>
         <Panel as="section">
           <h2 className="font-display text-2xl font-bold">Acciones disponibles</h2>
-          {projection.availableActions.length ? (
+          {availability.kind === "available" ? (
             <ul>
-              {projection.availableActions.map((action) => (
+              {availability.actions.map((action) => (
                 <li key={action}>{action}</li>
               ))}
             </ul>
-          ) : (
-            <p className="text-muted">El escrow alcanzó un estado final.</p>
+          ) : availability.kind === "wallet-required" ? (
+            <p className="text-muted">
+              {projection.deadlineElapsed
+                ? "Conectá una wallet para finalizar el plazo vencido."
+                : "Conectá una wallet para ver las acciones disponibles."}
+            </p>
+          ) : availability.kind === "wrong-network" ? (
+            <p className="text-muted">Cambiá tu wallet a Sepolia para realizar acciones.</p>
+          ) : availability.kind === "unavailable" ? (
+            <p className="text-muted">No tenés acciones disponibles en esta etapa.</p>
+          ) : null}
+          {availability.kind === "terminal" && (
+            <p className="text-muted">El ciclo de vida del escrow finalizó.</p>
           )}
           {projection.terminalOutcome && (
             <p>

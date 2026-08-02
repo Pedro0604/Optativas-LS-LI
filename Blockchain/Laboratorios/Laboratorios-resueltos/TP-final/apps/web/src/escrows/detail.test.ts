@@ -7,6 +7,7 @@ import {
   projectEscrow,
   resolveEscrowAddress,
   safeSubmissionUrl,
+  actionAvailability,
   type EscrowSnapshot,
 } from "./detail";
 
@@ -58,13 +59,71 @@ describe("escrow detail projection", () => {
   });
 
   it("derives actions from the connected role and wallet network", () => {
-    expect(projectEscrow(snapshot, 1n, { account: snapshot.worker, chainId: 11155111 }).availableActions).toEqual([
-      "Aceptar",
-    ]);
-    expect(projectEscrow(snapshot, 1n, { account: snapshot.owner, chainId: 11155111 }).availableActions).toEqual([
-      "Cancelar",
-    ]);
-    expect(projectEscrow(snapshot, 1n, { account: snapshot.worker, chainId: 1 }).availableActions).toEqual([]);
+    expect(
+      projectEscrow(snapshot, 1n, { account: snapshot.worker, chainId: 11155111 }).availableActions,
+    ).toEqual(["Aceptar"]);
+    expect(
+      projectEscrow(snapshot, 1n, { account: snapshot.owner, chainId: 11155111 }).availableActions,
+    ).toEqual(["Cancelar"]);
+    expect(
+      projectEscrow(snapshot, 1n, { account: snapshot.worker, chainId: 1 }).availableActions,
+    ).toEqual([]);
+  });
+
+  it("explains why an operational escrow has no available action", () => {
+    expect(actionAvailability(projectEscrow(snapshot, 1n, {}))).toEqual({
+      kind: "wallet-required",
+    });
+    expect(
+      actionAvailability(projectEscrow(snapshot, 1n, { account: snapshot.owner, chainId: 1 }), {
+        account: snapshot.owner,
+        chainId: 1,
+      }),
+    ).toEqual({
+      kind: "wrong-network",
+    });
+    expect(
+      actionAvailability(
+        projectEscrow(snapshot, 1n, { account: snapshot.arbiter, chainId: 11155111 }),
+        {
+          account: snapshot.arbiter,
+          chainId: 11155111,
+        },
+      ),
+    ).toEqual({ kind: "unavailable" });
+    expect(
+      actionAvailability(
+        projectEscrow(snapshot, 1n, { account: snapshot.worker, chainId: 11155111 }),
+        {
+          account: snapshot.worker,
+          chainId: 11155111,
+        },
+      ),
+    ).toEqual({ kind: "available", actions: ["Aceptar"] });
+  });
+
+  it("allows any Sepolia account to finalize an elapsed deadline", () => {
+    expect(actionAvailability(projectEscrow(snapshot, 100n, {}))).toEqual({
+      kind: "wallet-required",
+    });
+    expect(
+      actionAvailability(projectEscrow(snapshot, 100n, { account: snapshot.arbiter, chainId: 11155111 }), {
+        account: snapshot.arbiter,
+        chainId: 11155111,
+      }),
+    ).toEqual({ kind: "available", actions: ["Finalizar aceptación vencida"] });
+  });
+
+  it("shows a terminal outcome instead of an action availability message", () => {
+    const projection = projectEscrow({ ...snapshot, state: EscrowState.WorkApproved }, 1n, {
+      account: snapshot.worker,
+      chainId: 11155111,
+    });
+    expect(actionAvailability(projection, { account: snapshot.worker, chainId: 11155111 })).toEqual(
+      {
+        kind: "terminal",
+      },
+    );
   });
 
   it.each([
