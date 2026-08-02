@@ -18,7 +18,7 @@ import {
 
 export const PAGE_SIZE = 20;
 
-export type EscrowCard = {
+export type EscrowSummary = {
   address: Address;
   title: string;
   amount: bigint;
@@ -29,7 +29,9 @@ export type EscrowCard = {
   deadline: bigint;
 };
 
-export type EscrowItem = { address: Address; card?: EscrowCard; error?: string };
+export type EscrowItem =
+  | { kind: "success"; address: Address; summary: EscrowSummary }
+  | { kind: "error"; address: Address; error: string };
 
 export type DiscoveryPage = { count: number; page: number; pageCount: number; items: EscrowItem[] };
 
@@ -111,7 +113,7 @@ export async function fetchDiscovery(
       );
 
       const failed = values.find((result) => result.status === "failure");
-      if (failed) return { address, error: "No se pudo leer este escrow." };
+      if (failed) return { kind: "error", address, error: "No se pudo leer este escrow." };
 
       const [
         title,
@@ -130,7 +132,11 @@ export async function fetchDiscovery(
       try {
         stateValue = parseEscrowState(escrowState);
       } catch (error) {
-        return { address, error: error instanceof Error ? error.message : "Estado desconocido" };
+        return {
+          kind: "error",
+          address,
+          error: error instanceof Error ? error.message : "Estado desconocido",
+        };
       }
 
       // Objeto con los 4 deadlines
@@ -139,8 +145,9 @@ export async function fetchDiscovery(
       const deadline = phaseDeadlineFor(stateValue, deadlines);
 
       return {
+        kind: "success",
         address,
-        card: {
+        summary: {
           address,
           title: title as string,
           amount: amount as bigint,
@@ -152,7 +159,7 @@ export async function fetchDiscovery(
         },
       };
     })
-    .filter((item) => state === "all" || item.error || item.card?.state === state);
+    .filter((item) => state === "all" || item.kind === "error" || item.summary.state === state);
   return { count, page: safePage, pageCount, items };
 }
 

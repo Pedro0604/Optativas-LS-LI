@@ -91,8 +91,8 @@ describe("public discovery reads", () => {
         ]),
     };
     const result = await fetchDiscovery(client as never, factory, 1, "all");
-    expect(result.items[0].card?.title).toBe("Contrato");
-    expect(result.items[1].error).toMatch(/leer/);
+    expect(result.items[0]).toMatchObject({ kind: "success", summary: { title: "Contrato" } });
+    expect(result.items[1]).toMatchObject({ kind: "error", error: expect.stringMatching(/leer/) });
     expect(client.multicall).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({ blockNumber: 77n }),
@@ -118,7 +118,11 @@ describe("public discovery reads", () => {
 
     const result = await fetchDiscovery(client as never, factory, 1, "all");
 
-    expect(result.items[0]).toEqual({ address: escrow, error: "Estado de escrow desconocido: 11" });
+    expect(result.items[0]).toEqual({
+      kind: "error",
+      address: escrow,
+      error: "Estado de escrow desconocido: 11",
+    });
   });
 
   it("surfaces a fatal registry failure", async () => {
