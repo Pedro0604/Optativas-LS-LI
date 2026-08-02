@@ -38,7 +38,16 @@ export function canSubmitWork(
   blockTime: bigint,
   chainId: number | undefined,
 ) {
-  return eligibility(snapshot, account, blockTime, chainId, "worker", EscrowState.PendingSubmission, "submission", "enviar trabajo");
+  return eligibility(
+    snapshot,
+    account,
+    blockTime,
+    chainId,
+    "worker",
+    EscrowState.PendingSubmission,
+    "submission",
+    "enviar trabajo",
+  );
 }
 
 export function canApproveWork(
@@ -47,7 +56,16 @@ export function canApproveWork(
   blockTime: bigint,
   chainId: number | undefined,
 ) {
-  return eligibility(snapshot, account, blockTime, chainId, "owner", EscrowState.PendingReview, "review", "aprobar");
+  return eligibility(
+    snapshot,
+    account,
+    blockTime,
+    chainId,
+    "owner",
+    EscrowState.PendingReview,
+    "review",
+    "aprobar",
+  );
 }
 
 export function canOpenDispute(
@@ -56,5 +74,14 @@ export function canOpenDispute(
   blockTime: bigint,
   chainId: number | undefined,
 ) {
-  return eligibility(snapshot, account, blockTime, chainId, "owner", EscrowState.PendingReview, "review", "abrir una disputa en");
+  return eligibility(
+    snapshot,
+    account,
+    blockTime,
+    chainId,
+    "owner",
+    EscrowState.PendingReview,
+    "review",
+    "abrir una disputa en",
+  );
 }

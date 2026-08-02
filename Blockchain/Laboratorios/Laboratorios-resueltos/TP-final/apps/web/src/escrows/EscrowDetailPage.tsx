@@ -37,6 +37,7 @@ import {
   formatAllocationEth,
   parseWorkerAllocation,
 } from "./resolution";
+import { WalletControls } from "../wallet/WalletControls";
 
 function AddressRow({ label, address }: { label: string; address: Address }) {
   return (
@@ -718,13 +719,9 @@ export function EscrowDetailPage() {
             {reviewingLifecycleAction !== action ? (
               <Button onClick={() => reviewLifecycleAction(action)}>Revisar consecuencia</Button>
             ) : !account ? (
-              <div className="grid gap-3 rounded-lg border border-line p-4">
-                <p>Conectá una wallet para continuar con esta acción.</p>
-                <Button
-                  onClick={() => window.dispatchEvent(new Event(walletConnectionRequestEvent))}
-                >
-                  Conectar wallet y continuar
-                </Button>
+              <div className="flex items-center gap-3 rounded-lg border border-line p-4">
+                <p>Conectá una wallet para continuar con esta acción: </p>
+                <WalletControls/>
               </div>
             ) : !connectedAndEligible ? (
               <div className="grid gap-3 rounded-lg border border-line p-4">

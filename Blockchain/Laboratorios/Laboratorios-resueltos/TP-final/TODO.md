@@ -1,5 +1,7 @@
 ### Next
-- Hacer issue-07
+- Hacer issue-10
+- Añadir porcentajes a la resolución de disputas (que se pueda poner un 10% al worker y calcule el resto de los campos en base a eso y así, lo mismo al owner, así como se puede poner 0% o mitad y mitad)
+- Debería aparecer en la página de un escrow: tu rol en este escrow: <rol>
 - Hacer lifecycle tests.
 
 ### Bugs
