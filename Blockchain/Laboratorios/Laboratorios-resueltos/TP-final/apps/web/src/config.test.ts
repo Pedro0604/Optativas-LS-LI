@@ -11,7 +11,7 @@ const valid = {
 describe("runtime configuration", () => {
   it("accepts and normalizes a Sepolia configuration", () =>
     expect(parseConfig(valid).explorerUrl).toBe("https://sepolia.etherscan.io"));
-  
+
   it.each(["VITE_SEPOLIA_RPC_URL", "VITE_CHAIN_ID", "VITE_FACTORY_ADDRESS", "VITE_EXPLORER_URL"])(
     "rejects invalid %s",
     (key) => expect(() => parseConfig({ ...valid, [key]: "invalid" })).toThrow(ConfigurationError),

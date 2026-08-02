@@ -11,7 +11,7 @@
     "web:dev": "pnpm --filter @escrow/web dev",
     "format": "prettier --write \"apps/web/**/*.{ts,tsx,css,json,html}\" \"packages/contracts/**/*.{js,mjs,json}\" package.json pnpm-workspace.yaml .prettierrc.json --ignore-unknown",
     "format:check": "prettier --check \"apps/web/**/*.{ts,tsx,css,json,html}\" \"packages/contracts/**/*.{js,mjs,json}\" package.json pnpm-workspace.yaml .prettierrc.json --ignore-unknown",
-    "verify": "pnpm hardhat build && pnpm hardhat test && pnpm contracts:check && pnpm web:typecheck && pnpm web:test && pnpm web:build"
+    "verify": "pnpm hardhat build && pnpm hardhat test && pnpm contracts:check && pnpm web:typecheck && pnpm web:test && pnpm format && pnpm web:build"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-ethers": "^4.0.15",
