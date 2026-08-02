@@ -8,6 +8,7 @@ import {
   resolveEscrowAddress,
   safeSubmissionUrl,
   actionAvailability,
+  lifecycleWriteDetail,
   type EscrowSnapshot,
 } from "./detail";
 
@@ -115,6 +116,40 @@ describe("escrow detail projection", () => {
         },
       ),
     ).toEqual({ kind: "available", actions: ["Finalizar aceptación vencida"] });
+  });
+
+  it.each([
+    [
+      EscrowState.PendingAcceptance,
+      "acceptance",
+      "Finalizar aceptación vencida",
+      "expireAcceptance",
+    ],
+    [EscrowState.PendingSubmission, "submission", "Finalizar entrega vencida", "expireSubmission"],
+    [EscrowState.PendingReview, "review", "Finalizar revisión vencida", "expireReview"],
+    [
+      EscrowState.PendingArbitration,
+      "arbitration",
+      "Finalizar arbitraje vencido",
+      "expireArbitration",
+    ],
+  ] as const)(
+    "offers permissionless %s expiration exactly at its deadline",
+    (state, deadlineKey, action, functionName) => {
+      const deadlines = { acceptance: 0n, submission: 0n, review: 0n, arbitration: 0n };
+      deadlines[deadlineKey] = 100n;
+      const projection = projectEscrow({ ...snapshot, state, deadlines }, 100n, {
+        account: snapshot.arbiter,
+        chainId: 11155111,
+      });
+      expect(projection.deadlineElapsed).toBe(true);
+      expect(projection.availableActions).toEqual([action]);
+      expect(lifecycleWriteDetail(action).functionName).toBe(functionName);
+    },
+  );
+
+  it("describes the deterministic arbitration-expiration allocation", () => {
+    expect(lifecycleWriteDetail("Finalizar arbitraje vencido").consequence).toMatch(/wei impar/i);
   });
 
   it("shows a terminal outcome instead of an action availability message", () => {

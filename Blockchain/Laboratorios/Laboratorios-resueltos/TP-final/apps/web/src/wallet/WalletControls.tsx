@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAccount, useConnect, useDisconnect, useSwitchChain } from "wagmi";
 import { Button } from "../ui/Button";
 import { walletContextChangedEvent } from "./accountChange";
-import { canWrite, SEPOLIA_CHAIN_ID } from "./wallet";
+import { canWrite, SEPOLIA_CHAIN_ID, walletConnectionRequestEvent } from "./wallet";
 import { AddressDisplay } from "../ui/AddressDisplay";
 
 function WalletStateInvalidator() {
@@ -31,6 +31,12 @@ function WalletControlsContent() {
   const { switchChain, error: switchError, isPending: isSwitching } = useSwitchChain();
   const [showProviders, setShowProviders] = useState(false);
   const wrongNetwork = isConnected && !canWrite(chainId);
+
+  useEffect(() => {
+    const show = () => setShowProviders(true);
+    window.addEventListener(walletConnectionRequestEvent, show);
+    return () => window.removeEventListener(walletConnectionRequestEvent, show);
+  }, []);
 
   if (!isConnected)
     return (

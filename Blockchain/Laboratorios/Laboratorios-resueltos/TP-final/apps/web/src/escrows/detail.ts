@@ -51,6 +51,56 @@ export type ActionAvailability =
   | { kind: "wrong-network" }
   | { kind: "unavailable" };
 
+export type LifecycleWriteAction =
+  | "Cancelar"
+  | "Finalizar aceptación vencida"
+  | "Finalizar entrega vencida"
+  | "Finalizar revisión vencida"
+  | "Finalizar arbitraje vencido";
+
+const lifecycleWriteDetails: Record<
+  LifecycleWriteAction,
+  {
+    functionName:
+      | "cancelEscrow"
+      | "expireAcceptance"
+      | "expireSubmission"
+      | "expireReview"
+      | "expireArbitration";
+    consequence: string;
+  }
+> = {
+  Cancelar: {
+    functionName: "cancelEscrow",
+    consequence:
+      "El escrow quedará cancelado y el monto completo quedará disponible para retiro del owner.",
+  },
+  "Finalizar aceptación vencida": {
+    functionName: "expireAcceptance",
+    consequence:
+      "La aceptación quedará finalizada por vencimiento y el monto completo quedará disponible para retiro del owner.",
+  },
+  "Finalizar entrega vencida": {
+    functionName: "expireSubmission",
+    consequence:
+      "La entrega quedará finalizada por vencimiento y el monto completo quedará disponible para retiro del owner.",
+  },
+  "Finalizar revisión vencida": {
+    functionName: "expireReview",
+    consequence:
+      "La revisión quedará finalizada por vencimiento y el monto completo quedará disponible para retiro del worker.",
+  },
+  "Finalizar arbitraje vencido": {
+    functionName: "expireArbitration",
+    consequence:
+      "El arbitraje quedará finalizado por vencimiento: la mitad para el owner y la otra mitad (con cualquier wei impar adicional) para el worker quedarán disponibles para retiro.",
+  },
+};
+
+export function lifecycleWriteDetail(action: LifecycleWriteAction) {
+  return lifecycleWriteDetails[action];
+}
+
 type EscrowDetailResult =
   { kind: "not-found" } | { kind: "success"; blockTime: bigint; snapshot: EscrowSnapshot };
 

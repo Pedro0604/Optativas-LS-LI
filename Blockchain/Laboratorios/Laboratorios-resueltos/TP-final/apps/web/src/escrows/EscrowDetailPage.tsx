@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
 import type { Address } from "viem";
@@ -10,7 +10,14 @@ import { Button, actionClassName } from "../ui/Button";
 import { Panel } from "../ui/Panel";
 import { AddressDisplay } from "../ui/AddressDisplay";
 import { displayEth } from "./discovery";
-import { actionAvailability, escrowDetailQuery, projectEscrow, safeSubmissionUrl } from "./detail";
+import {
+  actionAvailability,
+  escrowDetailQuery,
+  lifecycleWriteDetail,
+  projectEscrow,
+  safeSubmissionUrl,
+  type LifecycleWriteAction,
+} from "./detail";
 import { formatDeadlineDate, formatDeadlineDistance, formatDuration, useChainTime } from "./time";
 import { canAcceptEscrow } from "./acceptance";
 import {
@@ -19,6 +26,7 @@ import {
   runEscrowTransaction,
   type TransactionState,
 } from "../transactions/coordinator";
+import { walletConnectionRequestEvent } from "../wallet/wallet";
 
 function AddressRow({ label, address }: { label: string; address: Address }) {
   return (
@@ -69,6 +77,9 @@ export function EscrowDetailPage() {
   const { writeContractAsync } = useWriteContract();
   const queryClient = useQueryClient();
   const [reviewingAcceptance, setReviewingAcceptance] = useState(false);
+  const [reviewingLifecycleAction, setReviewingLifecycleAction] = useState<
+    LifecycleWriteAction | undefined
+  >();
   const [transaction, setTransaction] = useState<TransactionState>({ kind: "idle" });
   const query = useQuery(
     escrowDetailQuery(publicClient, config.factoryAddress, address as Address),
@@ -78,6 +89,12 @@ export function EscrowDetailPage() {
     ? projectEscrow(successfulResult.snapshot, successfulResult.blockTime, { account, chainId })
     : undefined;
   const now = useChainTime(successfulResult?.blockTime ?? 0n, initialProjection?.activeDeadline);
+
+  useEffect(() => {
+    if (initialProjection?.activeDeadline && now >= initialProjection.activeDeadline) {
+      void query.refetch();
+    }
+  }, [initialProjection?.activeDeadline, now, query]);
 
   if (query.isPending) return <Panel role="status">Cargando detalle…</Panel>;
   if (query.isError)
@@ -107,6 +124,14 @@ export function EscrowDetailPage() {
   const availability = actionAvailability(projection, { account, chainId });
   const acceptance = canAcceptEscrow(snapshot, account, now, chainId);
 
+  async function refreshAfterConfirmation() {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["escrow", snapshot.address] }),
+      queryClient.invalidateQueries({ queryKey: ["escrows"] }),
+      queryClient.invalidateQueries({ queryKey: ["my-escrows"] }),
+    ]);
+  }
+
   async function accept() {
     if (!account || !acceptance.ok) return;
     const result = await runEscrowTransaction(snapshot.address, {
@@ -122,14 +147,44 @@ export function EscrowDetailPage() {
       onState: setTransaction,
     });
     if (result.kind === "confirmed") {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["escrow", snapshot.address] }),
-        queryClient.invalidateQueries({ queryKey: ["escrows"] }),
-        queryClient.invalidateQueries({ queryKey: ["my-escrows"] }),
-      ]);
+      await refreshAfterConfirmation();
       setReviewingAcceptance(false);
     }
   }
+
+  async function runLifecycleAction(action: LifecycleWriteAction) {
+    if (!account || !projection.availableActions.includes(action)) return;
+    const result = await runEscrowTransaction(snapshot.address, {
+      simulate: () =>
+        publicClient.simulateContract({
+          account,
+          address: snapshot.address,
+          abi: escrowAbi,
+          functionName: lifecycleWriteDetail(action).functionName,
+        }),
+      write: writeContractAsync,
+      wait: (hash) => publicClient.waitForTransactionReceipt({ hash }),
+      onState: setTransaction,
+    });
+    if (result.kind === "confirmed") {
+      await refreshAfterConfirmation();
+      setReviewingLifecycleAction(undefined);
+    }
+  }
+
+  function reviewLifecycleAction(action: LifecycleWriteAction) {
+    setReviewingLifecycleAction(action);
+    if (!account) window.dispatchEvent(new Event(walletConnectionRequestEvent));
+  }
+
+  const visitorExpirationAction = projection.deadlineElapsed
+    ? (projectEscrow(snapshot, now).availableActions[0] as LifecycleWriteAction | undefined)
+    : undefined;
+  const lifecycleActions = projection.availableActions.filter(
+    (action): action is LifecycleWriteAction => action !== "Aceptar",
+  );
+  if (visitorExpirationAction && !lifecycleActions.includes(visitorExpirationAction))
+    lifecycleActions.push(visitorExpirationAction);
 
   return (
     <div className="grid gap-6">
@@ -265,6 +320,93 @@ export function EscrowDetailPage() {
           )}
         </Panel>
       )}
+      {lifecycleActions.map((action) => {
+        const detail = lifecycleWriteDetail(action);
+        const connectedAndEligible = projection.availableActions.includes(action);
+        return (
+          <Panel as="section" className="grid gap-4" key={action}>
+            <div>
+              <h2 className="font-display text-2xl font-bold">{action}</h2>
+              <p className="text-muted">{detail.consequence}</p>
+            </div>
+            {reviewingLifecycleAction !== action ? (
+              <Button onClick={() => reviewLifecycleAction(action)}>Revisar consecuencia</Button>
+            ) : !account ? (
+              <div className="grid gap-3 rounded-lg border border-line p-4">
+                <p>Conectá una wallet para continuar con esta acción.</p>
+                <Button
+                  onClick={() => window.dispatchEvent(new Event(walletConnectionRequestEvent))}
+                >
+                  Conectar wallet y continuar
+                </Button>
+              </div>
+            ) : !connectedAndEligible ? (
+              <div className="grid gap-3 rounded-lg border border-line p-4">
+                <p className="text-muted">Esta cuenta no puede realizar la acción seleccionada.</p>
+                <Button variant="ghost" onClick={() => setReviewingLifecycleAction(undefined)}>
+                  Volver
+                </Button>
+              </div>
+            ) : (
+              <div className="grid gap-3 rounded-lg border border-line p-4">
+                <p>
+                  {detail.consequence} Primero simularemos la transacción; tu wallet confirma la
+                  firma final.
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  <Button
+                    disabled={
+                      isTransactionPending(transaction) ||
+                      isEscrowTransactionPending(snapshot.address)
+                    }
+                    onClick={() => runLifecycleAction(action)}
+                  >
+                    {transaction.kind === "simulating"
+                      ? "Simulando…"
+                      : transaction.kind === "wallet"
+                        ? "Esperando confirmación…"
+                        : transaction.kind === "submitted"
+                          ? "Esperando confirmación on-chain…"
+                          : "Simular y firmar"}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    disabled={isTransactionPending(transaction)}
+                    onClick={() => setReviewingLifecycleAction(undefined)}
+                  >
+                    Volver
+                  </Button>
+                </div>
+              </div>
+            )}
+          </Panel>
+        );
+      })}
+      {transaction.kind === "submitted" && reviewingLifecycleAction && (
+        <p role="status">
+          Transacción enviada:{" "}
+          <a
+            className="text-primary underline"
+            href={`${config.explorerUrl}/tx/${transaction.hash}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {transaction.hash}
+          </a>
+        </p>
+      )}
+      {(transaction.kind === "rejected" ||
+        transaction.kind === "reverted" ||
+        transaction.kind === "unknown-failure") &&
+        reviewingLifecycleAction && (
+          <div role="alert" className="grid gap-2 text-danger">
+            <p>{transaction.message}</p>
+            <details className="text-xs text-muted">
+              <summary>Detalle técnico</summary>
+              <pre className="mt-2 whitespace-pre-wrap">{transaction.detail}</pre>
+            </details>
+          </div>
+        )}
       <Panel as="section">
         <h2 className="font-display text-2xl font-bold">Ciclo de vida</h2>
         <ol className="mt-5 grid gap-3 md:grid-cols-4">

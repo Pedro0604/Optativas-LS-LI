@@ -1,9 +1,9 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { WalletControls } from "./WalletControls";
-import { SEPOLIA_CHAIN_ID } from "./wallet";
+import { SEPOLIA_CHAIN_ID, walletConnectionRequestEvent } from "./wallet";
 
 const mocks = vi.hoisted(() => ({
   account: {
@@ -65,6 +65,12 @@ describe("WalletControls", () => {
     expect(mocks.connect).toHaveBeenCalledWith({
       connector: expect.objectContaining({ uid: "rabby" }),
     });
+  });
+
+  it("opens the existing connector selector for a deferred write request", async () => {
+    renderControls();
+    await act(async () => window.dispatchEvent(new Event(walletConnectionRequestEvent)));
+    expect(screen.getByRole("button", { name: "MetaMask" })).toBeVisible();
   });
 
   it("keeps public browsing available when connection is rejected", async () => {
