@@ -10,12 +10,18 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CreateEscrowRouteImport } from './routes/create-escrow'
 import { Route as MyEscrowsRouteImport } from './routes/my-escrows'
 import { Route as EscrowsAddressRouteImport } from './routes/escrows.$address'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CreateEscrowRoute = CreateEscrowRouteImport.update({
+  id: '/create-escrow',
+  path: '/create-escrow',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MyEscrowsRoute = MyEscrowsRouteImport.update({
@@ -31,30 +37,34 @@ const EscrowsAddressRoute = EscrowsAddressRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/create-escrow': typeof CreateEscrowRoute
   '/my-escrows': typeof MyEscrowsRoute
   '/escrows/$address': typeof EscrowsAddressRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/create-escrow': typeof CreateEscrowRoute
   '/my-escrows': typeof MyEscrowsRoute
   '/escrows/$address': typeof EscrowsAddressRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/create-escrow': typeof CreateEscrowRoute
   '/my-escrows': typeof MyEscrowsRoute
   '/escrows/$address': typeof EscrowsAddressRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/my-escrows' | '/escrows/$address'
+  fullPaths: '/' | '/create-escrow' | '/my-escrows' | '/escrows/$address'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/my-escrows' | '/escrows/$address'
-  id: '__root__' | '/' | '/my-escrows' | '/escrows/$address'
+  to: '/' | '/create-escrow' | '/my-escrows' | '/escrows/$address'
+  id: '__root__' | '/' | '/create-escrow' | '/my-escrows' | '/escrows/$address'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CreateEscrowRoute: typeof CreateEscrowRoute
   MyEscrowsRoute: typeof MyEscrowsRoute
   EscrowsAddressRoute: typeof EscrowsAddressRoute
 }
@@ -66,6 +76,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/create-escrow': {
+      id: '/create-escrow'
+      path: '/create-escrow'
+      fullPath: '/create-escrow'
+      preLoaderRoute: typeof CreateEscrowRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/my-escrows': {
@@ -87,6 +104,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CreateEscrowRoute: CreateEscrowRoute,
   MyEscrowsRoute: MyEscrowsRoute,
   EscrowsAddressRoute: EscrowsAddressRoute,
 }

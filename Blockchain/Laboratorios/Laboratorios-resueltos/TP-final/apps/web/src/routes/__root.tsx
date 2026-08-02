@@ -19,6 +19,12 @@ export const Route = createRootRouteWithContext<RouterContext>()({
           >
             Mis escrows
           </Link>
+          <Link
+            to="/create-escrow"
+            className="text-sm font-semibold text-primary no-underline hover:text-primary-strong"
+          >
+            Crear escrow
+          </Link>
         </div>
         <div className="flex items-center gap-4">
           <WalletControls />

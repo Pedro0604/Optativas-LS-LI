@@ -4,7 +4,7 @@
 
 **Blocked by:** 01 — Base SPA and public escrow discovery; 03 — Injected wallet connection and Sepolia writes.
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] The form can be completed while disconnected and requests connection only when advancing to transaction review.
 - [ ] Amount is entered in ETH, durations use friendly units, participant inputs are explicit addresses, and title length is measured in UTF-8 bytes.
@@ -16,3 +16,6 @@
 - [ ] A confirmed receipt without a decodable creation event retains the transaction hash and fails safely without inventing an address.
 - [ ] Validation, connection cancellation, simulation failure, wallet rejection, success, and event-decoding failure are tested through the form flow.
 
+## Answer
+
+Se agregó la ruta `/create-escrow` con borrador desconectado, validación compatible con el constructor, revisión exacta en wei/segundos, simulación, firma, confirmación y navegación únicamente tras verificar el evento `EscrowCreated` del factory y `isEscrow`. Las listas relevantes se invalidan al confirmar y los fallos conservan el hash cuando corresponde.
