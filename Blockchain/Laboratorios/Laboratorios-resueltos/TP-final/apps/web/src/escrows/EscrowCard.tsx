@@ -45,7 +45,7 @@ export function EscrowCard({ summary, chainTime }: EscrowCardProps) {
           <p className={now >= activeDeadline ? "font-semibold text-accent" : undefined}>
             {formatDeadlineDistance(activeDeadline, now)}
           </p>
-          <p>
+          <p className="mb-2">
             Fecha límite:{" "}
             <time dateTime={new Date(Number(activeDeadline) * 1000).toISOString()}>
               {formatDeadlineDate(activeDeadline)}
