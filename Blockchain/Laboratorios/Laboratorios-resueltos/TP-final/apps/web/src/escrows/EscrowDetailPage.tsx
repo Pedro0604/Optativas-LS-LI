@@ -1,4 +1,4 @@
- import { useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
 import type { Address } from "viem";
 import { config, publicClient } from "../runtime";
@@ -136,16 +136,16 @@ export function EscrowDetailPage() {
           {projection.timeline.map((stage) => (
             <li
               key={stage.key}
-              className={`rounded-lg border p-4 ${stage.status === "current" ? "border-primary bg-primary/10" : stage.status === "elapsed" ? "border-accent bg-accent/10" : "border-line"}`}
+              className={`rounded-lg border p-4 ${stage.deadlineElapsed ? "border-accent bg-accent/10" : stage.status === "current" ? "border-primary bg-primary/10" : "border-line"}`}
             >
               <p className="font-semibold">{stage.label}</p>
               <Badge>
-                {stage.status === "completed"
-                  ? "Completada"
-                  : stage.status === "current"
-                    ? "Actual"
-                    : stage.status === "elapsed"
-                      ? "Vencida, sin finalizar"
+                {stage.deadlineElapsed
+                  ? "Actual · vencida, sin finalizar"
+                  : stage.status === "completed"
+                    ? "Completada"
+                    : stage.status === "current"
+                      ? "Actual"
                       : "No iniciada"}
               </Badge>
               <p className="mt-3 text-sm text-muted">

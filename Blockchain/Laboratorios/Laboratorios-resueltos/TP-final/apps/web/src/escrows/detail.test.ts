@@ -29,21 +29,44 @@ describe("escrow detail projection", () => {
     const result = projectEscrow(snapshot, 100n);
     expect(result.deadlineElapsed).toBe(true);
     expect(result.availableActions).toEqual(["Finalizar aceptación vencida"]);
-    expect(result.timeline[0].status).toBe("elapsed");
+    expect(result.timeline[0]).toMatchObject({ status: "current", deadlineElapsed: true });
     expect(
       result.timeline.slice(1).every((stage) => stage.deadline === 0n && stage.status === "future"),
     ).toBe(true);
   });
 
-  it.each(Object.values(EscrowState).filter((value) => typeof value === "number"))(
-    "projects state %s",
-    (state) => {
-      const result = projectEscrow({ ...snapshot, state }, 1n);
-      expect(result.stateLabel).not.toBe("");
-      expect(result.timeline).toHaveLength(4);
-      if (state >= EscrowState.EscrowCancelled) expect(result.terminalOutcome).toBeTruthy();
-    },
-  );
+  it.each([
+    [EscrowState.PendingAcceptance, 0, ["Aceptar", "Cancelar"]],
+    [EscrowState.PendingSubmission, 1, ["Enviar trabajo"]],
+    [EscrowState.PendingReview, 2, ["Aprobar trabajo", "Abrir disputa"]],
+    [EscrowState.PendingArbitration, 3, ["Resolver disputa"]],
+  ] as const)("projects operational state %s", (state, stageIndex, actions) => {
+    const deadlines = { acceptance: 100n, submission: 100n, review: 100n, arbitration: 100n };
+    const result = projectEscrow({ ...snapshot, state, deadlines }, 1n);
+    expect(result.activeDeadline).toBe(100n);
+    expect(result.availableActions).toEqual(actions);
+    expect(result.timeline.map((stage) => stage.status)).toEqual(
+      [0, 1, 2, 3].map((index) =>
+        index < stageIndex ? "completed" : index === stageIndex ? "current" : "future",
+      ),
+    );
+  });
+
+  it.each([
+    EscrowState.EscrowCancelled,
+    EscrowState.AcceptanceExpired,
+    EscrowState.SubmissionExpired,
+    EscrowState.WorkApproved,
+    EscrowState.ReviewExpired,
+    EscrowState.DisputeResolved,
+    EscrowState.ArbitrationExpired,
+  ])("projects terminal state %s", (state) => {
+    const result = projectEscrow({ ...snapshot, state }, 1n);
+    expect(result.stateLabel).not.toBe("");
+    expect(result.terminalOutcome).toBeTruthy();
+    expect(result.availableActions).toEqual([]);
+    expect(result.activeDeadline).toBeUndefined();
+  });
 });
 
 describe("detail address and evidence", () => {

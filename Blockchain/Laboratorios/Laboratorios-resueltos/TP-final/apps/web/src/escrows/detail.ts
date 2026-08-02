@@ -25,7 +25,8 @@ export type LifecycleStage = {
   key: keyof EscrowDeadlines;
   label: string;
   deadline: bigint;
-  status: "completed" | "current" | "future" | "elapsed";
+  status: "completed" | "current" | "future";
+  deadlineElapsed: boolean;
 };
 
 export type EscrowProjection = {
@@ -116,10 +117,15 @@ export function projectEscrow(snapshot: EscrowSnapshot, blockTime: bigint): Escr
     activeDeadline !== undefined && activeDeadline > 0n && blockTime >= activeDeadline;
   const timeline = stageDefinitions.map(({ key, label }, index): LifecycleStage => {
     const deadline = snapshot.deadlines[key];
-    let status: LifecycleStage["status"] =
+    const status: LifecycleStage["status"] =
       index < currentIndex ? "completed" : index === currentIndex ? "current" : "future";
-    if (index === currentIndex && operational && deadlineElapsed) status = "elapsed";
-    return { key, label, deadline, status };
+    return {
+      key,
+      label,
+      deadline,
+      status,
+      deadlineElapsed: index === currentIndex && deadlineElapsed,
+    };
   });
   const actions = operational
     ? deadlineElapsed
