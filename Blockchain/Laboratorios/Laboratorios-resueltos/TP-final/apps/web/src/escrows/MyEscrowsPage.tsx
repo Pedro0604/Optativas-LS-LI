@@ -40,9 +40,9 @@ export function MyEscrowsPage() {
         <p className="max-w-155 text-muted">Consultá tus acuerdos según el rol que cumplís.</p>
       </section>
       {!isConnected ? (
-        <Panel as="section" role="status">
+        <Panel as="section" role="status" className="flex gap-2 items-center">
+          <h2>Conectá tu wallet para ver tus escrows: </h2>
           <WalletControls />
-          <h2>Conectá tu wallet para ver tus escrows</h2>
         </Panel>
       ) : (
         <>

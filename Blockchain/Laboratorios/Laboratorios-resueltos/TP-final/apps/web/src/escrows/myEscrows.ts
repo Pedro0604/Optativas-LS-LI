@@ -1,12 +1,6 @@
-import { escrowAbi, escrowFactoryAbi } from "@escrow/contracts";
+import { escrowFactoryAbi } from "@escrow/contracts";
 import type { Address, PublicClient } from "viem";
-import { PAGE_SIZE, reverseIndexes, type DiscoveryPage, type EscrowItem } from "./discovery";
-import {
-  parseEscrowState,
-  phaseDeadlineFor,
-  type EscrowDeadlines,
-  type EscrowState,
-} from "./EscrowState";
+import { fetchEscrowPage, type DiscoveryPage } from "./escrowPage";
 
 export const escrowRoles = ["owner", "worker", "arbiter"] as const;
 export type EscrowRole = (typeof escrowRoles)[number];
@@ -35,99 +29,28 @@ export async function fetchMyEscrows(
   page: number,
 ): Promise<DiscoveryPage> {
   const registry = registryByRole[role];
-  const count = Number(
-    await client.readContract({
-      address: factory,
-      abi: escrowFactoryAbi,
-      functionName: registry.count,
-      args: [account],
-    } as never),
-  );
-  const pageCount = Math.max(1, Math.ceil(count / PAGE_SIZE));
-  const safePage = Math.min(page, pageCount);
-  const blockNumber = await client.getBlockNumber();
-  const blockPromise = client.getBlock({ blockNumber });
-  const indexes = reverseIndexes(count, safePage);
-  const addresses = (await client.multicall({
-    allowFailure: false,
-    blockNumber,
-    contracts: indexes.map((index) => ({
-      address: factory,
-      abi: escrowFactoryAbi,
-      functionName: registry.registry,
-      args: [account, index],
-    })),
-  } as never)) as unknown as Address[];
-
-  const functions = [
-    "title",
-    "amount",
-    "state",
-    "owner",
-    "worker",
-    "arbiter",
-    "acceptanceDeadline",
-    "submissionDeadline",
-    "reviewDeadline",
-    "arbitrationDeadline",
-  ] as const;
-  const details = await client.multicall({
-    allowFailure: true,
-    blockNumber,
-    contracts: addresses.flatMap((address) =>
-      functions.map((functionName) => ({ address, abi: escrowAbi, functionName })),
-    ),
+  return fetchEscrowPage(client, factory, page, {
+    count: async (pageClient, pageFactory) =>
+      Number(
+        await pageClient.readContract({
+          address: pageFactory,
+          abi: escrowFactoryAbi,
+          functionName: registry.count,
+          args: [account],
+        } as never),
+      ),
+    addresses: async (pageClient, pageFactory, indexes, blockNumber) =>
+      (await pageClient.multicall({
+        allowFailure: false,
+        blockNumber,
+        contracts: indexes.map((index) => ({
+          address: pageFactory,
+          abi: escrowFactoryAbi,
+          functionName: registry.registry,
+          args: [account, index],
+        })),
+      })) as Address[],
   });
-
-  const items = addresses.map((address, itemIndex): EscrowItem => {
-    const values = details.slice(itemIndex * functions.length, (itemIndex + 1) * functions.length);
-    if (values.some((result) => result.status === "failure"))
-      return { kind: "error", address, error: "No se pudo leer este escrow." };
-    const [
-      title,
-      amount,
-      state,
-      owner,
-      worker,
-      arbiter,
-      acceptance,
-      submission,
-      review,
-      arbitration,
-    ] = values.map((result) => (result.status === "success" ? result.result : undefined));
-    let parsedState: EscrowState;
-    try {
-      parsedState = parseEscrowState(state);
-    } catch (error) {
-      return {
-        kind: "error",
-        address,
-        error: error instanceof Error ? error.message : "Estado desconocido",
-      };
-    }
-    const deadline = phaseDeadlineFor(parsedState, {
-      acceptance,
-      submission,
-      review,
-      arbitration,
-    } as EscrowDeadlines);
-    return {
-      kind: "success",
-      address,
-      summary: {
-        address,
-        title: title as string,
-        amount: amount as bigint,
-        state: parsedState,
-        owner: owner as Address,
-        worker: worker as Address,
-        arbiter: arbiter as Address,
-        deadline,
-      },
-    };
-  });
-  const block = await blockPromise;
-  return { count, page: safePage, pageCount, blockTime: block.timestamp, items };
 }
 
 export function myEscrowsQuery(
