@@ -4,17 +4,20 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { ConfigurationError } from "./config";
 import "./styles.css";
+import { Panel } from "./ui/Panel";
+
+const eyebrowClassName = "text-xs font-bold tracking-[0.12em] text-primary uppercase";
 
 const element = document.getElementById("root")!;
 function renderConfigurationError(error: unknown) {
   ReactDOM.createRoot(element).render(
     <React.StrictMode>
-      <main className="configError" role="alert">
-        <p className="eyebrow">Configuración requerida</p>
-        <h1>No se puede iniciar Pacto</h1>
+      <Panel as="main" className="mx-auto mt-[12vh] max-w-162.5" role="alert">
+        <p className={eyebrowClassName}>Configuración requerida</p>
+        <h1 className="font-display text-3xl font-bold">No se puede iniciar Pacto</h1>
         <p>{error instanceof Error ? error.message : "La configuración es inválida."}</p>
-        <p>Revisá las variables VITE_* y volvé a compilar.</p>
-      </main>
+        <p className="text-muted">Revisá las variables VITE_* y volvé a compilar.</p>
+      </Panel>
     </React.StrictMode>,
   );
 }
@@ -41,10 +44,12 @@ try {
   else {
     console.error(error);
     ReactDOM.createRoot(element).render(
-      <main className="configError" role="alert">
-        <h1>No se pudo iniciar la aplicación</h1>
-        <p>Ocurrió un error inesperado. Recargá la página para intentar nuevamente.</p>
-      </main>,
+      <Panel as="main" className="mx-auto mt-[12vh] max-w-162.5" role="alert">
+        <h1 className="font-display text-3xl font-bold">No se pudo iniciar la aplicación</h1>
+        <p className="text-muted">
+          Ocurrió un error inesperado. Recargá la página para intentar nuevamente.
+        </p>
+      </Panel>,
     );
   }
 }

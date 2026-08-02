@@ -8,11 +8,14 @@ type PaginationProps = {
 
 export function Pagination({ page, pageCount, onPageChange }: PaginationProps) {
   return (
-    <nav className="pagination" aria-label="Paginación">
+    <nav
+      className="my-6 grid grid-cols-2 items-center gap-3 text-xs sm:flex sm:justify-between sm:gap-4 sm:text-sm"
+      aria-label="Paginación"
+    >
       <Button disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
         Anterior
       </Button>
-      <span>
+      <span className="col-span-2 row-start-1 text-center sm:col-auto sm:row-auto">
         Página {page} de {pageCount}
       </span>
       <Button disabled={page >= pageCount} onClick={() => onPageChange(page + 1)}>

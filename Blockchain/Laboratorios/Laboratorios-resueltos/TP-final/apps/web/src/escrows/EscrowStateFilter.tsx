@@ -4,6 +4,7 @@ import {
   parseEscrowState,
   type StateFilter,
 } from "./EscrowState";
+import { Select } from "../ui/Select";
 
 type EscrowStateFilterProps = {
   value: StateFilter;
@@ -11,22 +12,22 @@ type EscrowStateFilterProps = {
 };
 
 export function EscrowStateFilter({ value, onChange }: EscrowStateFilterProps) {
+  const options = [
+    { value: "all", label: "Todos en esta página" },
+    ...escrowStates.map((state) => ({
+      value: String(state),
+      label: escrowStateMetadata[state].label,
+    })),
+  ];
+
   return (
-    <label>
-      Estado{" "}
-      <select
-        value={value}
-        onChange={(event) =>
-          onChange(event.target.value === "all" ? "all" : parseEscrowState(event.target.value))
-        }
-      >
-        <option value="all">Todos en esta página</option>
-        {escrowStates.map((state) => (
-          <option value={state} key={state}>
-            {escrowStateMetadata[state].label}
-          </option>
-        ))}
-      </select>
-    </label>
+    <Select
+      label="Estado"
+      value={String(value)}
+      options={options}
+      onValueChange={(nextValue) =>
+        onChange(nextValue === "all" ? "all" : parseEscrowState(nextValue))
+      }
+    />
   );
 }

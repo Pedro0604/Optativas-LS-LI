@@ -3,6 +3,7 @@ import { useNavigate, useSearch } from "@tanstack/react-router";
 import { config, publicClient } from "../runtime";
 import { Button } from "../ui/Button";
 import { Pagination } from "../ui/Pagination";
+import { Panel } from "../ui/Panel";
 import { discoveryQuery } from "./discovery";
 import { EscrowList } from "./EscrowList";
 import { EscrowStateFilter } from "./EscrowStateFilter";
@@ -14,20 +15,15 @@ export function DiscoveryPage() {
     discoveryQuery(publicClient, config.factoryAddress, search.page, search.state),
   );
 
-  if (query.isPending)
-    return (
-      <p role="status" className="panel">
-        Cargando escrows…
-      </p>
-    );
+  if (query.isPending) return <Panel role="status">Cargando escrows…</Panel>;
 
   if (query.isError)
     return (
-      <section className="panel" role="alert">
+      <Panel as="section" role="alert">
         <h2>No pudimos cargar los escrows</h2>
         <p>La consulta a Sepolia falló.</p>
         <Button onClick={() => query.refetch()}>Reintentar</Button>
-      </section>
+      </Panel>
     );
 
   const data = query.data;
@@ -36,12 +32,21 @@ export function DiscoveryPage() {
 
   return (
     <>
-      <section className="hero">
-        <p className="eyebrow">Registro público · Sepolia</p>
-        <h1>Escrows</h1>
-        <p>Escrows creados por el factory, disponibles sin conectar una wallet.</p>
+      <section className="border-t border-line pt-8 pb-8 sm:pt-16">
+        <p className="text-xs font-bold tracking-[0.12em] text-primary uppercase">
+          Registro público · Sepolia
+        </p>
+        <h1 className="my-4 font-display text-[clamp(3rem,9vw,6rem)] leading-[0.9] font-bold">
+          Escrows
+        </h1>
+        <p className="max-w-155 text-muted">
+          Escrows creados por el factory, disponibles sin conectar una wallet.
+        </p>
       </section>
-      <section className="toolbar" aria-label="Filtros">
+      <section
+        className="my-4 mb-6 flex items-center justify-between gap-4 max-[560px]:flex-col max-[560px]:items-stretch"
+        aria-label="Filtros"
+      >
         <EscrowStateFilter
           value={search.state}
           onChange={(state) =>
@@ -50,7 +55,7 @@ export function DiscoveryPage() {
             })
           }
         />
-        <span>{data.count} escrows registrados</span>
+        <span className="text-sm text-muted">{data.count} escrows registrados</span>
       </section>
       <EscrowList items={data.items} onRetry={() => query.refetch()} />
       <Pagination page={data.page} pageCount={data.pageCount} onPageChange={changePage} />

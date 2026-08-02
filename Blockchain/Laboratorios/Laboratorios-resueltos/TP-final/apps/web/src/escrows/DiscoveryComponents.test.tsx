@@ -33,10 +33,12 @@ describe("EscrowStateFilter", () => {
     const onChange = vi.fn();
     render(<EscrowStateFilter value="all" onChange={onChange} />);
 
-    await userEvent.selectOptions(screen.getByLabelText("Estado"), "3");
+    const filter = screen.getByRole("combobox", { name: "Estado" });
+    await userEvent.click(filter);
+    expect(screen.getByRole("option", { name: "Todos en esta página" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("option", { name: "En arbitraje" }));
 
     expect(onChange).toHaveBeenCalledWith(EscrowState.PendingArbitration);
-    expect(screen.getByRole("option", { name: "Todos en esta página" })).toBeInTheDocument();
   });
 });
 
