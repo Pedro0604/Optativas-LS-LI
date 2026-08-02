@@ -1,9 +1,9 @@
 import { getAddress, isAddress } from "viem";
-import { sepoliaChain } from "@escrow/contracts";
+import { sepolia } from "viem/chains";
 
 export type AppConfig = Readonly<{
   rpcUrl: string;
-  chainId: typeof sepoliaChain.id;
+  chainId: typeof sepolia.id;
   factoryAddress: `0x${string}`;
   explorerUrl: string;
 }>;
@@ -31,8 +31,8 @@ export function parseConfig(env: Record<string, string | undefined>): AppConfig 
   if (explorer && !["http:", "https:"].includes(explorer.protocol))
     errors.push("VITE_EXPLORER_URL debe usar HTTP(S).");
 
-  if (env.VITE_CHAIN_ID !== String(sepoliaChain.id))
-    errors.push(`VITE_CHAIN_ID debe ser ${sepoliaChain.id} (Sepolia).`);
+  if (env.VITE_CHAIN_ID !== String(sepolia.id))
+    errors.push(`VITE_CHAIN_ID debe ser ${sepolia.id} (Sepolia).`);
 
   if (!isAddress(env.VITE_FACTORY_ADDRESS ?? ""))
     errors.push("VITE_FACTORY_ADDRESS debe ser una dirección Ethereum válida.");
@@ -41,7 +41,7 @@ export function parseConfig(env: Record<string, string | undefined>): AppConfig 
 
   return {
     rpcUrl: rpc!.toString(),
-    chainId: sepoliaChain.id,
+    chainId: sepolia.id,
     factoryAddress: getAddress(env.VITE_FACTORY_ADDRESS!) as `0x${string}`,
     explorerUrl: explorer!.toString().replace(/\/$/, ""),
   };

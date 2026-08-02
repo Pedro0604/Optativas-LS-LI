@@ -1,4 +1,4 @@
-import { escrowAbi, escrowFactoryAbi, sepoliaChain } from "@escrow/contracts";
+import { escrowAbi, escrowFactoryAbi } from "@escrow/contracts";
 import {
   createPublicClient,
   defineChain,
@@ -7,6 +7,7 @@ import {
   type Address,
   type PublicClient,
 } from "viem";
+import { sepolia } from "viem/chains";
 import type { AppConfig } from "../config";
 import {
   parseEscrowState,
@@ -44,7 +45,7 @@ export function reverseIndexes(count: number, page: number, size = PAGE_SIZE): b
 }
 
 export function createSepoliaClient(config: AppConfig) {
-  const chain = defineChain({ ...sepoliaChain, rpcUrls: { default: { http: [config.rpcUrl] } } });
+  const chain = defineChain({ ...sepolia, rpcUrls: { default: { http: [config.rpcUrl] } } });
   return createPublicClient({ chain, transport: http(config.rpcUrl) });
 }
 

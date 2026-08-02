@@ -1010,5 +1010,3 @@ export const escrowAbi = [
     "type": "function"
   }
 ] as const;
-
-export const sepoliaChain = { id: 11155111, name: "Sepolia", nativeCurrency: { name: "Sepolia Ether", symbol: "ETH", decimals: 18 } } as const;
