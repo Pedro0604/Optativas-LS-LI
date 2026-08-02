@@ -33,6 +33,7 @@ export type EscrowItem = { address: Address; card?: EscrowCard; error?: string }
 
 export type DiscoveryPage = { count: number; page: number; pageCount: number; items: EscrowItem[] };
 
+/** Calcula una página desde el final del registro para mostrar primero los escrows más nuevos. */
 export function reverseIndexes(count: number, page: number, size = PAGE_SIZE): bigint[] {
   const start = count - 1 - (page - 1) * size;
   return Array.from({ length: Math.max(0, Math.min(size, start + 1)) }, (_, offset) =>
@@ -45,6 +46,10 @@ export function createSepoliaClient(config: AppConfig) {
   return createPublicClient({ chain, transport: http(config.rpcUrl) });
 }
 
+/**
+ * Lee una página de escrows fijando ambas consultas agrupadas al mismo bloque.
+ * Si un escrow no puede leerse o trae un estado desconocido, conserva el error en ese elemento.
+ */
 export async function fetchDiscovery(
   client: PublicClient,
   factory: Address,

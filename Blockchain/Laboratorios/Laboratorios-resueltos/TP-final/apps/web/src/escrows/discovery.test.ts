@@ -39,7 +39,7 @@ describe("public discovery pagination", () => {
       state: EscrowState.PendingArbitration,
     });
     expect(validateDiscoverySearch({ page: 3, state: "3a" })).toEqual({ page: 3, state: "all" });
-    expect(validateDiscoverySearch({ page: "bbe", state: 4 })).toEqual({
+    expect(validateDiscoverySearch({ page: "bbe", state: EscrowState.EscrowCancelled })).toEqual({
       page: 1,
       state: EscrowState.EscrowCancelled,
     });
