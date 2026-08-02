@@ -21,12 +21,7 @@ import {
 } from "./detail";
 import { formatDeadlineDate, formatDeadlineDistance, formatDuration, useChainTime } from "./time";
 import { canAcceptEscrow } from "./acceptance";
-import {
-  canApproveWork,
-  canOpenDispute,
-  canSubmitWork,
-  validatePublicText,
-} from "./reviewActions";
+import { canApproveWork, canOpenDispute, canSubmitWork, validatePublicText } from "./reviewActions";
 import {
   isEscrowTransactionPending,
   isTransactionPending,
@@ -34,6 +29,14 @@ import {
   type TransactionState,
 } from "../transactions/coordinator";
 import { walletConnectionRequestEvent } from "../wallet/wallet";
+import {
+  allocationFromOwnerSlider,
+  allocationFromWorkerSlider,
+  allocationSliderSteps,
+  canResolveDispute,
+  formatAllocationEth,
+  parseWorkerAllocation,
+} from "./resolution";
 
 function AddressRow({ label, address }: { label: string; address: Address }) {
   return (
@@ -92,6 +95,10 @@ export function EscrowDetailPage() {
   >();
   const [submissionReference, setSubmissionReference] = useState("");
   const [disputeReason, setDisputeReason] = useState("");
+  const [reviewingResolution, setReviewingResolution] = useState(false);
+  const [workerAmountWei, setWorkerAmountWei] = useState(0n);
+  const [workerAmountInput, setWorkerAmountInput] = useState("0");
+  const [resolutionReason, setResolutionReason] = useState("");
   const [transaction, setTransaction] = useState<TransactionState>({ kind: "idle" });
   const query = useQuery(
     escrowDetailQuery(publicClient, config.factoryAddress, address as Address),
@@ -138,6 +145,13 @@ export function EscrowDetailPage() {
   const submission = canSubmitWork(snapshot, account, now, chainId);
   const approval = canApproveWork(snapshot, account, now, chainId);
   const dispute = canOpenDispute(snapshot, account, now, chainId);
+  const resolution = canResolveDispute(snapshot, account, now, chainId);
+  const allocation = formatAllocationEth(workerAmountWei, snapshot.amount);
+  const allocationValidation = parseWorkerAllocation(workerAmountInput, snapshot.amount);
+  const resolutionReasonValidation = validatePublicText(resolutionReason, 256);
+  const workerSliderValue = snapshot.amount
+    ? Number((workerAmountWei * allocationSliderSteps) / snapshot.amount)
+    : 0;
 
   async function refreshAfterConfirmation() {
     await Promise.all([
@@ -191,7 +205,8 @@ export function EscrowDetailPage() {
     if (!account) return;
     const input = action === "submit" ? submissionReference : disputeReason;
     if ((action === "submit" || action === "dispute") && validatePublicText(input, 256)) return;
-    const eligibility = action === "submit" ? submission : action === "approve" ? approval : dispute;
+    const eligibility =
+      action === "submit" ? submission : action === "approve" ? approval : dispute;
     if (!eligibility.ok) return;
     const shared = {
       write: writeContractAsync,
@@ -202,20 +217,67 @@ export function EscrowDetailPage() {
       action === "submit"
         ? await runEscrowTransaction(snapshot.address, {
             ...shared,
-            simulate: () => publicClient.simulateContract({ account, address: snapshot.address, abi: escrowAbi, functionName: "submitWork", args: [input] }),
+            simulate: () =>
+              publicClient.simulateContract({
+                account,
+                address: snapshot.address,
+                abi: escrowAbi,
+                functionName: "submitWork",
+                args: [input],
+              }),
           })
         : action === "approve"
           ? await runEscrowTransaction(snapshot.address, {
               ...shared,
-              simulate: () => publicClient.simulateContract({ account, address: snapshot.address, abi: escrowAbi, functionName: "approveWork" }),
+              simulate: () =>
+                publicClient.simulateContract({
+                  account,
+                  address: snapshot.address,
+                  abi: escrowAbi,
+                  functionName: "approveWork",
+                }),
             })
           : await runEscrowTransaction(snapshot.address, {
               ...shared,
-              simulate: () => publicClient.simulateContract({ account, address: snapshot.address, abi: escrowAbi, functionName: "openDispute", args: [input] }),
+              simulate: () =>
+                publicClient.simulateContract({
+                  account,
+                  address: snapshot.address,
+                  abi: escrowAbi,
+                  functionName: "openDispute",
+                  args: [input],
+                }),
             });
     if (result.kind === "confirmed") {
       await refreshAfterConfirmation();
       setReviewingReviewAction(undefined);
+    }
+  }
+
+  function setWorkerAllocation(value: bigint) {
+    setWorkerAmountWei(value);
+    setWorkerAmountInput(formatAllocationEth(value, snapshot.amount).worker);
+  }
+
+  async function resolveDispute() {
+    if (!account || !resolution.ok || !allocationValidation.ok || resolutionReasonValidation)
+      return;
+    const result = await runEscrowTransaction(snapshot.address, {
+      simulate: () =>
+        publicClient.simulateContract({
+          account,
+          address: snapshot.address,
+          abi: escrowAbi,
+          functionName: "resolveDispute",
+          args: [workerAmountWei, resolutionReason],
+        }),
+      write: writeContractAsync,
+      wait: (hash) => publicClient.waitForTransactionReceipt({ hash }),
+      onState: setTransaction,
+    });
+    if (result.kind === "confirmed") {
+      await refreshAfterConfirmation();
+      setReviewingResolution(false);
     }
   }
 
@@ -227,9 +289,7 @@ export function EscrowDetailPage() {
   const visitorExpirationAction = projection.deadlineElapsed
     ? (projectEscrow(snapshot, now).availableActions[0] as LifecycleWriteAction | undefined)
     : undefined;
-  const lifecycleActions = projection.availableActions.filter(
-    isLifecycleWriteAction,
-  );
+  const lifecycleActions = projection.availableActions.filter(isLifecycleWriteAction);
   if (visitorExpirationAction && !lifecycleActions.includes(visitorExpirationAction))
     lifecycleActions.push(visitorExpirationAction);
 
@@ -258,6 +318,16 @@ export function EscrowDetailPage() {
             <AddressRow label="Owner" address={snapshot.owner} />
             <AddressRow label="Worker" address={snapshot.worker} />
             <AddressRow label="Árbitro" address={snapshot.arbiter} />
+            {(snapshot.pendingWithdrawals.owner > 0n ||
+              snapshot.pendingWithdrawals.worker > 0n) && (
+              <div>
+                <dt className="text-sm text-muted">Pendiente de retiro</dt>
+                <dd className="mt-1">
+                  Owner: {displayEth(snapshot.pendingWithdrawals.owner)} · Worker:{" "}
+                  {displayEth(snapshot.pendingWithdrawals.worker)}
+                </dd>
+              </div>
+            )}
           </dl>
         </Panel>
         <Panel as="section">
@@ -368,8 +438,14 @@ export function EscrowDetailPage() {
         </Panel>
       )}
       {(["Enviar trabajo", "Aprobar trabajo", "Abrir disputa"] as const).map((label) => {
-        const action = label === "Enviar trabajo" ? "submit" : label === "Aprobar trabajo" ? "approve" : "dispute";
-        const eligible = action === "submit" ? submission : action === "approve" ? approval : dispute;
+        const action =
+          label === "Enviar trabajo"
+            ? "submit"
+            : label === "Aprobar trabajo"
+              ? "approve"
+              : "dispute";
+        const eligible =
+          action === "submit" ? submission : action === "approve" ? approval : dispute;
         if (!projection.availableActions.includes(label)) return null;
         const value = action === "submit" ? submissionReference : disputeReason;
         const validation = action === "approve" ? undefined : validatePublicText(value, 256);
@@ -392,7 +468,9 @@ export function EscrowDetailPage() {
               <div className="grid gap-3 rounded-lg border border-line p-4">
                 {action !== "approve" && (
                   <label className="grid gap-1">
-                    <span>{action === "submit" ? "Referencia de entrega" : "Motivo de disputa"}</span>
+                    <span>
+                      {action === "submit" ? "Referencia de entrega" : "Motivo de disputa"}
+                    </span>
                     <textarea
                       className="min-h-24 rounded-lg border border-line bg-transparent p-3"
                       value={value}
@@ -408,34 +486,226 @@ export function EscrowDetailPage() {
                 )}
                 {action !== "approve" && (
                   <p className="text-sm text-accent">
-                    Este texto será público e inmutable. No incluyas datos personales, credenciales ni secretos.
+                    Este texto será público e inmutable. No incluyas datos personales, credenciales
+                    ni secretos.
                   </p>
                 )}
-                {validation && <p role="alert" className="text-danger">{validation}</p>}
+                {validation && (
+                  <p role="alert" className="text-danger">
+                    {validation}
+                  </p>
+                )}
                 <p>Primero simularemos la transacción; tu wallet confirma la firma final.</p>
                 <div className="flex flex-wrap gap-3">
                   <Button
-                    disabled={!!validation || !eligible.ok || isTransactionPending(transaction) || isEscrowTransactionPending(snapshot.address)}
+                    disabled={
+                      !!validation ||
+                      !eligible.ok ||
+                      isTransactionPending(transaction) ||
+                      isEscrowTransactionPending(snapshot.address)
+                    }
                     onClick={() => runReviewAction(action)}
                   >
                     {isTransactionPending(transaction) ? "Procesando…" : "Simular y firmar"}
                   </Button>
-                  <Button variant="ghost" disabled={isTransactionPending(transaction)} onClick={() => setReviewingReviewAction(undefined)}>
+                  <Button
+                    variant="ghost"
+                    disabled={isTransactionPending(transaction)}
+                    onClick={() => setReviewingReviewAction(undefined)}
+                  >
                     Volver
                   </Button>
                 </div>
                 {!eligible.ok && <p className="text-danger">{eligible.message}</p>}
                 {transaction.kind === "submitted" && (
-                  <p role="status">Transacción enviada: <a className="text-primary underline" href={`${config.explorerUrl}/tx/${transaction.hash}`} target="_blank" rel="noopener noreferrer">{transaction.hash}</a></p>
+                  <p role="status">
+                    Transacción enviada:{" "}
+                    <a
+                      className="text-primary underline"
+                      href={`${config.explorerUrl}/tx/${transaction.hash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {transaction.hash}
+                    </a>
+                  </p>
                 )}
-                {(transaction.kind === "rejected" || transaction.kind === "reverted" || transaction.kind === "unknown-failure") && (
-                  <div role="alert" className="text-danger"><p>{transaction.message}</p><details className="text-xs text-muted"><summary>Detalle técnico</summary><pre className="mt-2 whitespace-pre-wrap">{transaction.detail}</pre></details></div>
+                {(transaction.kind === "rejected" ||
+                  transaction.kind === "reverted" ||
+                  transaction.kind === "unknown-failure") && (
+                  <div role="alert" className="text-danger">
+                    <p>{transaction.message}</p>
+                    <details className="text-xs text-muted">
+                      <summary>Detalle técnico</summary>
+                      <pre className="mt-2 whitespace-pre-wrap">{transaction.detail}</pre>
+                    </details>
+                  </div>
                 )}
               </div>
             )}
           </Panel>
         );
       })}
+      {projection.availableActions.includes("Resolver disputa") && (
+        <Panel as="section" className="grid gap-4">
+          <div>
+            <h2 className="font-display text-2xl font-bold">Resolver disputa</h2>
+            <p className="text-muted">
+              Asigná el monto exacto al worker; el owner recibe siempre el remanente exacto.
+            </p>
+          </div>
+          {!reviewingResolution ? (
+            <Button
+              onClick={() => {
+                setWorkerAllocation(0n);
+                setResolutionReason("");
+                setReviewingResolution(true);
+              }}
+            >
+              Revisar resolución
+            </Button>
+          ) : (
+            <div className="grid gap-4 rounded-lg border border-line p-4">
+              <label className="grid gap-1">
+                <span>Asignación al worker (ETH exacto)</span>
+                <input
+                  className="rounded-lg border border-line bg-transparent p-3"
+                  inputMode="decimal"
+                  value={workerAmountInput}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setWorkerAmountInput(value);
+                    const parsed = parseWorkerAllocation(value, snapshot.amount);
+                    if (parsed.ok) setWorkerAmountWei(parsed.workerAmountWei);
+                  }}
+                />
+                <span className="text-sm text-muted">{workerAmountWei.toString()} wei</span>
+              </label>
+              <label className="grid gap-1">
+                <span>Worker · {allocation.worker} ETH</span>
+                <input
+                  aria-label="Asignación al worker"
+                  type="range"
+                  min="0"
+                  max={allocationSliderSteps.toString()}
+                  value={workerSliderValue}
+                  onChange={(event) =>
+                    setWorkerAllocation(
+                      allocationFromWorkerSlider(Number(event.target.value), snapshot.amount),
+                    )
+                  }
+                />
+              </label>
+              <label className="grid gap-1">
+                <span>Owner · {allocation.owner} ETH</span>
+                <input
+                  className="rounded-lg border border-line bg-transparent p-3 text-muted"
+                  aria-label="Asignación al owner en ETH"
+                  readOnly
+                  value={allocation.owner}
+                />
+                <input
+                  aria-label="Asignación al owner"
+                  type="range"
+                  min="0"
+                  max={allocationSliderSteps.toString()}
+                  value={Number(allocationSliderSteps) - workerSliderValue}
+                  onChange={(event) =>
+                    setWorkerAllocation(
+                      allocationFromOwnerSlider(Number(event.target.value), snapshot.amount),
+                    )
+                  }
+                />
+              </label>
+              <div className="flex flex-wrap gap-3">
+                <Button variant="ghost" onClick={() => setWorkerAllocation(0n)}>
+                  0% worker
+                </Button>
+                <Button variant="ghost" onClick={() => setWorkerAllocation(snapshot.amount / 2n)}>
+                  Mitad
+                </Button>
+                <Button variant="ghost" onClick={() => setWorkerAllocation(snapshot.amount)}>
+                  100% worker
+                </Button>
+              </div>
+              <label className="grid gap-1">
+                <span>Motivo de resolución</span>
+                <textarea
+                  className="min-h-24 rounded-lg border border-line bg-transparent p-3"
+                  value={resolutionReason}
+                  maxLength={256}
+                  onChange={(event) => setResolutionReason(event.target.value)}
+                />
+                <span className="text-sm text-muted">Máximo 256 bytes UTF-8.</span>
+              </label>
+              <p className="text-sm text-accent">
+                El motivo será público e inmutable. No incluyas datos personales, credenciales ni
+                secretos.
+              </p>
+              {!allocationValidation.ok && (
+                <p role="alert" className="text-danger">
+                  {allocationValidation.message}
+                </p>
+              )}
+              {resolutionReasonValidation && (
+                <p role="alert" className="text-danger">
+                  {resolutionReasonValidation}
+                </p>
+              )}
+              {!resolution.ok && <p className="text-danger">{resolution.message}</p>}
+              <div className="rounded-lg bg-surface-raised p-3">
+                <p className="font-semibold">Confirmación</p>
+                <p>
+                  Worker: {allocation.worker} ETH ({workerAmountWei.toString()} wei)
+                </p>
+                <p>
+                  Owner: {allocation.owner} ETH ({(snapshot.amount - workerAmountWei).toString()}{" "}
+                  wei)
+                </p>
+                <p className="break-words">Motivo: {resolutionReason || "Sin motivo"}</p>
+              </div>
+              <p>Primero simularemos la transacción; tu wallet confirma la firma final.</p>
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  disabled={
+                    !allocationValidation.ok ||
+                    !!resolutionReasonValidation ||
+                    !resolution.ok ||
+                    isTransactionPending(transaction) ||
+                    isEscrowTransactionPending(snapshot.address)
+                  }
+                  onClick={resolveDispute}
+                >
+                  {isTransactionPending(transaction)
+                    ? "Procesando…"
+                    : "Simular y firmar resolución"}
+                </Button>
+                <Button
+                  variant="ghost"
+                  disabled={isTransactionPending(transaction)}
+                  onClick={() => setReviewingResolution(false)}
+                >
+                  Volver
+                </Button>
+              </div>
+              {transaction.kind === "submitted" && (
+                <p role="status">Transacción enviada: {transaction.hash}</p>
+              )}
+              {(transaction.kind === "rejected" ||
+                transaction.kind === "reverted" ||
+                transaction.kind === "unknown-failure") && (
+                <div role="alert" className="text-danger">
+                  <p>{transaction.message}</p>
+                  <details className="text-xs text-muted">
+                    <summary>Detalle técnico</summary>
+                    <pre className="mt-2 whitespace-pre-wrap">{transaction.detail}</pre>
+                  </details>
+                </div>
+              )}
+            </div>
+          )}
+        </Panel>
+      )}
       {lifecycleActions.map((action) => {
         const detail = lifecycleWriteDetail(action);
         const connectedAndEligible = projection.availableActions.includes(action);

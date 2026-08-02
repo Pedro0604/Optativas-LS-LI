@@ -4,7 +4,7 @@
 
 **Blocked by:** 08 — Submit work, approve it, or open a dispute.
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] One exact `workerAmountWei` value is the authoritative allocation state and owner allocation is always the exact remainder.
 - [ ] Worker and owner sliders are visually inverse and remain synchronized with exact ETH fields.
@@ -15,3 +15,6 @@
 - [ ] Successful resolution refreshes lifecycle state and both beneficiaries' pending balances.
 - [ ] Keyboard operation, complementary controls, rounding, validation, role/state/deadline failures, rejection, revert, and success are tested.
 
+## Answer
+
+Se incorporó la resolución de disputas: la asignación del worker se conserva en wei, el owner recibe el remanente exacto y los controles complementarios muestran ETH y wei. La resolución valida montos y motivo antes de simular, reutiliza el coordinador de transacciones y refresca el estado y saldos pendientes de ambos participantes tras confirmarse.

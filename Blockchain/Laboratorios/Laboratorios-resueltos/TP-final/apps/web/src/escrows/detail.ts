@@ -21,6 +21,7 @@ export type EscrowSnapshot = {
   submissionReference: string;
   disputeReason: string;
   resolutionReason: string;
+  pendingWithdrawals: { owner: bigint; worker: bigint };
 };
 
 export type LifecycleStage = {
@@ -359,6 +360,23 @@ export async function fetchEscrowDetail(
     string,
   ];
 
+  const [ownerPendingWithdrawal, workerPendingWithdrawal] = await Promise.all([
+    client.readContract({
+      address,
+      abi: escrowAbi,
+      functionName: "pendingWithdrawals",
+      args: [owner],
+      blockNumber,
+    }),
+    client.readContract({
+      address,
+      abi: escrowAbi,
+      functionName: "pendingWithdrawals",
+      args: [worker],
+      blockNumber,
+    }),
+  ]);
+
   return {
     kind: "success" as const,
     blockTime: block.timestamp,
@@ -379,6 +397,7 @@ export async function fetchEscrowDetail(
       submissionReference,
       disputeReason,
       resolutionReason,
+      pendingWithdrawals: { owner: ownerPendingWithdrawal, worker: workerPendingWithdrawal },
     },
   };
 }

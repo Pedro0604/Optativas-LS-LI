@@ -16,6 +16,7 @@ const snapshot: EscrowSnapshot = {
   submissionReference: "",
   disputeReason: "",
   resolutionReason: "",
+  pendingWithdrawals: { owner: 0n, worker: 0n },
 };
 
 describe("canAcceptEscrow", () => {
