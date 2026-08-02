@@ -4,7 +4,7 @@
 
 **Blocked by:** 06 — Accept escrow through a shared transaction coordinator.
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] An eligible worker can submit a non-empty submission reference within its UTF-8 byte limit.
 - [ ] The form warns that the reference is public and immutable and never interprets arbitrary markup.
@@ -15,3 +15,6 @@
 - [ ] Projection and visible actions update correctly for submission, approval, dispute, deadline races, and external transitions.
 - [ ] Tests cover validation boundaries, privacy copy, roles, states, deadlines, wallet rejection, contract revert, and confirmed outcomes.
 
+## Answer
+
+Se agregaron los flujos de entrega, aprobaciÃ³n y disputa reutilizando la proyecciÃ³n del detalle y el coordinador de transacciones. Las referencias y motivos se validan por bytes UTF-8, advierten su publicaciÃ³n inmutable y las escrituras se simulan, confirman y refrescan sin transiciones optimistas.

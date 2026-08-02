@@ -14,12 +14,19 @@ import {
   actionAvailability,
   escrowDetailQuery,
   lifecycleWriteDetail,
+  isLifecycleWriteAction,
   projectEscrow,
   safeSubmissionUrl,
   type LifecycleWriteAction,
 } from "./detail";
 import { formatDeadlineDate, formatDeadlineDistance, formatDuration, useChainTime } from "./time";
 import { canAcceptEscrow } from "./acceptance";
+import {
+  canApproveWork,
+  canOpenDispute,
+  canSubmitWork,
+  validatePublicText,
+} from "./reviewActions";
 import {
   isEscrowTransactionPending,
   isTransactionPending,
@@ -80,6 +87,11 @@ export function EscrowDetailPage() {
   const [reviewingLifecycleAction, setReviewingLifecycleAction] = useState<
     LifecycleWriteAction | undefined
   >();
+  const [reviewingReviewAction, setReviewingReviewAction] = useState<
+    "submit" | "approve" | "dispute" | undefined
+  >();
+  const [submissionReference, setSubmissionReference] = useState("");
+  const [disputeReason, setDisputeReason] = useState("");
   const [transaction, setTransaction] = useState<TransactionState>({ kind: "idle" });
   const query = useQuery(
     escrowDetailQuery(publicClient, config.factoryAddress, address as Address),
@@ -123,6 +135,9 @@ export function EscrowDetailPage() {
   const projection = projectEscrow(snapshot, now, { account, chainId });
   const availability = actionAvailability(projection, { account, chainId });
   const acceptance = canAcceptEscrow(snapshot, account, now, chainId);
+  const submission = canSubmitWork(snapshot, account, now, chainId);
+  const approval = canApproveWork(snapshot, account, now, chainId);
+  const dispute = canOpenDispute(snapshot, account, now, chainId);
 
   async function refreshAfterConfirmation() {
     await Promise.all([
@@ -172,6 +187,38 @@ export function EscrowDetailPage() {
     }
   }
 
+  async function runReviewAction(action: "submit" | "approve" | "dispute") {
+    if (!account) return;
+    const input = action === "submit" ? submissionReference : disputeReason;
+    if ((action === "submit" || action === "dispute") && validatePublicText(input, 256)) return;
+    const eligibility = action === "submit" ? submission : action === "approve" ? approval : dispute;
+    if (!eligibility.ok) return;
+    const shared = {
+      write: writeContractAsync,
+      wait: (hash: `0x${string}`) => publicClient.waitForTransactionReceipt({ hash }),
+      onState: setTransaction,
+    };
+    const result =
+      action === "submit"
+        ? await runEscrowTransaction(snapshot.address, {
+            ...shared,
+            simulate: () => publicClient.simulateContract({ account, address: snapshot.address, abi: escrowAbi, functionName: "submitWork", args: [input] }),
+          })
+        : action === "approve"
+          ? await runEscrowTransaction(snapshot.address, {
+              ...shared,
+              simulate: () => publicClient.simulateContract({ account, address: snapshot.address, abi: escrowAbi, functionName: "approveWork" }),
+            })
+          : await runEscrowTransaction(snapshot.address, {
+              ...shared,
+              simulate: () => publicClient.simulateContract({ account, address: snapshot.address, abi: escrowAbi, functionName: "openDispute", args: [input] }),
+            });
+    if (result.kind === "confirmed") {
+      await refreshAfterConfirmation();
+      setReviewingReviewAction(undefined);
+    }
+  }
+
   function reviewLifecycleAction(action: LifecycleWriteAction) {
     setReviewingLifecycleAction(action);
     if (!account) window.dispatchEvent(new Event(walletConnectionRequestEvent));
@@ -181,7 +228,7 @@ export function EscrowDetailPage() {
     ? (projectEscrow(snapshot, now).availableActions[0] as LifecycleWriteAction | undefined)
     : undefined;
   const lifecycleActions = projection.availableActions.filter(
-    (action): action is LifecycleWriteAction => action !== "Aceptar",
+    isLifecycleWriteAction,
   );
   if (visitorExpirationAction && !lifecycleActions.includes(visitorExpirationAction))
     lifecycleActions.push(visitorExpirationAction);
@@ -320,6 +367,75 @@ export function EscrowDetailPage() {
           )}
         </Panel>
       )}
+      {(["Enviar trabajo", "Aprobar trabajo", "Abrir disputa"] as const).map((label) => {
+        const action = label === "Enviar trabajo" ? "submit" : label === "Aprobar trabajo" ? "approve" : "dispute";
+        const eligible = action === "submit" ? submission : action === "approve" ? approval : dispute;
+        if (!projection.availableActions.includes(label)) return null;
+        const value = action === "submit" ? submissionReference : disputeReason;
+        const validation = action === "approve" ? undefined : validatePublicText(value, 256);
+        const title = label;
+        const consequence =
+          action === "submit"
+            ? "La referencia quedará pública e inmutable para que el owner revise la entrega."
+            : action === "approve"
+              ? "El monto completo quedará disponible para retiro del worker."
+              : "El motivo quedará público e inmutable y se abrirá el arbitraje.";
+        return (
+          <Panel as="section" className="grid gap-4" key={action}>
+            <div>
+              <h2 className="font-display text-2xl font-bold">{title}</h2>
+              <p className="text-muted">{consequence}</p>
+            </div>
+            {reviewingReviewAction !== action ? (
+              <Button onClick={() => setReviewingReviewAction(action)}>Revisar consecuencia</Button>
+            ) : (
+              <div className="grid gap-3 rounded-lg border border-line p-4">
+                {action !== "approve" && (
+                  <label className="grid gap-1">
+                    <span>{action === "submit" ? "Referencia de entrega" : "Motivo de disputa"}</span>
+                    <textarea
+                      className="min-h-24 rounded-lg border border-line bg-transparent p-3"
+                      value={value}
+                      maxLength={256}
+                      onChange={(event) =>
+                        action === "submit"
+                          ? setSubmissionReference(event.target.value)
+                          : setDisputeReason(event.target.value)
+                      }
+                    />
+                    <span className="text-sm text-muted">Máximo 256 bytes UTF-8.</span>
+                  </label>
+                )}
+                {action !== "approve" && (
+                  <p className="text-sm text-accent">
+                    Este texto será público e inmutable. No incluyas datos personales, credenciales ni secretos.
+                  </p>
+                )}
+                {validation && <p role="alert" className="text-danger">{validation}</p>}
+                <p>Primero simularemos la transacción; tu wallet confirma la firma final.</p>
+                <div className="flex flex-wrap gap-3">
+                  <Button
+                    disabled={!!validation || !eligible.ok || isTransactionPending(transaction) || isEscrowTransactionPending(snapshot.address)}
+                    onClick={() => runReviewAction(action)}
+                  >
+                    {isTransactionPending(transaction) ? "Procesando…" : "Simular y firmar"}
+                  </Button>
+                  <Button variant="ghost" disabled={isTransactionPending(transaction)} onClick={() => setReviewingReviewAction(undefined)}>
+                    Volver
+                  </Button>
+                </div>
+                {!eligible.ok && <p className="text-danger">{eligible.message}</p>}
+                {transaction.kind === "submitted" && (
+                  <p role="status">Transacción enviada: <a className="text-primary underline" href={`${config.explorerUrl}/tx/${transaction.hash}`} target="_blank" rel="noopener noreferrer">{transaction.hash}</a></p>
+                )}
+                {(transaction.kind === "rejected" || transaction.kind === "reverted" || transaction.kind === "unknown-failure") && (
+                  <div role="alert" className="text-danger"><p>{transaction.message}</p><details className="text-xs text-muted"><summary>Detalle técnico</summary><pre className="mt-2 whitespace-pre-wrap">{transaction.detail}</pre></details></div>
+                )}
+              </div>
+            )}
+          </Panel>
+        );
+      })}
       {lifecycleActions.map((action) => {
         const detail = lifecycleWriteDetail(action);
         const connectedAndEligible = projection.availableActions.includes(action);

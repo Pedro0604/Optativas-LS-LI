@@ -101,6 +101,10 @@ export function lifecycleWriteDetail(action: LifecycleWriteAction) {
   return lifecycleWriteDetails[action];
 }
 
+export function isLifecycleWriteAction(action: string): action is LifecycleWriteAction {
+  return action in lifecycleWriteDetails;
+}
+
 type EscrowDetailResult =
   { kind: "not-found" } | { kind: "success"; blockTime: bigint; snapshot: EscrowSnapshot };
 

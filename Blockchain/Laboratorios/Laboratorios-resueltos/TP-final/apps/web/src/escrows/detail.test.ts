@@ -8,6 +8,7 @@ import {
   resolveEscrowAddress,
   safeSubmissionUrl,
   actionAvailability,
+  isLifecycleWriteAction,
   lifecycleWriteDetail,
   type EscrowSnapshot,
 } from "./detail";
@@ -194,6 +195,13 @@ describe("escrow detail projection", () => {
 });
 
 describe("detail address and evidence", () => {
+  it("does not classify submission and review actions as lifecycle writes", () => {
+    expect(isLifecycleWriteAction("Enviar trabajo")).toBe(false);
+    expect(isLifecycleWriteAction("Aprobar trabajo")).toBe(false);
+    expect(isLifecycleWriteAction("Abrir disputa")).toBe(false);
+    expect(isLifecycleWriteAction("Finalizar revisión vencida")).toBe(true);
+  });
+
   it("rejects malformed addresses and checksums valid ones", () => {
     expect(normalizeEscrowAddress("no-address")).toBeUndefined();
     expect(normalizeEscrowAddress("0xde709f2102306220921060314715629080e2fb77")).toBe(
