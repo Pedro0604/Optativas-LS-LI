@@ -1,5 +1,8 @@
 ### Next
-- issue 2
+- verificar issue 2
+- Que en vez de decir "Plazo aún no iniciado" diga tantos minutos/horas/dias desde la aceptación, la entrega, la apertura de la disputa. 
+- componente address que permita copiar la address y mostrarla completa o recortada
+- hacer issue 3
 - Hacer lifecycle tests.
 
 ### Later
