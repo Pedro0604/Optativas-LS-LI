@@ -20,7 +20,7 @@ export function EscrowCard({ summary, chainTime }: EscrowCardProps) {
         <Badge>{escrowStateMetadata[summary.state].label}</Badge>
       </div>
       <strong className="text-lg text-primary-strong">{displayEth(summary.amount)}</strong>
-      <dl className="my-4 border-y border-line py-3">
+      <dl className="my-4 border-y border-line py-3 flex flex-col gap-2">
         <div className="flex justify-between gap-4">
           <dt className="text-muted">Owner</dt>
           <dd className="m-0">

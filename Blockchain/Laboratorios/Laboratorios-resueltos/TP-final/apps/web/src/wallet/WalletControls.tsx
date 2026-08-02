@@ -68,7 +68,7 @@ function WalletControlsContent() {
           {switchError && <span className="text-xs text-danger">No se cambió la red.</span>}
         </div>
       )}
-      <AddressDisplay address={address!} format="short" />
+      <AddressDisplay address={address!} format="short" tooltipSide="bottom" />
       <Button variant="ghost" onClick={() => disconnect()}>
         Desconectar
       </Button>

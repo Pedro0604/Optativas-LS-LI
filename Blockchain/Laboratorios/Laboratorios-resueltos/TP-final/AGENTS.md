@@ -29,6 +29,10 @@ Issues are tracked as local Markdown files under `.scratch/`. See `docs/agents/i
 
 Single-context domain documentation. See `docs/agents/domain.md`.
 
+### Styling docs
+
+See `docs/agents/styles.md`.
+
 ## Responses
 
 When writing a response to the user be concise, don't use extra words and sacrifice grammar for the sake of conciseness.

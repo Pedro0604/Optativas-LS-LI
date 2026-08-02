@@ -21,22 +21,26 @@ afterEach(() => {
 });
 
 describe("AddressDisplay", () => {
-  it("renders its requested responsive format and full-address tooltip", () => {
+  it("renders its requested responsive format", () => {
     const { rerender } = render(<AddressDisplay address={address} format="short" />);
 
     expect(screen.getByText("0x1234…abcd")).toBeInTheDocument();
-    expect(screen.getByRole("tooltip")).toHaveTextContent(address);
 
     rerender(<AddressDisplay address={address} format="long" />);
     expect(screen.getByTestId("address-mobile")).toHaveClass("md:hidden");
     expect(screen.getByTestId("address-mobile")).toHaveTextContent("0x1234…abcd");
     expect(screen.getByTestId("address-desktop")).toHaveClass("hidden", "md:inline");
     expect(screen.getByTestId("address-desktop")).toHaveTextContent(address);
-    expect(screen.getByRole("tooltip")).toHaveClass(
-      "group-hover:flex",
-      "group-focus-within:flex",
-      "md:hidden",
-    );
+  });
+
+  it("uses a Radix tooltip with a configurable side", () => {
+    render(<AddressDisplay address={address} format="short" tooltipSide="bottom" />);
+    const value = screen.getByLabelText(`Mostrar dirección completa: ${address}`);
+
+    fireEvent.focus(value);
+
+    expect(screen.getByRole("tooltip")).toHaveTextContent(address);
+    expect(screen.getByRole("tooltip")).toHaveAttribute("data-side", "bottom");
   });
 
   it("copies the full address and reports success temporarily", async () => {
@@ -64,28 +68,5 @@ describe("AddressDisplay", () => {
 
     act(() => vi.advanceTimersByTime(2_000));
     expect(screen.queryAllByText("No se pudo copiar")).toHaveLength(0);
-  });
-
-  it("opens by tapping the abbreviated text and closes with Escape or outside press", async () => {
-    render(<AddressDisplay address={address} format="short" />);
-    const value = screen.getByRole("button", { name: `Mostrar dirección completa: ${address}` });
-    const tooltip = screen.getByRole("tooltip");
-
-    expect(value).toHaveAttribute("aria-describedby", tooltip.id);
-    expect(tooltip).toHaveClass("group-hover:flex", "group-focus-within:flex");
-    expect(document.querySelector("[aria-live='polite']")).toBeInTheDocument();
-
-    value.focus();
-    expect(value).toHaveFocus();
-
-    fireEvent.click(value);
-    expect(tooltip).toHaveAttribute("data-open", "true");
-
-    fireEvent.keyDown(value, { key: "Escape" });
-    expect(tooltip).toHaveAttribute("data-open", "false");
-
-    fireEvent.click(value);
-    fireEvent.pointerDown(document.body);
-    expect(tooltip).toHaveAttribute("data-open", "false");
   });
 });
