@@ -48,7 +48,7 @@ export function DiscoveryPage() {
 
   return (
     <>
-      <section className="pt-8 pb-8">
+      <section className="pb-8">
         <p className="text-xs font-bold tracking-[0.12em] text-primary uppercase">
           Registro público · Sepolia
         </p>

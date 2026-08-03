@@ -253,7 +253,7 @@ export function CreateEscrowPage() {
 
   return (
     <div className="grid max-w-3xl gap-6">
-      <section className="pt-8">
+      <section>
         <p className="text-xs font-bold tracking-[0.12em] text-primary uppercase">Nuevo escrow</p>
         <h1 className="mt-2 font-display text-4xl font-bold">Crear y financiar un escrow</h1>
         <p className="mt-3 text-muted">
