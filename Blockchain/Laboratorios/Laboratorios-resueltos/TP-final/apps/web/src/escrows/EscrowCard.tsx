@@ -20,6 +20,14 @@ export function EscrowCard({ summary, chainTime }: EscrowCardProps) {
         <Badge>{escrowStateMetadata[summary.state].label}</Badge>
       </div>
       <strong className="text-lg text-primary-strong">{displayEth(summary.amount)}</strong>
+      {summary.pendingWithdrawal !== undefined && summary.pendingWithdrawal > 0n && (
+        <div className="mt-3 rounded-lg border border-primary/30 bg-primary/5 p-3">
+          <p className="text-sm text-muted">Tu saldo pendiente:</p>
+          <strong className="font-mono text-primary-strong">
+            {displayEth(summary.pendingWithdrawal)}
+          </strong>
+        </div>
+      )}
       <dl className="my-4 border-y border-line py-3 flex flex-col gap-2">
         <div className="flex justify-between gap-4">
           <dt className="text-muted">Owner</dt>

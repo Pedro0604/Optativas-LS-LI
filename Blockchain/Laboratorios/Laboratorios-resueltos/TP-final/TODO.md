@@ -8,6 +8,7 @@
 - Arreglar form de creación porque los errores siempre se muestran al inicio, deberían ir calculandose on blur o algo así
 - Al clickear conectar Wallet, aparece MetaMask y Injected, que abre MetaMask
 - En confirmación de creación mostrar duración en segundos, pero también en un formato más legible (días, horas, minutos, según corresponda)
+- Al firmar una creación y estar esperando la confirmación, que se deshabilite el botón de editar datos.
 
 ### Later
 - IEscrow.sol que tenga todos los eventos, errores y la interfaz con su NatSpec para que en Escrow.sol esté la implementación y no esté lleno de comentarios de specs (usar @inheritdoc) 

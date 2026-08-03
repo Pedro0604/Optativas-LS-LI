@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { fetchDiscovery, reverseIndexes } from "./discovery";
+import { discoveryQuery, fetchDiscovery, reverseIndexes } from "./discovery";
 import {
   EscrowState,
   escrowStateMetadata,
@@ -51,6 +51,55 @@ describe("public discovery reads", () => {
   const factory = "0x0000000000000000000000000000000000000001" as const;
   const escrow = "0x0000000000000000000000000000000000000002" as const;
   const participant = "0x0000000000000000000000000000000000000003" as const;
+
+  it("keys connected balances by account", () => {
+    expect(discoveryQuery({} as never, factory, 1, "all", participant).queryKey).toEqual([
+      "escrows",
+      participant,
+      1,
+      "all",
+    ]);
+  });
+
+  it("reads the connected account balance without depending on wallet chain", async () => {
+    const ok = (result: unknown) => ({ status: "success", result });
+    const client = {
+      readContract: vi.fn().mockResolvedValue(1n),
+      getBlockNumber: vi.fn().mockResolvedValue(77n),
+      getBlock: vi.fn().mockResolvedValue({ timestamp: 70n }),
+      multicall: vi
+        .fn()
+        .mockResolvedValueOnce([escrow])
+        .mockResolvedValueOnce(
+          [
+            "Contrato",
+            10n,
+            0n,
+            participant,
+            participant,
+            participant,
+            0n,
+            0n,
+            0n,
+            0n,
+            9n,
+          ].map(ok),
+        ),
+    };
+
+    const result = await fetchDiscovery(client as never, factory, 1, "all", participant);
+    expect(result.items[0]).toMatchObject({
+      kind: "success",
+      summary: { pendingWithdrawal: 9n },
+    });
+    expect(client.multicall).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        contracts: expect.arrayContaining([
+          expect.objectContaining({ functionName: "pendingWithdrawals", args: [participant] }),
+        ]),
+      }),
+    );
+  });
 
   it("returns an empty page", async () => {
     const client = {

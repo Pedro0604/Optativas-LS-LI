@@ -334,8 +334,8 @@ export function CreateEscrowPage() {
             la firma; la wallet es la confirmación final.
           </p>
           {!isConnected ? (
-            <div className="grid gap-3">
-              <p>Conectá una wallet para continuar con la revisión.</p>
+            <div className="flex items-center gap-3">
+              <p>Conectá una wallet para continuar con la revisión: </p>
               <WalletControls />
             </div>
           ) : !canWrite(chainId) ? (

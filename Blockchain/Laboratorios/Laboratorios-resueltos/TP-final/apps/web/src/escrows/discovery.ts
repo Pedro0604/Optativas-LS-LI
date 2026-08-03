@@ -31,6 +31,7 @@ export async function fetchDiscovery(
   factory: Address,
   page: number,
   state: StateFilter,
+  account?: Address,
 ) {
   return fetchEscrowPage(
     client,
@@ -58,6 +59,7 @@ export async function fetchDiscovery(
         })) as unknown as Address[],
     },
     state,
+    account,
   );
 }
 
@@ -68,10 +70,11 @@ export function discoveryQuery(
   factory: Address,
   page: number,
   state: StateFilter,
+  account?: Address,
 ) {
   return {
-    queryKey: ["escrows", page, state] as const,
-    queryFn: () => fetchDiscovery(client, factory, page, state),
+    queryKey: ["escrows", account ?? "disconnected", page, state] as const,
+    queryFn: () => fetchDiscovery(client, factory, page, state, account),
     refetchInterval: 30_000,
   };
 }

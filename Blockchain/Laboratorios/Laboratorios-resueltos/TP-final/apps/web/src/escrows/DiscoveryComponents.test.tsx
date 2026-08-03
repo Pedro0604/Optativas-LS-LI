@@ -26,6 +26,7 @@ const summary: EscrowSummary = {
   worker: participant,
   arbiter: participant,
   deadline: 1_800_000_000n,
+  pendingWithdrawal: undefined,
 };
 
 describe("EscrowStateFilter", () => {
@@ -60,6 +61,15 @@ describe("EscrowCard", () => {
     render(<EscrowCard summary={{ ...summary, deadline: 0n }} chainTime={1n} />);
 
     expect(screen.queryByText(/Fecha límite:/)).not.toBeInTheDocument();
+  });
+
+  it("shows only a positive connected-account balance", () => {
+    const view = render(<EscrowCard summary={{ ...summary, pendingWithdrawal: 1n }} chainTime={1n} />);
+    expect(screen.getByText("Tu saldo pendiente:")).toBeInTheDocument();
+    expect(screen.getByText("0.000000000000000001 ETH")).toBeInTheDocument();
+
+    view.rerender(<EscrowCard summary={{ ...summary, pendingWithdrawal: 0n }} chainTime={1n} />);
+    expect(screen.queryByText("Tu saldo pendiente:")).not.toBeInTheDocument();
   });
 
   it("does not render a countdown for a terminal escrow", () => {

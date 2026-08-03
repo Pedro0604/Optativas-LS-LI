@@ -1,6 +1,7 @@
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useRef } from "react";
+import { useAccount } from "wagmi";
 import { config, publicClient } from "../runtime";
 import { Button } from "../ui/Button";
 import { Pagination } from "../ui/Pagination";
@@ -12,14 +13,20 @@ import { EscrowStateFilter } from "./EscrowStateFilter";
 export function DiscoveryPage() {
   const search = useSearch({ from: "/" });
   const navigate = useNavigate({ from: "/" });
+  const { address: account } = useAccount();
   const query = useQuery({
-    ...discoveryQuery(publicClient, config.factoryAddress, search.page, search.state),
-    placeholderData: keepPreviousData,
+    ...discoveryQuery(publicClient, config.factoryAddress, search.page, search.state, account),
+    placeholderData: (previousData, previousQuery) =>
+      previousQuery?.queryKey[1] === (account ?? "disconnected") ? previousData : undefined,
   });
-  const lastData = useRef(query.data);
+  const lastData = useRef<{ account: typeof account; data: typeof query.data }>({
+    account,
+    data: query.data,
+  });
 
-  if (query.data !== undefined) lastData.current = query.data;
-  const data = query.data ?? lastData.current;
+  if (lastData.current.account !== account) lastData.current = { account, data: undefined };
+  if (query.data !== undefined) lastData.current = { account, data: query.data };
+  const data = query.data ?? lastData.current.data;
 
   if (query.isPending && data === undefined) return <Panel role="status">Cargando escrows…</Panel>;
 

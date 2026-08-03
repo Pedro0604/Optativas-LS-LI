@@ -114,4 +114,35 @@ describe("MyEscrowsPage", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Cargando tus escrows");
     expect(screen.queryByText("No hay escrows para mostrar")).not.toBeInTheDocument();
   });
+
+  it("shows the connected account's positive pending balance in its cards", () => {
+    mocks.account = { isConnected: true, address: "0x0000000000000000000000000000000000000002" };
+    setQuery({
+      data: {
+        ...data,
+        count: 1,
+        items: [
+          {
+            kind: "success",
+            address: "0x0000000000000000000000000000000000000003",
+            summary: {
+              address: "0x0000000000000000000000000000000000000003",
+              title: "Con saldo",
+              amount: 1n,
+              state: 0,
+              owner: "0x0000000000000000000000000000000000000002",
+              worker: "0x0000000000000000000000000000000000000004",
+              arbiter: "0x0000000000000000000000000000000000000005",
+              deadline: 0n,
+              pendingWithdrawal: 9n,
+            },
+          },
+        ],
+      },
+    });
+
+    render(<MyEscrowsPage />);
+    expect(screen.getByText("Tu saldo pendiente:")).toBeVisible();
+    expect(screen.getByText("0.000000000000000009 ETH")).toBeVisible();
+  });
 });

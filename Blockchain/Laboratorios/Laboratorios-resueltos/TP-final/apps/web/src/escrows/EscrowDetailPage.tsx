@@ -38,6 +38,11 @@ import {
   parseWorkerAllocation,
 } from "./resolution";
 import { WalletControls } from "../wallet/WalletControls";
+import {
+  canWithdrawFromEscrow,
+  formatPendingWithdrawal,
+  pendingWithdrawalFor,
+} from "./withdrawal";
 
 function AddressRow({ label, address }: { label: string; address: Address }) {
   return (
@@ -97,10 +102,14 @@ export function EscrowDetailPage() {
   const [submissionReference, setSubmissionReference] = useState("");
   const [disputeReason, setDisputeReason] = useState("");
   const [reviewingResolution, setReviewingResolution] = useState(false);
+  const [reviewingWithdrawal, setReviewingWithdrawal] = useState(false);
   const [workerAmountWei, setWorkerAmountWei] = useState(0n);
   const [workerAmountInput, setWorkerAmountInput] = useState("0");
   const [resolutionReason, setResolutionReason] = useState("");
   const [transaction, setTransaction] = useState<TransactionState>({ kind: "idle" });
+  const [withdrawalTransaction, setWithdrawalTransaction] = useState<TransactionState>({
+    kind: "idle",
+  });
   const query = useQuery(
     escrowDetailQuery(publicClient, config.factoryAddress, address as Address),
   );
@@ -115,6 +124,11 @@ export function EscrowDetailPage() {
       void query.refetch();
     }
   }, [initialProjection?.activeDeadline, now, query]);
+
+  useEffect(() => {
+    setReviewingWithdrawal(false);
+    setWithdrawalTransaction({ kind: "idle" });
+  }, [account, chainId]);
 
   if (query.isPending) return <Panel role="status">Cargando detalle…</Panel>;
   if (query.isError)
@@ -153,6 +167,7 @@ export function EscrowDetailPage() {
   const workerSliderValue = snapshot.amount
     ? Number((workerAmountWei * allocationSliderSteps) / snapshot.amount)
     : 0;
+  const pendingWithdrawal = pendingWithdrawalFor(snapshot, account);
 
   async function refreshAfterConfirmation() {
     await Promise.all([
@@ -282,6 +297,26 @@ export function EscrowDetailPage() {
     }
   }
 
+  async function withdraw() {
+    if (!account || pendingWithdrawal <= 0n) return;
+    const result = await runEscrowTransaction(snapshot.address, {
+      simulate: () =>
+        publicClient.simulateContract({
+          account,
+          address: snapshot.address,
+          abi: escrowAbi,
+          functionName: "withdraw",
+        }),
+      write: writeContractAsync,
+      wait: (hash) => publicClient.waitForTransactionReceipt({ hash }),
+      onState: setWithdrawalTransaction,
+    });
+    if (result.kind === "confirmed") {
+      await refreshAfterConfirmation();
+      setReviewingWithdrawal(false);
+    }
+  }
+
   function reviewLifecycleAction(action: LifecycleWriteAction) {
     setReviewingLifecycleAction(action);
     if (!account) window.dispatchEvent(new Event(walletConnectionRequestEvent));
@@ -319,13 +354,11 @@ export function EscrowDetailPage() {
             <AddressRow label="Owner" address={snapshot.owner} />
             <AddressRow label="Worker" address={snapshot.worker} />
             <AddressRow label="Árbitro" address={snapshot.arbiter} />
-            {(snapshot.pendingWithdrawals.owner > 0n ||
-              snapshot.pendingWithdrawals.worker > 0n) && (
+            {account && (
               <div>
-                <dt className="text-sm text-muted">Pendiente de retiro</dt>
-                <dd className="mt-1">
-                  Owner: {displayEth(snapshot.pendingWithdrawals.owner)} · Worker:{" "}
-                  {displayEth(snapshot.pendingWithdrawals.worker)}
+                <dt className="text-sm text-muted">Tu saldo pendiente en este escrow</dt>
+                <dd className="mt-1 font-mono" data-testid="pending-withdrawal">
+                  {formatPendingWithdrawal(pendingWithdrawal)}
                 </dd>
               </div>
             )}
@@ -360,6 +393,77 @@ export function EscrowDetailPage() {
           )}
         </Panel>
       </div>
+      {canWithdrawFromEscrow(snapshot, account, chainId) && (
+        <Panel as="section" className="grid gap-4">
+          <div>
+            <h2 className="font-display text-2xl font-bold">Retirar fondos</h2>
+            <p className="text-muted">Retirá el saldo disponible únicamente desde este escrow.</p>
+          </div>
+          {!reviewingWithdrawal ? (
+            <Button onClick={() => setReviewingWithdrawal(true)}>Revisar retiro</Button>
+          ) : (
+            <div className="grid gap-3 rounded-lg border border-line p-4">
+              <p>
+                Vas a retirar <strong className="font-mono">{formatPendingWithdrawal(pendingWithdrawal)}</strong>{" "}
+                desde el escrow <AddressDisplay address={snapshot.address} format="long" />.
+              </p>
+              <p>Primero simularemos la transacción; tu wallet confirma la firma final.</p>
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  disabled={
+                    isTransactionPending(withdrawalTransaction) ||
+                    isEscrowTransactionPending(snapshot.address)
+                  }
+                  onClick={withdraw}
+                >
+                  {withdrawalTransaction.kind === "simulating"
+                    ? "Simulando…"
+                    : withdrawalTransaction.kind === "wallet"
+                      ? "Esperando confirmación…"
+                      : withdrawalTransaction.kind === "submitted"
+                        ? "Esperando confirmación on-chain…"
+                        : "Simular y firmar retiro"}
+                </Button>
+                <Button
+                  variant="ghost"
+                  disabled={isTransactionPending(withdrawalTransaction)}
+                  onClick={() => setReviewingWithdrawal(false)}
+                >
+                  Volver
+                </Button>
+              </div>
+            </div>
+          )}
+          {withdrawalTransaction.kind === "submitted" && (
+            <p role="status">
+              Transacción enviada:{" "}
+              <a
+                className="text-primary underline"
+                href={`${config.explorerUrl}/tx/${withdrawalTransaction.hash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {withdrawalTransaction.hash}
+              </a>
+            </p>
+          )}
+          {(withdrawalTransaction.kind === "rejected" ||
+            withdrawalTransaction.kind === "reverted" ||
+            withdrawalTransaction.kind === "unknown-failure") &&
+            reviewingWithdrawal && (
+              <div role="alert" className="grid gap-2 text-danger">
+                <p>{withdrawalTransaction.message}</p>
+                <details className="text-xs text-muted">
+                  <summary>Detalle técnico</summary>
+                  <pre className="mt-2 whitespace-pre-wrap">{withdrawalTransaction.detail}</pre>
+                </details>
+              </div>
+            )}
+        </Panel>
+      )}
+      {withdrawalTransaction.kind === "confirmed" && (
+        <Panel role="status">Retiro confirmado. El saldo pendiente fue actualizado.</Panel>
+      )}
       {projection.availableActions.includes("Aceptar") && (
         <Panel as="section" className="grid gap-4">
           <div>

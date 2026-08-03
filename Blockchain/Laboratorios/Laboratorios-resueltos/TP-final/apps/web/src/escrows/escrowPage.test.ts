@@ -6,6 +6,43 @@ const escrow = "0x0000000000000000000000000000000000000002" as const;
 const participant = "0x0000000000000000000000000000000000000003" as const;
 
 describe("fetchEscrowPage", () => {
+  it("keeps a card when only its connected-account balance read fails", async () => {
+    const client = {
+      getBlockNumber: vi.fn().mockResolvedValue(77n),
+      getBlock: vi.fn().mockResolvedValue({ timestamp: 70n }),
+      multicall: vi.fn().mockResolvedValue([
+        { status: "success", result: "Contrato" },
+        { status: "success", result: 10n },
+        { status: "success", result: 0n },
+        { status: "success", result: participant },
+        { status: "success", result: participant },
+        { status: "success", result: participant },
+        { status: "success", result: 0n },
+        { status: "success", result: 0n },
+        { status: "success", result: 0n },
+        { status: "success", result: 0n },
+        { status: "failure", error: new Error("balance unavailable") },
+      ]),
+    };
+
+    const result = await fetchEscrowPage(
+      client as never,
+      factory,
+      1,
+      {
+        count: vi.fn().mockResolvedValue(1),
+        addresses: vi.fn().mockResolvedValue([escrow]),
+      },
+      undefined,
+      participant,
+    );
+
+    expect(result.items[0]).toMatchObject({
+      kind: "success",
+      summary: { pendingWithdrawal: undefined },
+    });
+  });
+
   it("uses the supplied registry and preserves failed escrows when filtering", async () => {
     const client = {
       getBlockNumber: vi.fn().mockResolvedValue(77n),

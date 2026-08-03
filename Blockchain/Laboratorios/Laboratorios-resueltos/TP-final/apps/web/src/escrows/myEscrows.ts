@@ -50,7 +50,7 @@ export async function fetchMyEscrows(
           args: [account, index],
         })),
       })) as Address[],
-  });
+  }, undefined, account);
 }
 
 export function myEscrowsQuery(

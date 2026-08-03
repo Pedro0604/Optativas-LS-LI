@@ -19,6 +19,7 @@ export type EscrowSummary = {
   worker: Address;
   arbiter: Address;
   deadline: bigint;
+  pendingWithdrawal?: bigint;
 };
 
 export type EscrowItem =
@@ -58,6 +59,7 @@ export async function fetchEscrowPage(
   page: number,
   registry: EscrowRegistry,
   state?: StateFilter,
+  account?: Address,
 ): Promise<DiscoveryPage> {
   const count = await registry.count(client, factory);
   const pageCount = Math.max(1, Math.ceil(count / PAGE_SIZE));
@@ -84,22 +86,28 @@ export async function fetchEscrowPage(
     "reviewDeadline",
     "arbitrationDeadline",
   ] as const;
+  const contracts = addresses.flatMap((address) => [
+    ...functions.map((functionName) => ({ address, abi: escrowAbi, functionName })),
+    ...(account
+      ? [{ address, abi: escrowAbi, functionName: "pendingWithdrawals" as const, args: [account] }]
+      : []),
+  ]);
   const details = await client.multicall({
     allowFailure: true,
     blockNumber,
-    contracts: addresses.flatMap((address) =>
-      functions.map((functionName) => ({ address, abi: escrowAbi, functionName })),
-    ),
+    contracts,
   });
+  const resultsPerEscrow = functions.length + (account ? 1 : 0);
 
   const items = addresses
     .map((address, itemIndex): EscrowItem => {
       const values = details.slice(
-        itemIndex * functions.length,
-        (itemIndex + 1) * functions.length,
+        itemIndex * resultsPerEscrow,
+        (itemIndex + 1) * resultsPerEscrow,
       );
 
-      if (values.some((result) => result.status === "failure"))
+      const requiredValues = values.slice(0, functions.length);
+      if (requiredValues.some((result) => result.status === "failure"))
         return { kind: "error", address, error: "No se pudo leer este escrow." };
 
       const [
@@ -113,7 +121,10 @@ export async function fetchEscrowPage(
         submission,
         review,
         arbitration,
-      ] = values.map((result) => (result.status === "success" ? result.result : undefined));
+      ] = requiredValues.map((result) => (result.status === "success" ? result.result : undefined));
+      const pendingResult = account ? values[functions.length] : undefined;
+      const pendingWithdrawal =
+        pendingResult?.status === "success" ? (pendingResult.result as bigint) : undefined;
 
       let parsedState: EscrowState;
       try {
@@ -144,6 +155,7 @@ export async function fetchEscrowPage(
           worker: worker as Address,
           arbiter: arbiter as Address,
           deadline,
+          pendingWithdrawal,
         },
       };
     })

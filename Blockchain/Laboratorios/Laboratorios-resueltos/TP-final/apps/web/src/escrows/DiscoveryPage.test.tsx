@@ -5,11 +5,14 @@ import { DiscoveryPage } from "./DiscoveryPage";
 import { EscrowState } from "./EscrowState";
 
 const mocks = vi.hoisted(() => ({
+  account: undefined as `0x${string}` | undefined,
   navigate: vi.fn(),
   refetch: vi.fn(),
   search: { page: 1, state: "all" as "all" | EscrowState },
   query: {} as Record<string, unknown>,
 }));
+
+vi.mock("wagmi", () => ({ useAccount: () => ({ address: mocks.account }) }));
 
 vi.mock("@tanstack/react-query", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@tanstack/react-query")>()),
@@ -44,6 +47,7 @@ afterEach(() => {
   cleanup();
   vi.clearAllMocks();
   mocks.search = { page: 1, state: "all" };
+  mocks.account = undefined;
 });
 
 describe("DiscoveryPage", () => {
