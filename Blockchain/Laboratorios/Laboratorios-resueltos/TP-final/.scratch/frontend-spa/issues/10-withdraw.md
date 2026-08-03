@@ -4,14 +4,18 @@
 
 **Blocked by:** 06 — Accept escrow through a shared transaction coordinator.
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] The detail displays the connected account's exact pending amount for that escrow.
-- [ ] Lists may mark a loaded escrow with available funds but never calculate or display a global total.
-- [ ] Withdraw is shown only when the connected account has a positive pending balance.
-- [ ] A confirmation summarizes the source escrow and exact amount before simulation and signing.
-- [ ] A confirmed withdrawal refreshes the pending balance without altering lifecycle state.
-- [ ] Transfer rejection, no-balance races, wallet rejection, contract revert, and successful withdrawal produce distinct outcomes.
-- [ ] Amount formatting remains exact and copyable without changing the wei submitted to the contract.
-- [ ] Detail and transaction integration tests cover owner and worker beneficiaries and repeated withdrawal attempts.
+- [x] The detail displays the connected account's exact pending amount for that escrow.
+- [x] Lists may mark a loaded escrow with available funds but never calculate or display a global total.
+- [x] Withdraw is shown only when the connected account has a positive pending balance.
+- [x] A confirmation summarizes the source escrow and exact amount before simulation and signing.
+- [x] A confirmed withdrawal refreshes the pending balance without altering lifecycle state.
+- [x] Transfer rejection, no-balance races, wallet rejection, contract revert, and successful withdrawal produce distinct outcomes.
+- [x] Amount formatting remains exact and copyable without changing the wei submitted to the contract.
+- [x] Detail and transaction integration tests cover owner and worker beneficiaries and repeated withdrawal attempts.
+
+## Answer
+
+The escrow detail and participant lists expose only the connected account's per-escrow pending balance. A positive balance enables an exact, reviewed withdrawal through the shared transaction coordinator; confirmation invalidates detail and list queries without changing lifecycle state. Owner and worker flows, repeated attempts, exact wei formatting, wallet rejection, no-balance races, transfer failures, contract reverts, and success are covered by tests.
 
