@@ -78,6 +78,15 @@ describe("WalletControls", () => {
     expect(screen.getByRole("button", { name: "MetaMask" })).toBeVisible();
   });
 
+  it("anchors the connector selector to the connect button in stretched layouts", async () => {
+    renderControls();
+    const connectButton = screen.getByRole("button", { name: "Conectar wallet" });
+
+    await userEvent.click(connectButton);
+
+    expect(connectButton.parentElement).toHaveClass("w-fit");
+  });
+
   it("hides the generic injected connector when named wallets are discovered", async () => {
     mocks.connectors = [
       { uid: "metamask", name: "MetaMask" },

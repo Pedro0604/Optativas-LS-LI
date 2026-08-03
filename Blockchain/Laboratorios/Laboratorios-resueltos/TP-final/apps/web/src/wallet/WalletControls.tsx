@@ -46,7 +46,7 @@ function WalletControlsContent() {
 
   if (!isConnected)
     return (
-      <div className="relative">
+      <div className="relative w-fit">
         <Button aria-expanded={showProviders} onClick={() => setShowProviders((open) => !open)}>
           Conectar wallet
         </Button>

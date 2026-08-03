@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
 import type { Address } from "viem";
@@ -32,7 +32,6 @@ import {
   runEscrowTransaction,
   type TransactionState,
 } from "../transactions/coordinator";
-import { walletConnectionRequestEvent } from "../wallet/wallet";
 import {
   allocationFromWorkerSlider,
   allocationSliderSteps,
@@ -47,7 +46,8 @@ import {
 import { WalletControls } from "../wallet/WalletControls";
 import { canWithdrawFromEscrow, formatPendingWithdrawal, pendingWithdrawalFor } from "./withdrawal";
 import { EscrowParticipants } from "./EscrowParticipants";
-import { escrowActionLabels } from "./domainLabels";
+import { escrowActionLabels, escrowSigningLabels, signingLabelForAction } from "./domainLabels";
+import { EscrowDetailSummary } from "./EscrowDetailSummary";
 
 function Evidence({
   label,
@@ -81,6 +81,29 @@ function Evidence({
   );
 }
 
+function TransactionFeedback({ transaction }: { transaction: TransactionState }) {
+  if (transaction.kind === "idle" || transaction.kind === "simulating" || transaction.kind === "wallet")
+    return null;
+  if (
+    transaction.kind === "submitted" ||
+    transaction.kind === "confirmed" ||
+    transaction.kind === "prolonged" ||
+    transaction.kind === "replaced"
+  )
+    return (
+      <p role="status" className="break-all text-sm">
+        {transaction.kind === "confirmed" ? "Transacción confirmada: " : "Transacción enviada: "}
+        <a className="text-primary underline" href={`${config.explorerUrl}/tx/${transaction.hash}`} target="_blank" rel="noopener noreferrer">{transaction.hash}</a>
+      </p>
+    );
+  return (
+    <div role="alert" className="grid gap-2 text-danger">
+      <p>{transaction.message}</p>
+      <details className="overflow-auto text-xs text-muted"><summary>Detalle técnico</summary><pre className="mt-2 whitespace-pre-wrap">{transaction.detail}</pre></details>
+    </div>
+  );
+}
+
 type ResolutionField = "workerAmount" | "workerPercent" | "ownerAmount" | "ownerPercent" | "reason";
 
 export function EscrowDetailPage() {
@@ -88,17 +111,10 @@ export function EscrowDetailPage() {
   const { address: account, chainId } = useAccount();
   const { writeContractAsync } = useWriteContract();
   const queryClient = useQueryClient();
-  const [reviewingAcceptance, setReviewingAcceptance] = useState(false);
-  const [reviewingLifecycleAction, setReviewingLifecycleAction] = useState<
-    LifecycleWriteAction | undefined
-  >();
-  const [reviewingReviewAction, setReviewingReviewAction] = useState<
-    "submit" | "approve" | "dispute" | undefined
-  >();
   const [submissionReference, setSubmissionReference] = useState("");
   const [disputeReason, setDisputeReason] = useState("");
   const [reviewingResolution, setReviewingResolution] = useState(false);
-  const [reviewingWithdrawal, setReviewingWithdrawal] = useState(false);
+  const resolutionPanelRef = useRef<HTMLDivElement>(null);
   const [workerAmountWei, setWorkerAmountWei] = useState(0n);
   const [workerAmountInput, setWorkerAmountInput] = useState("0");
   const [ownerAmountInput, setOwnerAmountInput] = useState("0");
@@ -127,9 +143,16 @@ export function EscrowDetailPage() {
   );
 
   useEffect(() => {
-    setReviewingWithdrawal(false);
     setWithdrawalTransaction({ kind: "idle" });
   }, [account, chainId]);
+
+  useEffect(() => {
+    if (!reviewingResolution) return;
+    const frame = window.requestAnimationFrame(() => {
+      resolutionPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [reviewingResolution]);
 
   if (query.isPending) return <Panel role="status">Cargando detalle…</Panel>;
   if (query.isError)
@@ -216,7 +239,6 @@ export function EscrowDetailPage() {
     });
     if (result.kind === "confirmed") {
       await refreshAfterConfirmation();
-      setReviewingAcceptance(false);
     }
   }
 
@@ -236,7 +258,6 @@ export function EscrowDetailPage() {
     });
     if (result.kind === "confirmed") {
       await refreshAfterConfirmation();
-      setReviewingLifecycleAction(undefined);
     }
   }
 
@@ -289,7 +310,6 @@ export function EscrowDetailPage() {
             });
     if (result.kind === "confirmed") {
       await refreshAfterConfirmation();
-      setReviewingReviewAction(undefined);
     }
   }
 
@@ -389,13 +409,7 @@ export function EscrowDetailPage() {
     });
     if (result.kind === "confirmed") {
       await refreshAfterConfirmation();
-      setReviewingWithdrawal(false);
     }
-  }
-
-  function reviewLifecycleAction(action: LifecycleWriteAction) {
-    setReviewingLifecycleAction(action);
-    if (!account) window.dispatchEvent(new Event(walletConnectionRequestEvent));
   }
 
   const visitorExpirationAction = projection.deadlineElapsed
@@ -404,6 +418,50 @@ export function EscrowDetailPage() {
   const lifecycleActions = projection.availableActions.filter(isLifecycleWriteAction);
   if (visitorExpirationAction && !lifecycleActions.includes(visitorExpirationAction))
     lifecycleActions.push(visitorExpirationAction);
+
+  const actionInteraction = (
+    <div className="mt-4 grid gap-5">
+      {canWithdrawFromEscrow(snapshot, account, chainId) && (
+        <section className="grid gap-3 border-t border-primary/25 pt-4 first:border-0 first:pt-0">
+          <h3 className="font-display text-xl font-bold">Retirar fondos</h3>
+          <p className="text-sm text-muted">Retirá {formatPendingWithdrawal(pendingWithdrawal)} desde este escrow.</p>
+          <Button disabled={isTransactionPending(withdrawalTransaction) || isEscrowTransactionPending(snapshot.address)} onClick={withdraw}>{isTransactionPending(withdrawalTransaction) ? "Procesando…" : escrowSigningLabels.withdraw}</Button>
+          <TransactionFeedback transaction={withdrawalTransaction} />
+        </section>
+      )}
+      {projection.availableActions.includes(escrowActionLabels.accept) && (
+        <section className="grid gap-3 border-t border-primary/25 pt-4 first:border-0 first:pt-0">
+          <h3 className="font-display text-xl font-bold">Aceptar escrow</h3>
+          <p className="text-sm text-muted">La aceptación inicia el plazo de entrega y no puede deshacerse.</p>
+          {!acceptance.ok && <p className="text-sm text-danger">{acceptance.message}</p>}
+          <Button disabled={!acceptance.ok || isTransactionPending(transaction) || isEscrowTransactionPending(snapshot.address)} onClick={accept}>{isTransactionPending(transaction) ? "Procesando…" : escrowSigningLabels.accept}</Button>
+        </section>
+      )}
+      {(["submit", "approve", "dispute"] as const).map((action) => {
+        const label = action === "submit" ? escrowActionLabels.submit : action === "approve" ? escrowActionLabels.approve : escrowActionLabels.dispute;
+        if (!projection.availableActions.includes(label)) return null;
+        const value = action === "submit" ? submissionReference : disputeReason;
+        const validation = action === "approve" ? undefined : validatePublicText(value, 256);
+        const eligibility = action === "submit" ? submission : action === "approve" ? approval : dispute;
+        return <section className="grid gap-3 border-t border-primary/25 pt-4 first:border-0 first:pt-0" key={action}>
+          <h3 className="font-display text-xl font-bold">{label}</h3>
+          <p className="text-sm text-muted">{action === "submit" ? "La referencia quedará pública e inmutable." : action === "approve" ? "El monto completo quedará disponible para el worker." : "El motivo quedará público y se abrirá el arbitraje."}</p>
+          {action !== "approve" && <><textarea aria-label={action === "submit" ? "Referencia de entrega" : "Motivo de disputa"} className="min-h-24 rounded-lg border border-line bg-surface p-3" maxLength={256} value={action === "submit" ? submissionReference : disputeReason} onChange={(event) => action === "submit" ? setSubmissionReference(event.target.value) : setDisputeReason(event.target.value)} /><PrivacyWarning /></>}
+          {validation && <p role="alert" className="text-sm text-danger">{validation}</p>}
+          {!eligibility.ok && <p className="text-sm text-danger">{eligibility.message}</p>}
+          <Button disabled={!!validation || !eligibility.ok || isTransactionPending(transaction) || isEscrowTransactionPending(snapshot.address)} onClick={() => runReviewAction(action)}>{isTransactionPending(transaction) ? "Procesando…" : escrowSigningLabels[action]}</Button>
+        </section>;
+      })}
+      {projection.availableActions.includes(escrowActionLabels.resolve) && (
+        <section className="grid gap-3 border-t border-primary/25 pt-4 first:border-0 first:pt-0"><h3 className="font-display text-xl font-bold">Resolver disputa</h3><p className="text-sm text-muted">La distribución requiere un editor más amplio.</p><Button onClick={() => { setPercentAllocation("50", "worker"); setResolutionReason(""); setBlurredResolutionFields({}); setReviewingResolution(true); }}>Abrir resolución debajo</Button></section>
+      )}
+      {lifecycleActions.map((action) => (
+        <section className="grid gap-3 border-t border-primary/25 pt-4 first:border-0 first:pt-0" key={action}><h3 className="font-display text-xl font-bold">{action}</h3><p className="text-sm text-muted">{lifecycleWriteDetail(action).consequence}</p>{!account ? <WalletControls /> : projection.availableActions.includes(action) ? <Button disabled={isTransactionPending(transaction) || isEscrowTransactionPending(snapshot.address)} onClick={() => runLifecycleAction(action)}>{isTransactionPending(transaction) ? "Procesando…" : signingLabelForAction(action)}</Button> : <p className="text-sm text-danger">Esta cuenta no puede realizar esta acción.</p>}</section>
+      ))}
+      {(availability.kind === "wallet-required" || availability.kind === "wrong-network") && lifecycleActions.length === 0 && <WalletControls />}
+      <TransactionFeedback transaction={transaction} />
+    </div>
+  );
 
   return (
     <div className="grid gap-6">
@@ -422,313 +480,36 @@ export function EscrowDetailPage() {
           )}
         </div>
       </section>
-      <div className="grid gap-6 md:grid-cols-2">
-        <Panel as="section">
-          <h2 className="font-display text-2xl font-bold">Fondos y participantes</h2>
-          <p className="text-3xl font-bold text-primary-strong">{displayEth(snapshot.amount)}</p>
-          <dl className="grid gap-4">
+      <EscrowDetailSummary
+        amount={displayEth(snapshot.amount)}
+        guidance={
+          availability.kind === "available"
+            ? availability.actions.length === 1
+              ? `Podés ${availability.actions[0].toLocaleLowerCase()}.`
+              : "Este escrow requiere tu intervención. Elegí una opción debajo."
+            : availability.kind === "wallet-required"
+              ? "Conectá tu wallet para saber si este escrow requiere tu intervención."
+              : availability.kind === "wrong-network"
+                ? "Cambiá tu wallet a Sepolia para operar este escrow."
+                : availability.kind === "terminal"
+                  ? "El ciclo de vida del escrow finalizó."
+                  : "No necesitás hacer nada en esta etapa."
+        }
+        pendingBalance={account ? formatPendingWithdrawal(pendingWithdrawal) : undefined}
+        interaction={actionInteraction}
+        participants={
+          <>
             <EscrowParticipants
               account={account}
               owner={snapshot.owner}
               worker={snapshot.worker}
               arbiter={snapshot.arbiter}
             />
-            {account && (
-              <div>
-                <dt className="text-sm text-muted">Tu saldo pendiente en este escrow</dt>
-                <dd className="mt-1 font-mono" data-testid="pending-withdrawal">
-                  {formatPendingWithdrawal(pendingWithdrawal)}
-                </dd>
-              </div>
-            )}
-          </dl>
-        </Panel>
-        <Panel as="section">
-          <h2 className="font-display text-2xl font-bold">Acciones disponibles</h2>
-          {availability.kind === "available" ? (
-            <ul>
-              {availability.actions.map((action) => (
-                <li key={action}>{action}</li>
-              ))}
-            </ul>
-          ) : availability.kind === "wallet-required" ? (
-            <p className="text-muted">
-              {projection.deadlineElapsed
-                ? "Conectá una wallet para finalizar el plazo vencido."
-                : "Conectá una wallet para ver las acciones disponibles."}
-            </p>
-          ) : availability.kind === "wrong-network" ? (
-            <p className="text-muted">Cambiá tu wallet a Sepolia para realizar acciones.</p>
-          ) : availability.kind === "unavailable" ? (
-            <p className="text-muted">No tenés acciones disponibles en esta etapa.</p>
-          ) : null}
-          {availability.kind === "terminal" && (
-            <p className="text-muted">El ciclo de vida del escrow finalizó.</p>
-          )}
-          {projection.terminalOutcome && (
-            <p>
-              <strong>Resultado:</strong> {projection.terminalOutcome}
-            </p>
-          )}
-        </Panel>
-      </div>
-      {canWithdrawFromEscrow(snapshot, account, chainId) && (
-        <Panel as="section" className="grid gap-4">
-          <div>
-            <h2 className="font-display text-2xl font-bold">Retirar fondos</h2>
-            <p className="text-muted">Retirá el saldo disponible únicamente desde este escrow.</p>
-          </div>
-          {!reviewingWithdrawal ? (
-            <Button onClick={() => setReviewingWithdrawal(true)}>Revisar retiro</Button>
-          ) : (
-            <div className="grid gap-3 rounded-lg border border-line p-4">
-              <p>
-                Vas a retirar{" "}
-                <strong className="font-mono">{formatPendingWithdrawal(pendingWithdrawal)}</strong>{" "}
-                desde el escrow <AddressDisplay address={snapshot.address} format="long" />.
-              </p>
-              <p>Primero simularemos la transacción; tu wallet confirma la firma final.</p>
-              <div className="flex flex-wrap gap-3">
-                <Button
-                  disabled={
-                    isTransactionPending(withdrawalTransaction) ||
-                    isEscrowTransactionPending(snapshot.address)
-                  }
-                  onClick={withdraw}
-                >
-                  {withdrawalTransaction.kind === "simulating"
-                    ? "Simulando…"
-                    : withdrawalTransaction.kind === "wallet"
-                      ? "Esperando confirmación…"
-                      : withdrawalTransaction.kind === "submitted"
-                        ? "Esperando confirmación on-chain…"
-                        : "Simular y firmar retiro"}
-                </Button>
-                <Button
-                  variant="ghost"
-                  disabled={isTransactionPending(withdrawalTransaction)}
-                  onClick={() => setReviewingWithdrawal(false)}
-                >
-                  Volver
-                </Button>
-              </div>
-            </div>
-          )}
-          {withdrawalTransaction.kind === "submitted" && (
-            <p role="status">
-              Transacción enviada:{" "}
-              <a
-                className="text-primary underline"
-                href={`${config.explorerUrl}/tx/${withdrawalTransaction.hash}`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {withdrawalTransaction.hash}
-              </a>
-            </p>
-          )}
-          {(withdrawalTransaction.kind === "rejected" ||
-            withdrawalTransaction.kind === "reverted" ||
-            withdrawalTransaction.kind === "unknown-failure") &&
-            reviewingWithdrawal && (
-              <div role="alert" className="grid gap-2 text-danger">
-                <p>{withdrawalTransaction.message}</p>
-                <details className="text-xs text-muted overflow-auto">
-                  <summary>Detalle técnico</summary>
-                  <pre className="mt-2 whitespace-pre-wrap">{withdrawalTransaction.detail}</pre>
-                </details>
-              </div>
-            )}
-        </Panel>
-      )}
-      {withdrawalTransaction.kind === "confirmed" && (
-        <Panel role="status">Retiro confirmado. El saldo pendiente fue actualizado.</Panel>
-      )}
-      {projection.availableActions.includes(escrowActionLabels.accept) && (
-        <Panel as="section" className="grid gap-4">
-          <div>
-            <h2 className="font-display text-2xl font-bold">Aceptar escrow</h2>
-            <p className="text-muted">
-              La aceptación inicia el plazo de entrega y no puede deshacerse.
-            </p>
-          </div>
-          {!reviewingAcceptance ? (
-            <Button onClick={() => setReviewingAcceptance(true)}>Revisar aceptación</Button>
-          ) : (
-            <div className="grid gap-3 rounded-lg border border-line p-4">
-              <p>
-                Vas a aceptar este escrow como worker. Primero simularemos la transacción; tu wallet
-                confirma la firma final.
-              </p>
-              <div className="flex flex-wrap gap-3">
-                <Button
-                  disabled={
-                    isTransactionPending(transaction) ||
-                    isEscrowTransactionPending(snapshot.address)
-                  }
-                  onClick={accept}
-                >
-                  {transaction.kind === "simulating"
-                    ? "Simulando…"
-                    : transaction.kind === "wallet"
-                      ? "Esperando confirmación…"
-                      : transaction.kind === "submitted"
-                        ? "Esperando confirmación on-chain…"
-                        : "Simular y firmar aceptación"}
-                </Button>
-                <Button
-                  variant="ghost"
-                  disabled={isTransactionPending(transaction)}
-                  onClick={() => setReviewingAcceptance(false)}
-                >
-                  Volver
-                </Button>
-              </div>
-            </div>
-          )}
-          {hasTrackedTransaction(transaction) && (
-            <p role="status">
-              Transacción enviada:{" "}
-              <a
-                className="text-primary underline"
-                href={`${config.explorerUrl}/tx/${transaction.hash}`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {transaction.hash}
-              </a>
-            </p>
-          )}
-          {(transaction.kind === "rejected" ||
-            transaction.kind === "reverted" ||
-            transaction.kind === "unknown-failure") && (
-            <div role="alert" className="grid gap-2 text-danger">
-              <p>{transaction.message}</p>
-              {transaction.hash && (
-                <a
-                  className="text-primary underline"
-                  href={`${config.explorerUrl}/tx/${transaction.hash}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Ver transacción
-                </a>
-              )}
-              <details className="text-xs text-muted overflow-auto">
-                <summary>Detalle técnico</summary>
-                <pre className="mt-2 whitespace-pre-wrap">{transaction.detail}</pre>
-              </details>
-            </div>
-          )}
-        </Panel>
-      )}
-      {(
-        [escrowActionLabels.submit, escrowActionLabels.approve, escrowActionLabels.dispute] as const
-      ).map((label) => {
-        const action =
-          label === escrowActionLabels.submit
-            ? "submit"
-            : label === escrowActionLabels.approve
-              ? "approve"
-              : "dispute";
-        const eligible =
-          action === "submit" ? submission : action === "approve" ? approval : dispute;
-        if (!projection.availableActions.includes(label)) return null;
-        const value = action === "submit" ? submissionReference : disputeReason;
-        const validation = action === "approve" ? undefined : validatePublicText(value, 256);
-        const title = label;
-        const consequence =
-          action === "submit"
-            ? "La referencia quedará pública e inmutable para que el owner revise la entrega."
-            : action === "approve"
-              ? "El monto completo quedará disponible para retiro del worker."
-              : "El motivo quedará público e inmutable y se abrirá el arbitraje.";
-        return (
-          <Panel as="section" className="grid gap-4" key={action}>
-            <div>
-              <h2 className="font-display text-2xl font-bold">{title}</h2>
-              <p className="text-muted">{consequence}</p>
-            </div>
-            {reviewingReviewAction !== action ? (
-              <Button onClick={() => setReviewingReviewAction(action)}>Revisar consecuencia</Button>
-            ) : (
-              <div className="grid gap-3 rounded-lg border border-line p-4">
-                {action !== "approve" && (
-                  <label className="grid gap-1">
-                    <span>
-                      {action === "submit" ? "Referencia de entrega" : "Motivo de disputa"}
-                    </span>
-                    <textarea
-                      className="min-h-24 rounded-lg border border-line bg-transparent p-3"
-                      value={value}
-                      maxLength={256}
-                      onChange={(event) =>
-                        action === "submit"
-                          ? setSubmissionReference(event.target.value)
-                          : setDisputeReason(event.target.value)
-                      }
-                    />
-                    <span className="text-sm text-muted">Máximo 256 bytes UTF-8.</span>
-                  </label>
-                )}
-                {action !== "approve" && <PrivacyWarning />}
-                {validation && (
-                  <p role="alert" className="text-danger">
-                    {validation}
-                  </p>
-                )}
-                <p>Primero simularemos la transacción; tu wallet confirma la firma final.</p>
-                <div className="flex flex-wrap gap-3">
-                  <Button
-                    disabled={
-                      !!validation ||
-                      !eligible.ok ||
-                      isTransactionPending(transaction) ||
-                      isEscrowTransactionPending(snapshot.address)
-                    }
-                    onClick={() => runReviewAction(action)}
-                  >
-                    {isTransactionPending(transaction) ? "Procesando…" : "Simular y firmar"}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    disabled={isTransactionPending(transaction)}
-                    onClick={() => setReviewingReviewAction(undefined)}
-                  >
-                    Volver
-                  </Button>
-                </div>
-                {!eligible.ok && <p className="text-danger">{eligible.message}</p>}
-                {hasTrackedTransaction(transaction) && (
-                  <p role="status">
-                    Transacción enviada:{" "}
-                    <a
-                      className="text-primary underline"
-                      href={`${config.explorerUrl}/tx/${transaction.hash}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {transaction.hash}
-                    </a>
-                  </p>
-                )}
-                {(transaction.kind === "rejected" ||
-                  transaction.kind === "reverted" ||
-                  transaction.kind === "unknown-failure") && (
-                  <div role="alert" className="text-danger">
-                    <p>{transaction.message}</p>
-                    <details className="text-xs text-muted overflow-auto">
-                      <summary>Detalle técnico</summary>
-                      <pre className="mt-2 whitespace-pre-wrap">{transaction.detail}</pre>
-                    </details>
-                  </div>
-                )}
-              </div>
-            )}
-          </Panel>
-        );
-      })}
-      {projection.availableActions.includes(escrowActionLabels.resolve) && (
+          </>
+        }
+      />
+      {projection.availableActions.includes(escrowActionLabels.resolve) && reviewingResolution && (
+        <div ref={resolutionPanelRef}>
         <Panel as="section" className="grid gap-4">
           <div>
             <h2 className="font-display text-2xl font-bold">Resolver disputa</h2>
@@ -772,7 +553,7 @@ export function EscrowDetailPage() {
                       />
                       <span className="ml-1 text-lg font-semibold text-muted">%</span>
                     </span>
-                    <span className="h-10 overflow-hidden text-sm">
+                    <span className="overflow-hidden text-sm">
                       {blurredResolutionFields.workerPercent && !workerPercentValidation.ok && (
                         <span role="alert" className="text-danger">
                           {workerPercentValidation.message}
@@ -827,7 +608,7 @@ export function EscrowDetailPage() {
                       />
                       <span className="ml-1 text-lg font-semibold text-muted">%</span>
                     </span>
-                    <span className="h-10 overflow-hidden text-sm">
+                    <span className="overflow-hidden text-sm">
                       {blurredResolutionFields.ownerPercent && !ownerPercentValidation.ok && (
                         <span role="alert" className="text-danger">
                           {ownerPercentValidation.message}
@@ -915,7 +696,7 @@ export function EscrowDetailPage() {
               <label className="grid gap-2">
                 <span className="font-semibold">Motivo de resolución</span>
                 <textarea
-                  className={`min-h-28 resize-y rounded-xl border bg-surface p-3 transition-colors outline-none focus:border-primary ${resolutionReasonValidation ? "border-danger/70" : "border-line"}`}
+                  className={`min-h-28 resize-y rounded-xl border bg-surface p-3 transition-colors outline-none focus:border-primary ${blurredResolutionFields.reason && resolutionReasonValidation ? "border-danger/70" : "border-line"}`}
                   value={resolutionReason}
                   maxLength={256}
                   onBlur={() => markResolutionFieldBlurred("reason")}
@@ -975,7 +756,7 @@ export function EscrowDetailPage() {
                 >
                   {isTransactionPending(transaction)
                     ? "Procesando…"
-                    : "Simular y firmar resolución"}
+                    : escrowSigningLabels.resolve}
                 </Button>
                 <Button
                   variant="ghost"
@@ -1002,90 +783,8 @@ export function EscrowDetailPage() {
             </div>
           )}
         </Panel>
+        </div>
       )}
-      {lifecycleActions.map((action) => {
-        const detail = lifecycleWriteDetail(action);
-        const connectedAndEligible = projection.availableActions.includes(action);
-        return (
-          <Panel as="section" className="grid gap-4" key={action}>
-            <div>
-              <h2 className="font-display text-2xl font-bold">{action}</h2>
-              <p className="text-muted">{detail.consequence}</p>
-            </div>
-            {reviewingLifecycleAction !== action ? (
-              <Button onClick={() => reviewLifecycleAction(action)}>Revisar consecuencia</Button>
-            ) : !account ? (
-              <div className="flex items-center gap-3 rounded-lg border border-line p-4">
-                <p>Conectá una wallet para continuar con esta acción: </p>
-                <WalletControls />
-              </div>
-            ) : !connectedAndEligible ? (
-              <div className="grid gap-3 rounded-lg border border-line p-4">
-                <p className="text-muted">Esta cuenta no puede realizar la acción seleccionada.</p>
-                <Button variant="ghost" onClick={() => setReviewingLifecycleAction(undefined)}>
-                  Volver
-                </Button>
-              </div>
-            ) : (
-              <div className="grid gap-3 rounded-lg border border-line p-4">
-                <p>
-                  {detail.consequence} Primero simularemos la transacción; tu wallet confirma la
-                  firma final.
-                </p>
-                <div className="flex flex-wrap gap-3">
-                  <Button
-                    disabled={
-                      isTransactionPending(transaction) ||
-                      isEscrowTransactionPending(snapshot.address)
-                    }
-                    onClick={() => runLifecycleAction(action)}
-                  >
-                    {transaction.kind === "simulating"
-                      ? "Simulando…"
-                      : transaction.kind === "wallet"
-                        ? "Esperando confirmación…"
-                        : transaction.kind === "submitted"
-                          ? "Esperando confirmación on-chain…"
-                          : "Simular y firmar"}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    disabled={isTransactionPending(transaction)}
-                    onClick={() => setReviewingLifecycleAction(undefined)}
-                  >
-                    Volver
-                  </Button>
-                </div>
-              </div>
-            )}
-          </Panel>
-        );
-      })}
-      {hasTrackedTransaction(transaction) && reviewingLifecycleAction && (
-        <p role="status">
-          Transacción enviada:{" "}
-          <a
-            className="text-primary underline"
-            href={`${config.explorerUrl}/tx/${transaction.hash}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {transaction.hash}
-          </a>
-        </p>
-      )}
-      {(transaction.kind === "rejected" ||
-        transaction.kind === "reverted" ||
-        transaction.kind === "unknown-failure") &&
-        reviewingLifecycleAction && (
-          <div role="alert" className="grid gap-2 text-danger">
-            <p>{transaction.message}</p>
-            <details className="text-xs text-muted overflow-auto">
-              <summary>Detalle técnico</summary>
-              <pre className="mt-2 whitespace-pre-wrap">{transaction.detail}</pre>
-            </details>
-          </div>
-        )}
       <Panel as="section">
         <h2 className="font-display text-2xl font-bold">Ciclo de vida</h2>
         <ol className="mt-5 grid gap-3 md:grid-cols-4">
@@ -1133,19 +832,16 @@ export function EscrowDetailPage() {
           ))}
         </ol>
       </Panel>
-      <Panel as="section">
-        <h2 className="font-display text-2xl font-bold">Evidencia on-chain</h2>
-        <dl className="grid gap-4">
-          <Evidence label="Referencia de entrega" value={snapshot.submissionReference} link />
-          <Evidence label="Motivo de disputa" value={snapshot.disputeReason} />
-          <Evidence label="Motivo de resolución" value={snapshot.resolutionReason} />
-          {!snapshot.submissionReference &&
-            !snapshot.disputeReason &&
-            !snapshot.resolutionReason && (
-              <p className="text-muted">Todavía no hay evidencia registrada.</p>
-            )}
-        </dl>
-      </Panel>
+      {(snapshot.submissionReference || snapshot.disputeReason || snapshot.resolutionReason) && (
+        <Panel as="section">
+          <h2 className="font-display text-2xl font-bold">Evidencia on-chain</h2>
+          <dl className="grid gap-4">
+            <Evidence label="Referencia de entrega" value={snapshot.submissionReference} link />
+            <Evidence label="Motivo de disputa" value={snapshot.disputeReason} />
+            <Evidence label="Motivo de resolución" value={snapshot.resolutionReason} />
+          </dl>
+        </Panel>
+      )}
     </div>
   );
 }

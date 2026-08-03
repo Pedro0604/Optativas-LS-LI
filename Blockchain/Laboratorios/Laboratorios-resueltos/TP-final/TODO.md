@@ -1,8 +1,9 @@
 ### Next
-- Desplegar front
+- 
 - Hacer cosas de antes de entregar
 - Hacer whitepaper
 - Si sobra tiempo, análisis de cosas a mejorar de UI y mejorarlas antes de entregar
+- Si sobra más, hacer que el 404 sea un cli y que los comandos te lleven a las páginas del sistema jeje
 
 ### Bugs
 

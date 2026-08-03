@@ -28,6 +28,25 @@ export const escrowActionLabels = {
 
 export type EscrowActionLabel = (typeof escrowActionLabels)[keyof typeof escrowActionLabels];
 
+export const escrowSigningLabels = {
+  accept: "Simular aceptación y firmar",
+  cancel: "Simular cancelación y firmar",
+  submit: "Simular envío de trabajo y firmar",
+  approve: "Simular aprobación y firmar",
+  dispute: "Simular apertura de disputa y firmar",
+  resolve: "Simular resolución y firmar",
+  expireAcceptance: "Simular finalización de aceptación y firmar",
+  expireSubmission: "Simular finalización de entrega y firmar",
+  expireReview: "Simular finalización de revisión y firmar",
+  expireArbitration: "Simular finalización de arbitraje y firmar",
+  withdraw: "Simular retiro y firmar",
+} as const;
+
+export function signingLabelForAction(action: EscrowActionLabel): string {
+  const entry = Object.entries(escrowActionLabels).find(([, label]) => label === action);
+  return entry ? escrowSigningLabels[entry[0] as keyof typeof escrowActionLabels] : action;
+}
+
 export const deadlineLabels: Record<DeadlineKind, string> = {
   acceptance: "Aceptación",
   submission: "Entrega",
