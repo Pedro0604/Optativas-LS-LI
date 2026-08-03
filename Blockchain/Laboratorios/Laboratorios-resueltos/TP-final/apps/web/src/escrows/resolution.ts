@@ -81,11 +81,9 @@ export function parseAllocationPercent(
 ): AllocationParseResult {
   const normalized = value.trim().replace(",", ".");
   if (!normalized) return { ok: false, message: `Ingresá el porcentaje del ${party}.` };
-  if (!/^\d{1,3}(?:\.\d{1,2})?$/.test(normalized))
+  const basisPoints = parsePercentBasisPoints(normalized);
+  if (basisPoints === undefined)
     return { ok: false, message: "Ingresá un porcentaje de hasta 2 decimales." };
-
-  const [whole, fraction = ""] = normalized.split(".");
-  const basisPoints = BigInt(whole) * 100n + BigInt(fraction.padEnd(2, "0"));
   if (basisPoints > allocationSliderSteps)
     return { ok: false, message: "El porcentaje debe estar entre 0 y 100." };
 
@@ -96,12 +94,16 @@ export function parseAllocationPercent(
   };
 }
 
-export function complementAllocationPercent(value: string) {
+function parsePercentBasisPoints(value: string) {
   const normalized = value.trim().replace(",", ".");
   if (!/^\d{1,3}(?:\.\d{1,2})?$/.test(normalized)) return undefined;
   const [whole, fraction = ""] = normalized.split(".");
-  const basisPoints = BigInt(whole) * 100n + BigInt(fraction.padEnd(2, "0"));
-  if (basisPoints > allocationSliderSteps) return undefined;
+  return BigInt(whole) * 100n + BigInt(fraction.padEnd(2, "0"));
+}
+
+export function complementAllocationPercent(value: string) {
+  const basisPoints = parsePercentBasisPoints(value);
+  if (basisPoints === undefined || basisPoints > allocationSliderSteps) return undefined;
   return formatBasisPoints(allocationSliderSteps - basisPoints);
 }
 

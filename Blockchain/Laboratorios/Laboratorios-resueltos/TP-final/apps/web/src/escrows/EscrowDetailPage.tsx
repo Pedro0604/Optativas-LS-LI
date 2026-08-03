@@ -311,8 +311,14 @@ export function EscrowDetailPage() {
     const amounts = formatAllocationEth(parsed.workerAmountWei, snapshot.amount);
     setWorkerAmountInput(amounts.worker);
     setOwnerAmountInput(amounts.owner);
-    if (party === "worker") setOwnerPercentInput(complement);
-    else setWorkerPercentInput(complement);
+    const normalized = value.trim().replace(",", ".");
+    if (party === "worker") {
+      setWorkerPercentInput(normalized);
+      setOwnerPercentInput(complement);
+    } else {
+      setOwnerPercentInput(normalized);
+      setWorkerPercentInput(complement);
+    }
   }
 
   async function resolveDispute() {
@@ -370,7 +376,7 @@ export function EscrowDetailPage() {
 
   return (
     <div className="grid gap-6">
-      <section className="pt-8">
+      <section>
         <p className="text-xs font-bold tracking-[0.12em] text-primary uppercase">Escrow</p>
         <h1 className="my-3 font-display text-[clamp(2.4rem,7vw,5rem)] leading-none font-bold">
           {snapshot.title}
@@ -724,6 +730,11 @@ export function EscrowDetailPage() {
                     value={workerAmountInput}
                     onChange={(event) => setEthAllocation(event.target.value, "worker")}
                   />
+                  {!workerAmountValidation.ok && (
+                    <span role="alert" className="text-sm text-danger">
+                      {workerAmountValidation.message}
+                    </span>
+                  )}
                   <span className="text-sm text-muted">{workerAmountWei.toString()} wei</span>
                 </label>
                 <label className="grid gap-1">
@@ -735,6 +746,11 @@ export function EscrowDetailPage() {
                     value={workerPercentInput}
                     onChange={(event) => setPercentAllocation(event.target.value, "worker")}
                   />
+                  {!workerPercentValidation.ok && (
+                    <span role="alert" className="text-sm text-danger">
+                      {workerPercentValidation.message}
+                    </span>
+                  )}
                 </label>
               </div>
               <label className="grid gap-1">
@@ -762,6 +778,11 @@ export function EscrowDetailPage() {
                     value={ownerAmountInput}
                     onChange={(event) => setEthAllocation(event.target.value, "owner")}
                   />
+                  {!ownerAmountValidation.ok && (
+                    <span role="alert" className="text-sm text-danger">
+                      {ownerAmountValidation.message}
+                    </span>
+                  )}
                   <span className="text-sm text-muted">
                     {(snapshot.amount - workerAmountWei).toString()} wei
                   </span>
@@ -775,6 +796,11 @@ export function EscrowDetailPage() {
                     value={ownerPercentInput}
                     onChange={(event) => setPercentAllocation(event.target.value, "owner")}
                   />
+                  {!ownerPercentValidation.ok && (
+                    <span role="alert" className="text-sm text-danger">
+                      {ownerPercentValidation.message}
+                    </span>
+                  )}
                 </label>
               </div>
               <label className="grid gap-1">
@@ -817,11 +843,6 @@ export function EscrowDetailPage() {
                 El motivo será público e inmutable. No incluyas datos personales, credenciales ni
                 secretos.
               </p>
-              {allocationInputError && !allocationInputError.ok && (
-                <p role="alert" className="text-danger">
-                  {allocationInputError.message}
-                </p>
-              )}
               {resolutionReasonValidation && (
                 <p role="alert" className="text-danger">
                   {resolutionReasonValidation}
