@@ -10,7 +10,7 @@ import { describe, expect, it } from "vitest";
 import { NotFoundPage } from "../ui/NotFoundPage";
 
 describe("root route", () => {
-  it("renders a Spanish 404 page with a home link for an unknown route", async () => {
+  it("renders a Spanish 404 page with recovery links for an unknown route", async () => {
     const rootRoute = createRootRoute({ notFoundComponent: NotFoundPage });
     const indexRoute = createRoute({
       getParentRoute: () => rootRoute,
@@ -25,8 +25,15 @@ describe("root route", () => {
     render(<RouterProvider router={router} />);
 
     await waitFor(() =>
-      expect(screen.getByRole("heading", { name: "Página no encontrada" })).toBeInTheDocument(),
+      expect(screen.getByRole("heading", { name: "Conexión rota." })).toBeInTheDocument(),
     );
-    expect(screen.getByRole("link", { name: "Volver al inicio" })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("link", { name: "↳ Reconectar al inicio" })).toHaveAttribute(
+      "href",
+      "/",
+    );
+    expect(screen.getByRole("link", { name: "Ver mis escrows" })).toHaveAttribute(
+      "href",
+      "/my-escrows",
+    );
   });
 });

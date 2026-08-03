@@ -80,22 +80,22 @@ export function AddressDisplay({ address, format, tooltipSide = "top" }: Address
           </Tooltip.Portal>
         </Tooltip.Root>
         <span className="h-5 w-px bg-line" aria-hidden="true" />
-                <Tooltip.Root>
+        <Tooltip.Root>
           <Tooltip.Trigger asChild>
-        <button
-          type="button"
-          aria-label={copyStatus === "success" ? "Dirección copiada" : "Copiar dirección"}
-          className={iconActionClassName}
-          onClick={copyAddress}
-        >
-          {copyStatus === "success" ? (
-            <CheckIcon aria-hidden="true" />
-          ) : copyStatus === "error" ? (
-            <CrossCircledIcon aria-hidden="true" />
-          ) : (
-            <CopyIcon aria-hidden="true" />
-          )}
-        </button>
+            <button
+              type="button"
+              aria-label={copyStatus === "success" ? "Dirección copiada" : "Copiar dirección"}
+              className={iconActionClassName}
+              onClick={copyAddress}
+            >
+              {copyStatus === "success" ? (
+                <CheckIcon aria-hidden="true" />
+              ) : copyStatus === "error" ? (
+                <CrossCircledIcon aria-hidden="true" />
+              ) : (
+                <CopyIcon aria-hidden="true" />
+              )}
+            </button>
           </Tooltip.Trigger>
           <Tooltip.Portal>
             <Tooltip.Content
