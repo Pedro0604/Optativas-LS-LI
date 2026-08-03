@@ -83,6 +83,74 @@ afterEach(() => {
 });
 
 describe("CreateEscrowPage", () => {
+  it("reveals validation on blur and revalidates touched fields while editing", async () => {
+    mocks.account = {
+      isConnected: true,
+      address: "0x0000000000000000000000000000000000000001",
+      chainId: 11155111,
+    };
+    renderPage();
+    const user = userEvent.setup();
+    const title = screen.getByLabelText("Título");
+
+    expect(screen.queryByText("El título es obligatorio.")).not.toBeInTheDocument();
+    await user.click(title);
+    await user.tab();
+    expect(screen.getByText("El título es obligatorio.")).toBeVisible();
+    expect(title).toHaveAttribute("aria-invalid", "true");
+    expect(title).toHaveAttribute("aria-describedby", "title-error");
+
+    await user.type(title, "Diseño");
+    expect(screen.queryByText("El título es obligatorio.")).not.toBeInTheDocument();
+    expect(title).toHaveAttribute("aria-invalid", "false");
+  });
+
+  it("shows every error on review and focuses the first invalid field", async () => {
+    renderPage();
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: "Revisar creación" }));
+
+    expect(screen.getByText("El título es obligatorio.")).toBeVisible();
+    expect(screen.getByText("Ingresá un monto válido en ETH.")).toBeVisible();
+    expect(screen.getByLabelText("Título")).toHaveFocus();
+  });
+
+  it("does not reveal an empty duration error when only its unit changes", async () => {
+    renderPage();
+    const user = userEvent.setup();
+
+    await user.selectOptions(screen.getByLabelText("Aceptación unidad"), "hours");
+
+    expect(screen.queryByText("Ingresá una duración entera mayor a cero.")).not.toBeInTheDocument();
+  });
+
+  it("revalidates touched participant fields when the owner changes", async () => {
+    mocks.account = {
+      isConnected: true,
+      address: "0x0000000000000000000000000000000000000001",
+      chainId: 11155111,
+    };
+    const view = renderPage();
+    const user = userEvent.setup();
+    const worker = screen.getByLabelText("Dirección del worker");
+    await user.type(worker, "0x0000000000000000000000000000000000000002");
+    await user.tab();
+    expect(screen.queryByText("El worker debe ser distinto del owner.")).not.toBeInTheDocument();
+
+    mocks.account = { ...mocks.account, address: "0x0000000000000000000000000000000000000002" };
+    view.rerender(
+      <QueryClientProvider client={new QueryClient()}>
+        <CreateEscrowPage />
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByText("El worker debe ser distinto del owner.")).toBeVisible();
+    expect(
+      screen.queryByText("El árbitro no puede participar como owner."),
+    ).not.toBeInTheDocument();
+  });
+
   it("keeps the draft disconnected and asks for a wallet only from review", async () => {
     renderPage();
     expect(screen.queryByRole("button", { name: "Conectar wallet" })).not.toBeInTheDocument();

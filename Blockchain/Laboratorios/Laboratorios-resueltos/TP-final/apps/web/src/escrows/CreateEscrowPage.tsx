@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useAccount, useWriteContract } from "wagmi";
@@ -34,6 +34,23 @@ const initialDraft: EscrowDraft = {
   arbitration: { value: "", unit: "days" },
 };
 
+const draftKeys = Object.keys(initialDraft) as (keyof EscrowDraft)[];
+type DraftErrors = Partial<Record<keyof EscrowDraft, string>>;
+type TouchedFields = Partial<Record<keyof EscrowDraft, boolean>>;
+
+function visibleErrors(
+  draft: EscrowDraft,
+  owner: `0x${string}` | undefined,
+  touched: TouchedFields,
+): DraftErrors {
+  const result = createEscrowRequest(draft, owner);
+  const validationErrors = result.ok ? {} : result.errors;
+  return draftKeys.reduce<DraftErrors>((visible, key) => {
+    if (touched[key] && validationErrors[key]) visible[key] = validationErrors[key];
+    return visible;
+  }, {});
+}
+
 type TransactionState =
   | { kind: "idle" }
   | { kind: "simulating" }
@@ -44,40 +61,55 @@ type TransactionState =
 function Field({
   label,
   error,
+  errorId,
   children,
 }: {
   label: string;
   error?: string;
+  errorId: string;
   children: React.ReactNode;
 }) {
   return (
     <label className="grid gap-1.5 text-sm font-semibold">
       {label}
       {children}
-      {error && <span className="text-xs font-normal text-danger">{error}</span>}
+      {error && (
+        <span id={errorId} className="text-xs font-normal text-danger">
+          {error}
+        </span>
+      )}
     </label>
   );
 }
 
 function DurationField({
   label,
+  name,
   value,
   error,
+  onBlur,
   onChange,
 }: {
   label: string;
+  name: keyof EscrowDraft;
   value: FriendlyDuration;
   error?: string;
+  onBlur: () => void;
   onChange: (value: FriendlyDuration) => void;
 }) {
+  const errorId = `${name}-error`;
   return (
-    <Field label={label} error={error}>
+    <Field label={label} error={error} errorId={errorId}>
       <span className="flex gap-2">
         <input
           className="min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 py-2 text-ink"
           aria-label={`${label} duración`}
           inputMode="numeric"
+          data-escrow-field={name}
+          aria-invalid={Boolean(error)}
+          aria-describedby={error ? errorId : undefined}
           value={value.value}
+          onBlur={onBlur}
           onChange={(event) => onChange({ ...value, value: event.target.value })}
         />
         <select
@@ -106,8 +138,10 @@ export function CreateEscrowPage() {
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState(initialDraft);
   const [reviewing, setReviewing] = useState(false);
-  const [errors, setErrors] = useState<Partial<Record<keyof EscrowDraft, string>>>({});
+  const [errors, setErrors] = useState<DraftErrors>({});
+  const [touched, setTouched] = useState<TouchedFields>({});
   const [transaction, setTransaction] = useState<TransactionState>({ kind: "idle" });
+  const formRef = useRef<HTMLFormElement>(null);
   const titleBytes = new TextEncoder().encode(draft.title).length;
   const request = createEscrowRequest(draft, address);
   const ready = request.ok ? request : undefined;
@@ -117,26 +151,40 @@ export function CreateEscrowPage() {
     setDraft(initialDraft);
     setReviewing(false);
     setErrors({});
+    setTouched({});
     setTransaction({ kind: "idle" });
   });
   useResetAccountSensitiveState(() => setTransaction({ kind: "idle" }));
 
   useEffect(() => {
-    if (isConnected) {
-      const result = createEscrowRequest(draft, address);
-      setErrors(result.ok ? {} : result.errors);
-    }
+    setErrors(visibleErrors(draft, address, touched));
   }, [address, isConnected]); // Revalidate roles when the owner account changes without altering the draft.
 
   function update<K extends keyof EscrowDraft>(key: K, value: EscrowDraft[K]) {
-    setDraft((current) => ({ ...current, [key]: value }));
+    const nextDraft = { ...draft, [key]: value };
+    setDraft(nextDraft);
+    if (touched[key]) setErrors(visibleErrors(nextDraft, address, touched));
     setTransaction({ kind: "idle" });
+  }
+
+  function touch(key: keyof EscrowDraft) {
+    const nextTouched = { ...touched, [key]: true };
+    setTouched(nextTouched);
+    setErrors(visibleErrors(draft, address, nextTouched));
   }
 
   function openReview() {
     const result = createEscrowRequest(draft, address);
     setErrors(result.ok ? {} : result.errors);
-    if (result.ok) setReviewing(true);
+    setTouched(Object.fromEntries(draftKeys.map((key) => [key, true])) as TouchedFields);
+    if (result.ok) {
+      setReviewing(true);
+      return;
+    }
+    const firstInvalid = draftKeys.find((key) => result.errors[key]);
+    if (firstInvalid) {
+      formRef.current?.querySelector<HTMLElement>(`[data-escrow-field="${firstInvalid}"]`)?.focus();
+    }
   }
 
   async function submit() {
@@ -200,7 +248,7 @@ export function CreateEscrowPage() {
 
   return (
     <div className="grid max-w-3xl gap-6">
-      <section className="border-t border-line pt-8">
+      <section className="pt-8">
         <p className="text-xs font-bold tracking-[0.12em] text-primary uppercase">Nuevo escrow</p>
         <h1 className="mt-2 font-display text-4xl font-bold">Crear y financiar un escrow</h1>
         <p className="mt-3 text-muted">
@@ -210,49 +258,66 @@ export function CreateEscrowPage() {
 
       {!reviewing ? (
         <form
+          ref={formRef}
           onSubmit={(event) => {
             event.preventDefault();
             openReview();
           }}
         >
           <Panel className="grid gap-5">
-            <Field label="Título" error={errors.title}>
+            <Field label="Título" error={errors.title} errorId="title-error">
               <input
                 aria-label="Título"
+                data-escrow-field="title"
+                aria-invalid={Boolean(errors.title)}
+                aria-describedby={errors.title ? "title-error" : undefined}
                 className="rounded-lg border border-line bg-surface px-3 py-2 text-ink"
                 value={draft.title}
+                onBlur={() => touch("title")}
                 onChange={(event) => update("title", event.target.value)}
               />
               <span className="text-xs font-normal text-muted">
                 {titleBytes}/{titleMaxBytes} bytes UTF-8
               </span>
             </Field>
-            <Field label="Monto (ETH)" error={errors.amountEth}>
+            <Field label="Monto (ETH)" error={errors.amountEth} errorId="amountEth-error">
               <input
                 aria-label="Monto (ETH)"
+                data-escrow-field="amountEth"
+                aria-invalid={Boolean(errors.amountEth)}
+                aria-describedby={errors.amountEth ? "amountEth-error" : undefined}
                 className="rounded-lg border border-line bg-surface px-3 py-2 text-ink"
                 inputMode="decimal"
                 placeholder="0.0"
                 value={draft.amountEth}
+                onBlur={() => touch("amountEth")}
                 onChange={(event) => update("amountEth", event.target.value)}
               />
             </Field>
             <div className="grid gap-5 md:grid-cols-2">
-              <Field label="Dirección del worker" error={errors.worker}>
+              <Field label="Dirección del worker" error={errors.worker} errorId="worker-error">
                 <input
                   aria-label="Dirección del worker"
+                  data-escrow-field="worker"
+                  aria-invalid={Boolean(errors.worker)}
+                  aria-describedby={errors.worker ? "worker-error" : undefined}
                   className="rounded-lg border border-line bg-surface px-3 py-2 font-mono text-ink"
                   spellCheck={false}
                   value={draft.worker}
+                  onBlur={() => touch("worker")}
                   onChange={(event) => update("worker", event.target.value)}
                 />
               </Field>
-              <Field label="Dirección del árbitro" error={errors.arbiter}>
+              <Field label="Dirección del árbitro" error={errors.arbiter} errorId="arbiter-error">
                 <input
                   aria-label="Dirección del árbitro"
+                  data-escrow-field="arbiter"
+                  aria-invalid={Boolean(errors.arbiter)}
+                  aria-describedby={errors.arbiter ? "arbiter-error" : undefined}
                   className="rounded-lg border border-line bg-surface px-3 py-2 font-mono text-ink"
                   spellCheck={false}
                   value={draft.arbiter}
+                  onBlur={() => touch("arbiter")}
                   onChange={(event) => update("arbiter", event.target.value)}
                 />
               </Field>
@@ -260,26 +325,34 @@ export function CreateEscrowPage() {
             <div className="grid gap-5 md:grid-cols-2">
               <DurationField
                 label="Aceptación"
+                name="acceptance"
                 value={draft.acceptance}
                 error={errors.acceptance}
+                onBlur={() => touch("acceptance")}
                 onChange={(value) => update("acceptance", value)}
               />
               <DurationField
                 label="Entrega"
+                name="submission"
                 value={draft.submission}
                 error={errors.submission}
+                onBlur={() => touch("submission")}
                 onChange={(value) => update("submission", value)}
               />
               <DurationField
                 label="Revisión"
+                name="review"
                 value={draft.review}
                 error={errors.review}
+                onBlur={() => touch("review")}
                 onChange={(value) => update("review", value)}
               />
               <DurationField
                 label="Arbitraje"
+                name="arbitration"
                 value={draft.arbitration}
                 error={errors.arbitration}
+                onBlur={() => touch("arbitration")}
                 onChange={(value) => update("arbitration", value)}
               />
             </div>
