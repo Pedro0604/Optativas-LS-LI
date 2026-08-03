@@ -2,8 +2,10 @@ import { createRootRouteWithContext, Link, Outlet } from "@tanstack/react-router
 import type { RouterContext } from "../routerContext";
 import { WalletControls } from "../wallet/WalletControls";
 import { TransactionRecovery } from "../transactions/TransactionRecovery";
+import { NotFoundPage } from "../ui/NotFoundPage";
 
 export const Route = createRootRouteWithContext<RouterContext>()({
+  notFoundComponent: NotFoundPage,
   component: () => (
     <div className="grid min-h-screen grid-rows-[auto_1fr_auto]">
       <header className="mx-auto flex w-[min(1120px,calc(100%-2rem))] flex-wrap items-center justify-between gap-4 border-b border-line py-5">

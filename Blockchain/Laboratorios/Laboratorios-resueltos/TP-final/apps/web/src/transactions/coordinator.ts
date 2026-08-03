@@ -1,3 +1,5 @@
+import { isKnownContractError, translateKnownContractError } from "../escrows/domainLabels";
+
 export type TransactionHash = `0x${string}`;
 export type PendingTransaction = {
   escrow: string;
@@ -8,8 +10,6 @@ export type PendingTransaction = {
 const pendingStorageKey = "pacto:pending-transactions:v1";
 export const PROLONGED_TRANSACTION_MS = 60_000;
 
-const knownRevertPattern =
-  /OnlyWorkerAllowed|OnlyOwnerAllowed|OnlyArbiterAllowed|InvalidState|DeadlineAlreadyExpired|DeadlineNotExpiredYet|ZeroDuration|NoEthProvided|ZeroAddress|CannotHireYourself|ArbiterCannotParticipate|EmptyString|StringTooLong|WorkerAmountExceedsEscrow|NoFundsToWithdraw|WithdrawalFailed/i;
 const pendingEscrows = new Set<string>();
 
 export type TransactionState =
@@ -82,26 +82,10 @@ function errorDetail(error: unknown) {
 
 export function translateTransactionError(error: unknown) {
   const detail = errorDetail(error);
-  if (/OnlyWorkerAllowed/i.test(detail)) return "Solo el worker puede aceptar este escrow.";
-  if (/InvalidState/i.test(detail))
-    return "El escrow ya no está en el estado requerido para esta acción.";
-  if (/DeadlineAlreadyExpired/i.test(detail)) return "El plazo de esta acción ya venció.";
-  if (/DeadlineNotExpiredYet/i.test(detail)) return "El plazo todavía no venció.";
-  if (/OnlyOwnerAllowed/i.test(detail)) return "Solo el owner puede realizar esta acción.";
-  if (/OnlyArbiterAllowed/i.test(detail)) return "Solo el árbitro puede realizar esta acción.";
-  if (/ZeroDuration/i.test(detail)) return "La duración debe ser mayor a cero.";
-  if (/NoEthProvided/i.test(detail)) return "El escrow debe financiarse con ETH.";
-  if (/ZeroAddress/i.test(detail)) return "Las direcciones de participantes no pueden ser cero.";
-  if (/CannotHireYourself/i.test(detail)) return "El owner no puede ser el worker.";
-  if (/ArbiterCannotParticipate/i.test(detail))
-    return "El árbitro no puede participar como owner ni worker.";
-  if (/EmptyString/i.test(detail)) return "El texto obligatorio no puede estar vacío.";
-  if (/StringTooLong/i.test(detail)) return "El texto supera la longitud permitida.";
-  if (/WorkerAmountExceedsEscrow/i.test(detail))
-    return "El monto asignado al worker excede los fondos del escrow.";
-  if (/NoFundsToWithdraw/i.test(detail)) return "No hay fondos disponibles para retirar.";
-  if (/WithdrawalFailed/i.test(detail)) return "No se pudieron transferir los fondos.";
-  return "No se pudo completar la transacción. Intentá nuevamente.";
+  return (
+    translateKnownContractError(detail) ??
+    "No se pudo completar la transacción. Intentá nuevamente."
+  );
 }
 
 function failureState(error: unknown, hash?: TransactionHash): TransactionState {
@@ -111,7 +95,7 @@ function failureState(error: unknown, hash?: TransactionHash): TransactionState 
   if (hash && replacement) return { kind: "replaced", hash: replacement, replacedHash: hash };
   if (/UserRejectedRequest|user rejected|rejected the request/i.test(detail))
     return { kind: "rejected", message: "La firma fue rechazada en la wallet.", detail };
-  if (/revert|reverted/i.test(detail) || knownRevertPattern.test(detail))
+  if (/revert|reverted/i.test(detail) || isKnownContractError(detail))
     return { kind: "reverted", message: translateTransactionError(error), detail, hash };
   return { kind: "unknown-failure", message: translateTransactionError(error), detail, hash };
 }

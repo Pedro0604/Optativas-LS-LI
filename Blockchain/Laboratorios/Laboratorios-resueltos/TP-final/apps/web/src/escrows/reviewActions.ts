@@ -28,7 +28,7 @@ function eligibility(
     return { ok: false, message: `Tu wallet debe usar Sepolia para ${action} el escrow.` };
   if (snapshot.state !== state) return { ok: false, message: `El escrow ya no permite ${action}.` };
   if (blockTime >= snapshot.deadlines[deadline])
-    return { ok: false, message: `El plazo para ${action} ya venciÃ³.` };
+    return { ok: false, message: `El plazo para ${action} ya venció.` };
   return { ok: true };
 }
 

@@ -11,6 +11,7 @@ import { Badge } from "../ui/Badge";
 import { Button, actionClassName } from "../ui/Button";
 import { Panel } from "../ui/Panel";
 import { AddressDisplay } from "../ui/AddressDisplay";
+import { PrivacyWarning } from "../ui/PrivacyWarning";
 import { displayEth } from "./discovery";
 import {
   actionAvailability,
@@ -46,6 +47,7 @@ import {
 import { WalletControls } from "../wallet/WalletControls";
 import { canWithdrawFromEscrow, formatPendingWithdrawal, pendingWithdrawalFor } from "./withdrawal";
 import { EscrowParticipants } from "./EscrowParticipants";
+import { escrowActionLabels } from "./domainLabels";
 
 function Evidence({
   label,
@@ -531,7 +533,7 @@ export function EscrowDetailPage() {
             reviewingWithdrawal && (
               <div role="alert" className="grid gap-2 text-danger">
                 <p>{withdrawalTransaction.message}</p>
-                <details className="text-xs text-muted">
+                <details className="text-xs text-muted overflow-auto">
                   <summary>Detalle técnico</summary>
                   <pre className="mt-2 whitespace-pre-wrap">{withdrawalTransaction.detail}</pre>
                 </details>
@@ -542,7 +544,7 @@ export function EscrowDetailPage() {
       {withdrawalTransaction.kind === "confirmed" && (
         <Panel role="status">Retiro confirmado. El saldo pendiente fue actualizado.</Panel>
       )}
-      {projection.availableActions.includes("Aceptar") && (
+      {projection.availableActions.includes(escrowActionLabels.accept) && (
         <Panel as="section" className="grid gap-4">
           <div>
             <h2 className="font-display text-2xl font-bold">Aceptar escrow</h2>
@@ -612,7 +614,7 @@ export function EscrowDetailPage() {
                   Ver transacción
                 </a>
               )}
-              <details className="text-xs text-muted">
+              <details className="text-xs text-muted overflow-auto">
                 <summary>Detalle técnico</summary>
                 <pre className="mt-2 whitespace-pre-wrap">{transaction.detail}</pre>
               </details>
@@ -620,11 +622,13 @@ export function EscrowDetailPage() {
           )}
         </Panel>
       )}
-      {(["Enviar trabajo", "Aprobar trabajo", "Abrir disputa"] as const).map((label) => {
+      {(
+        [escrowActionLabels.submit, escrowActionLabels.approve, escrowActionLabels.dispute] as const
+      ).map((label) => {
         const action =
-          label === "Enviar trabajo"
+          label === escrowActionLabels.submit
             ? "submit"
-            : label === "Aprobar trabajo"
+            : label === escrowActionLabels.approve
               ? "approve"
               : "dispute";
         const eligible =
@@ -667,12 +671,7 @@ export function EscrowDetailPage() {
                     <span className="text-sm text-muted">Máximo 256 bytes UTF-8.</span>
                   </label>
                 )}
-                {action !== "approve" && (
-                  <p className="text-sm text-accent">
-                    Este texto será público e inmutable. No incluyas datos personales, credenciales
-                    ni secretos.
-                  </p>
-                )}
+                {action !== "approve" && <PrivacyWarning />}
                 {validation && (
                   <p role="alert" className="text-danger">
                     {validation}
@@ -718,7 +717,7 @@ export function EscrowDetailPage() {
                   transaction.kind === "unknown-failure") && (
                   <div role="alert" className="text-danger">
                     <p>{transaction.message}</p>
-                    <details className="text-xs text-muted">
+                    <details className="text-xs text-muted overflow-auto">
                       <summary>Detalle técnico</summary>
                       <pre className="mt-2 whitespace-pre-wrap">{transaction.detail}</pre>
                     </details>
@@ -729,7 +728,7 @@ export function EscrowDetailPage() {
           </Panel>
         );
       })}
-      {projection.availableActions.includes("Resolver disputa") && (
+      {projection.availableActions.includes(escrowActionLabels.resolve) && (
         <Panel as="section" className="grid gap-4">
           <div>
             <h2 className="font-display text-2xl font-bold">Resolver disputa</h2>
@@ -932,10 +931,7 @@ export function EscrowDetailPage() {
                   )}
                 </span>
               </label>
-              <p className="rounded-xl border border-accent/20 bg-accent/5 p-3 text-sm text-accent">
-                El motivo será público e inmutable. No incluyas datos personales, credenciales ni
-                secretos.
-              </p>
+              <PrivacyWarning />
               {!resolution.ok && <p className="text-danger">{resolution.message}</p>}
               <div className="grid gap-4 rounded-2xl border border-line bg-surface p-4">
                 <div className="flex items-center justify-between gap-3">
@@ -997,7 +993,7 @@ export function EscrowDetailPage() {
                 transaction.kind === "unknown-failure") && (
                 <div role="alert" className="text-danger">
                   <p>{transaction.message}</p>
-                  <details className="text-xs text-muted">
+                  <details className="text-xs text-muted overflow-auto">
                     <summary>Detalle técnico</summary>
                     <pre className="mt-2 whitespace-pre-wrap">{transaction.detail}</pre>
                   </details>
@@ -1084,7 +1080,7 @@ export function EscrowDetailPage() {
         reviewingLifecycleAction && (
           <div role="alert" className="grid gap-2 text-danger">
             <p>{transaction.message}</p>
-            <details className="text-xs text-muted">
+            <details className="text-xs text-muted overflow-auto">
               <summary>Detalle técnico</summary>
               <pre className="mt-2 whitespace-pre-wrap">{transaction.detail}</pre>
             </details>

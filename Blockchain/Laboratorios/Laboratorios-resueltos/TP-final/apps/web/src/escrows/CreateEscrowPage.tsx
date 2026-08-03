@@ -7,6 +7,7 @@ import { formatEther, getAddress } from "viem";
 import { config, publicClient } from "../runtime";
 import { Button } from "../ui/Button";
 import { Panel } from "../ui/Panel";
+import { PrivacyWarning } from "../ui/PrivacyWarning";
 import {
   useDiscardDirtyFormOnWalletChange,
   useResetAccountSensitiveState,
@@ -23,6 +24,7 @@ import {
   type FriendlyDuration,
 } from "./creation";
 import { formatDurationWithSeconds } from "./time";
+import { escrowRoleNames } from "./domainLabels";
 
 const initialDraft: EscrowDraft = {
   title: "",
@@ -361,10 +363,7 @@ export function CreateEscrowPage() {
                 onChange={(value) => update("arbitration", value)}
               />
             </div>
-            <p className="rounded-lg border border-accent/40 bg-accent/10 p-3 text-sm text-accent">
-              El título y todas las direcciones se publicarán de forma inmutable. No incluyas datos
-              personales, credenciales ni secretos.
-            </p>
+            <PrivacyWarning />
             <Button type="submit">Revisar creación</Button>
           </Panel>
         </form>
@@ -387,11 +386,11 @@ export function CreateEscrowPage() {
                 </dd>
               </div>
               <div>
-                <dt className="text-muted">Worker</dt>
+                <dt className="text-muted">{escrowRoleNames.worker}</dt>
                 <dd className="font-mono">{ready.args[0]}</dd>
               </div>
               <div>
-                <dt className="text-muted">Árbitro</dt>
+                <dt className="text-muted">{escrowRoleNames.arbiter}</dt>
                 <dd className="font-mono">{ready.args[1]}</dd>
               </div>
               {(
@@ -465,7 +464,7 @@ export function CreateEscrowPage() {
                 </a>
               )}
               {transaction.detail && (
-                <details className="text-xs text-muted">
+                <details className="text-xs text-muted overflow-auto">
                   <summary>Detalle técnico</summary>
                   <pre className="mt-2 whitespace-pre-wrap">{transaction.detail}</pre>
                 </details>

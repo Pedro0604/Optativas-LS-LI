@@ -3,8 +3,8 @@ import { AddressDisplay } from "../ui/AddressDisplay";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { walletConnectionRequestEvent } from "../wallet/wallet";
-
-type ParticipantRole = "Owner" | "Worker" | "Árbitro";
+import { escrowRoleNames } from "./domainLabels";
+import type { EscrowRole } from "./myEscrows";
 
 type EscrowParticipantsProps = {
   account?: Address;
@@ -16,20 +16,20 @@ type EscrowParticipantsProps = {
 function participantRole(
   account: Address | undefined,
   participants: Omit<EscrowParticipantsProps, "account">,
-): ParticipantRole | undefined {
+): EscrowRole | undefined {
   const normalized = account?.toLowerCase();
-  if (normalized === participants.owner.toLowerCase()) return "Owner";
-  if (normalized === participants.worker.toLowerCase()) return "Worker";
-  if (normalized === participants.arbiter.toLowerCase()) return "Árbitro";
+  if (normalized === participants.owner.toLowerCase()) return "owner";
+  if (normalized === participants.worker.toLowerCase()) return "worker";
+  if (normalized === participants.arbiter.toLowerCase()) return "arbiter";
   return undefined;
 }
 
 function AddressRow({
-  label,
+  role,
   address,
   isCurrentAccount,
 }: {
-  label: ParticipantRole;
+  role: EscrowRole;
   address: Address;
   isCurrentAccount: boolean;
 }) {
@@ -40,7 +40,7 @@ function AddressRow({
       }
     >
       <dt className="flex items-center gap-2 text-sm text-muted">
-        {label}
+        {escrowRoleNames[role]}
         {isCurrentAccount && <Badge>Vos</Badge>}
       </dt>
       <dd className="mt-1">
@@ -61,7 +61,7 @@ export function EscrowParticipants({ account, owner, worker, arbiter }: EscrowPa
         <dd className="font-semibold">
           {account ? (
             role ? (
-              <Badge>{role}</Badge>
+              <Badge>{escrowRoleNames[role]}</Badge>
             ) : (
               "No sos participante"
             )
@@ -72,9 +72,9 @@ export function EscrowParticipants({ account, owner, worker, arbiter }: EscrowPa
           )}
         </dd>
       </div>
-      <AddressRow label="Owner" address={owner} isCurrentAccount={role === "Owner"} />
-      <AddressRow label="Worker" address={worker} isCurrentAccount={role === "Worker"} />
-      <AddressRow label="Árbitro" address={arbiter} isCurrentAccount={role === "Árbitro"} />
+      <AddressRow role="owner" address={owner} isCurrentAccount={role === "owner"} />
+      <AddressRow role="worker" address={worker} isCurrentAccount={role === "worker"} />
+      <AddressRow role="arbiter" address={arbiter} isCurrentAccount={role === "arbiter"} />
     </>
   );
 }

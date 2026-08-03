@@ -8,12 +8,7 @@ import { Panel } from "../ui/Panel";
 import { WalletControls } from "../wallet/WalletControls";
 import { EscrowList } from "./EscrowList";
 import { escrowRoles, myEscrowsQuery, type EscrowRole } from "./myEscrows";
-
-const roleLabels: Record<EscrowRole, string> = {
-  owner: "Como owner",
-  worker: "Como worker",
-  arbiter: "Como árbitro",
-};
+import { escrowRoleTabLabels } from "./domainLabels";
 
 export function MyEscrowsPage() {
   const search = useSearch({ from: "/my-escrows" });
@@ -55,7 +50,7 @@ export function MyEscrowsPage() {
                 variant={search.role === role ? "default" : "ghost"}
                 onClick={() => changeRole(role)}
               >
-                {roleLabels[role]}
+                {escrowRoleTabLabels[role]}
               </Button>
             ))}
           </div>

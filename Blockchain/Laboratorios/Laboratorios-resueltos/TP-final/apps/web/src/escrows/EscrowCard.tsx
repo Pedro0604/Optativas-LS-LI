@@ -7,6 +7,7 @@ import { Panel } from "../ui/Panel";
 import { AddressDisplay } from "../ui/AddressDisplay";
 import { isOperationalEscrowState } from "./EscrowState";
 import { formatDeadlineDate, formatDeadlineDistance, useChainTime } from "./time";
+import { escrowRoleNames } from "./domainLabels";
 
 type EscrowCardProps = { summary: EscrowSummary; chainTime: bigint };
 
@@ -30,19 +31,19 @@ export function EscrowCard({ summary, chainTime }: EscrowCardProps) {
       )}
       <dl className="my-4 border-y border-line py-3 flex flex-col gap-2">
         <div className="flex justify-between gap-4">
-          <dt className="text-muted">Owner</dt>
+          <dt className="text-muted">{escrowRoleNames.owner}</dt>
           <dd className="m-0">
             <AddressDisplay address={summary.owner} format="short" />
           </dd>
         </div>
         <div className="flex justify-between gap-4">
-          <dt className="text-muted">Worker</dt>
+          <dt className="text-muted">{escrowRoleNames.worker}</dt>
           <dd className="m-0">
             <AddressDisplay address={summary.worker} format="short" />
           </dd>
         </div>
         <div className="flex justify-between gap-4">
-          <dt className="text-muted">Árbitro</dt>
+          <dt className="text-muted">{escrowRoleNames.arbiter}</dt>
           <dd className="m-0">
             <AddressDisplay address={summary.arbiter} format="short" />
           </dd>

@@ -1,4 +1,5 @@
 import { escrowFactoryAbi } from "@escrow/contracts";
+import { translateKnownContractError } from "./domainLabels";
 import { parseEventLogs, parseEther, zeroAddress, type Address, type Log } from "viem";
 
 export const titleMaxBytes = 64;
@@ -120,13 +121,8 @@ export function translateCreationError(error: unknown) {
   const detail = error instanceof Error ? error.message : String(error);
   if (/UserRejectedRequest|user rejected|rejected the request/i.test(detail))
     return "La firma fue rechazada en la wallet.";
-  if (/NoEthProvided/i.test(detail)) return "El escrow debe financiarse con ETH.";
-  if (/ZeroDuration/i.test(detail)) return "Cada duración debe ser mayor a cero.";
-  if (/ZeroAddress/i.test(detail)) return "Worker y árbitro no pueden ser la dirección cero.";
-  if (/CannotHireYourself/i.test(detail)) return "El owner no puede ser el worker.";
-  if (/ArbiterCannotParticipate/i.test(detail))
-    return "El árbitro debe ser distinto de owner y worker.";
-  if (/EmptyString/i.test(detail)) return "El título es obligatorio.";
-  if (/StringTooLong/i.test(detail)) return "El título supera el máximo de 64 bytes.";
-  return "No se pudo crear el escrow. Revisá los datos e intentá nuevamente.";
+  return (
+    translateKnownContractError(detail) ??
+    "No se pudo crear el escrow. Revisá los datos e intentá nuevamente."
+  );
 }

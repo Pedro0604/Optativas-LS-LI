@@ -8,6 +8,7 @@ import {
   parseEscrowState,
   type EscrowDeadlines,
 } from "./EscrowState";
+import { deadlineLabels, escrowActionLabels, type EscrowActionLabel } from "./domainLabels";
 
 export type EscrowSnapshot = {
   address: Address;
@@ -40,25 +41,25 @@ export type EscrowProjection = {
   terminalOutcome?: string;
   activeDeadline?: bigint;
   deadlineElapsed: boolean;
-  availableActions: string[];
+  availableActions: EscrowActionLabel[];
   timeline: LifecycleStage[];
 };
 
 export type EscrowActionContext = { account?: Address; chainId?: number };
 
 export type ActionAvailability =
-  | { kind: "available"; actions: string[] }
+  | { kind: "available"; actions: EscrowActionLabel[] }
   | { kind: "terminal" }
   | { kind: "wallet-required" }
   | { kind: "wrong-network" }
   | { kind: "unavailable" };
 
 export type LifecycleWriteAction =
-  | "Cancelar"
-  | "Finalizar aceptación vencida"
-  | "Finalizar entrega vencida"
-  | "Finalizar revisión vencida"
-  | "Finalizar arbitraje vencido";
+  | typeof escrowActionLabels.cancel
+  | typeof escrowActionLabels.expireAcceptance
+  | typeof escrowActionLabels.expireSubmission
+  | typeof escrowActionLabels.expireReview
+  | typeof escrowActionLabels.expireArbitration;
 
 const lifecycleWriteDetails: Record<
   LifecycleWriteAction,
@@ -72,27 +73,27 @@ const lifecycleWriteDetails: Record<
     consequence: string;
   }
 > = {
-  Cancelar: {
+  [escrowActionLabels.cancel]: {
     functionName: "cancelEscrow",
     consequence:
       "El escrow quedará cancelado y el monto completo quedará disponible para retiro del owner.",
   },
-  "Finalizar aceptación vencida": {
+  [escrowActionLabels.expireAcceptance]: {
     functionName: "expireAcceptance",
     consequence:
       "La aceptación quedará finalizada por vencimiento y el monto completo quedará disponible para retiro del owner.",
   },
-  "Finalizar entrega vencida": {
+  [escrowActionLabels.expireSubmission]: {
     functionName: "expireSubmission",
     consequence:
       "La entrega quedará finalizada por vencimiento y el monto completo quedará disponible para retiro del owner.",
   },
-  "Finalizar revisión vencida": {
+  [escrowActionLabels.expireReview]: {
     functionName: "expireReview",
     consequence:
       "La revisión quedará finalizada por vencimiento y el monto completo quedará disponible para retiro del worker.",
   },
-  "Finalizar arbitraje vencido": {
+  [escrowActionLabels.expireArbitration]: {
     functionName: "expireArbitration",
     consequence:
       "El arbitraje quedará finalizado por vencimiento: la mitad para el owner y la otra mitad (con cualquier wei impar adicional) para el worker quedarán disponibles para retiro.",
@@ -118,10 +119,14 @@ const operationalStates = [
 ] as const;
 
 const stageDefinitions = [
-  { key: "acceptance", label: "Aceptación" },
-  { key: "submission", label: "Entrega", startsAfter: "la aceptación" },
-  { key: "review", label: "Revisión", startsAfter: "la entrega" },
-  { key: "arbitration", label: "Arbitraje", startsAfter: "la apertura de la disputa" },
+  { key: "acceptance", label: deadlineLabels.acceptance },
+  { key: "submission", label: deadlineLabels.submission, startsAfter: "la aceptación" },
+  { key: "review", label: deadlineLabels.review, startsAfter: "la entrega" },
+  {
+    key: "arbitration",
+    label: deadlineLabels.arbitration,
+    startsAfter: "la apertura de la disputa",
+  },
 ] as const;
 
 const expirationStates = new Set<EscrowState>([
@@ -155,19 +160,19 @@ const terminalOutcomes: Partial<Record<EscrowState, string>> = {
   [EscrowState.ArbitrationExpired]: "Arbitraje vencido",
 };
 
-const actionsByState: Record<(typeof operationalStates)[number], string[]> = {
-  [EscrowState.PendingAcceptance]: ["Aceptar", "Cancelar"],
-  [EscrowState.PendingSubmission]: ["Enviar trabajo"],
-  [EscrowState.PendingReview]: ["Aprobar trabajo", "Abrir disputa"],
-  [EscrowState.PendingArbitration]: ["Resolver disputa"],
+const actionsByState: Record<(typeof operationalStates)[number], EscrowActionLabel[]> = {
+  [EscrowState.PendingAcceptance]: [escrowActionLabels.accept, escrowActionLabels.cancel],
+  [EscrowState.PendingSubmission]: [escrowActionLabels.submit],
+  [EscrowState.PendingReview]: [escrowActionLabels.approve, escrowActionLabels.dispute],
+  [EscrowState.PendingArbitration]: [escrowActionLabels.resolve],
 };
 
 const expirationActions = [
-  "Finalizar aceptación vencida",
-  "Finalizar entrega vencida",
-  "Finalizar revisión vencida",
-  "Finalizar arbitraje vencido",
-];
+  escrowActionLabels.expireAcceptance,
+  escrowActionLabels.expireSubmission,
+  escrowActionLabels.expireReview,
+  escrowActionLabels.expireArbitration,
+] as const;
 
 export function normalizeEscrowAddress(value: string): Address | undefined {
   return isAddress(value) ? getAddress(value) : undefined;
@@ -185,7 +190,7 @@ export function resolveEscrowAddress(
 }
 
 function actionsForAccount(
-  actions: string[],
+  actions: EscrowActionLabel[],
   snapshot: EscrowSnapshot,
   context?: EscrowActionContext,
 ) {
@@ -202,11 +207,13 @@ function actionsForAccount(
           ? "arbiter"
           : undefined;
   return actions.filter((action) =>
-    action === "Aceptar" || action === "Enviar trabajo"
+    action === escrowActionLabels.accept || action === escrowActionLabels.submit
       ? role === "worker"
-      : action === "Cancelar" || action === "Aprobar trabajo" || action === "Abrir disputa"
+      : action === escrowActionLabels.cancel ||
+          action === escrowActionLabels.approve ||
+          action === escrowActionLabels.dispute
         ? role === "owner"
-        : action === "Resolver disputa"
+        : action === escrowActionLabels.resolve
           ? role === "arbiter"
           : false,
   );
