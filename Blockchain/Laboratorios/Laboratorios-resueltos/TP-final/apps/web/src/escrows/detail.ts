@@ -1,6 +1,7 @@
 import { escrowAbi, escrowFactoryAbi } from "@escrow/contracts";
 import { getAddress, isAddress, type Address, type PublicClient } from "viem";
 import { canWrite } from "../wallet/wallet";
+import { DETAIL_POLL_INTERVAL_MS, visiblePollingInterval } from "../queryResilience";
 import {
   EscrowState,
   escrowStateMetadata,
@@ -406,7 +407,8 @@ export function escrowDetailQuery(client: PublicClient, factory: Address, addres
   return {
     queryKey: ["escrow", address] as const,
     queryFn: () => fetchEscrowDetail(client, factory, address),
-    refetchInterval: 30_000,
+    refetchInterval: visiblePollingInterval(DETAIL_POLL_INTERVAL_MS),
+    refetchIntervalInBackground: false,
   };
 }
 

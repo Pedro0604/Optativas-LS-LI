@@ -9,6 +9,7 @@ import {
 } from "viem";
 import { sepolia } from "viem/chains";
 import type { AppConfig } from "../config";
+import { LIST_POLL_INTERVAL_MS, visiblePollingInterval } from "../queryResilience";
 import type { StateFilter } from "./EscrowState";
 import { fetchEscrowPage } from "./escrowPage";
 
@@ -75,6 +76,7 @@ export function discoveryQuery(
   return {
     queryKey: ["escrows", account ?? "disconnected", page, state] as const,
     queryFn: () => fetchDiscovery(client, factory, page, state, account),
-    refetchInterval: 30_000,
+    refetchInterval: visiblePollingInterval(LIST_POLL_INTERVAL_MS),
+    refetchIntervalInBackground: false,
   };
 }

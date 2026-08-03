@@ -1,7 +1,33 @@
 import { describe, expect, it, vi } from "vitest";
-import { runEscrowTransaction, runTransaction, translateTransactionError } from "./coordinator";
+import {
+  readPendingTransactions,
+  recoverPendingTransactions,
+  runEscrowTransaction,
+  runTransaction,
+  translateTransactionError,
+} from "./coordinator";
 
 describe("transaction coordinator", () => {
+  it("persists submitted metadata and recovers receipt tracking after reload", async () => {
+    localStorage.clear();
+    let finish!: (receipt: { status: "success" }) => void;
+    const pending = runEscrowTransaction("0xescrow", {
+      simulate: vi.fn().mockResolvedValue({ request: {} }),
+      write: vi
+        .fn()
+        .mockResolvedValue("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
+      wait: () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    });
+    await vi.waitFor(() => expect(readPendingTransactions()).toHaveLength(1));
+    const recovered = await recoverPendingTransactions(vi.fn().mockResolvedValue(null));
+    expect(recovered[0].item.escrow).toBe("0xescrow");
+    finish({ status: "success" });
+    await pending;
+    expect(readPendingTransactions()).toEqual([]);
+  });
   it("reports simulation, wallet, submission, and confirmation in order", async () => {
     const states: string[] = [];
     await expect(
@@ -33,6 +59,23 @@ describe("transaction coordinator", () => {
       kind: "reverted",
       hash: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
     });
+  });
+
+  it("distinguishes a replaced transaction and keeps both hashes", async () => {
+    const original = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" as const;
+    const replacement =
+      "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc" as const;
+    await expect(
+      runTransaction({
+        simulate: vi.fn().mockResolvedValue({ request: {} }),
+        write: vi.fn().mockResolvedValue(original),
+        wait: vi
+          .fn()
+          .mockRejectedValue(
+            Object.assign(new Error("replaced"), { replacement: { hash: replacement } }),
+          ),
+      }),
+    ).resolves.toEqual({ kind: "replaced", hash: replacement, replacedHash: original });
   });
 
   it("distinguishes a rejected wallet request and translates known contract errors", async () => {

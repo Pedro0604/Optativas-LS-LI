@@ -1,12 +1,18 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { WagmiProvider } from "wagmi";
 import { ConfigurationError } from "./config";
 import "./styles.css";
 import { Panel } from "./ui/Panel";
 import { ExplorerProvider } from "./ui/ExplorerProvider";
+import { useRefreshOnVisibility } from "./queryResilience";
+
+function QueryResilience() {
+  useRefreshOnVisibility(useQueryClient());
+  return null;
+}
 
 const eyebrowClassName = "text-xs font-bold tracking-[0.12em] text-primary uppercase";
 
@@ -38,6 +44,7 @@ try {
   ReactDOM.createRoot(element).render(
     <React.StrictMode>
       <QueryClientProvider client={queryClient}>
+        <QueryResilience />
         <WagmiProvider config={walletConfig} reconnectOnMount>
           <ExplorerProvider explorerUrl={config.explorerUrl}>
             <RouterProvider router={router} />

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
 import type { Address } from "viem";
@@ -26,6 +26,7 @@ import { canAcceptEscrow } from "./acceptance";
 import { canApproveWork, canOpenDispute, canSubmitWork, validatePublicText } from "./reviewActions";
 import {
   isEscrowTransactionPending,
+  hasTrackedTransaction,
   isTransactionPending,
   runEscrowTransaction,
   type TransactionState,
@@ -116,13 +117,12 @@ export function EscrowDetailPage() {
   const initialProjection = successfulResult
     ? projectEscrow(successfulResult.snapshot, successfulResult.blockTime, { account, chainId })
     : undefined;
-  const now = useChainTime(successfulResult?.blockTime ?? 0n, initialProjection?.activeDeadline);
-
-  useEffect(() => {
-    if (initialProjection?.activeDeadline && now >= initialProjection.activeDeadline) {
-      void query.refetch();
-    }
-  }, [initialProjection?.activeDeadline, now, query]);
+  const refreshDeadline = useCallback(() => void query.refetch(), [query.refetch]);
+  const now = useChainTime(
+    successfulResult?.blockTime ?? 0n,
+    initialProjection?.activeDeadline,
+    refreshDeadline,
+  );
 
   useEffect(() => {
     setReviewingWithdrawal(false);
@@ -584,7 +584,7 @@ export function EscrowDetailPage() {
               </div>
             </div>
           )}
-          {transaction.kind === "submitted" && (
+          {hasTrackedTransaction(transaction) && (
             <p role="status">
               Transacción enviada:{" "}
               <a
@@ -700,7 +700,7 @@ export function EscrowDetailPage() {
                   </Button>
                 </div>
                 {!eligible.ok && <p className="text-danger">{eligible.message}</p>}
-                {transaction.kind === "submitted" && (
+                {hasTrackedTransaction(transaction) && (
                   <p role="status">
                     Transacción enviada:{" "}
                     <a
@@ -989,7 +989,7 @@ export function EscrowDetailPage() {
                   Volver
                 </Button>
               </div>
-              {transaction.kind === "submitted" && (
+              {hasTrackedTransaction(transaction) && (
                 <p role="status">Transacción enviada: {transaction.hash}</p>
               )}
               {(transaction.kind === "rejected" ||
@@ -1065,7 +1065,7 @@ export function EscrowDetailPage() {
           </Panel>
         );
       })}
-      {transaction.kind === "submitted" && reviewingLifecycleAction && (
+      {hasTrackedTransaction(transaction) && reviewingLifecycleAction && (
         <p role="status">
           Transacción enviada:{" "}
           <a

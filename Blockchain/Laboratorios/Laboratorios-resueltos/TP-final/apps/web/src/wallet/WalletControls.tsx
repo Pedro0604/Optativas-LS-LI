@@ -16,7 +16,7 @@ function WalletStateInvalidator() {
 
   useEffect(() => {
     if (previous.current !== undefined && previous.current !== current) {
-      queryClient.cancelQueries({ queryKey: ["my-escrows"] });
+      queryClient.cancelQueries();
       queryClient.invalidateQueries();
       window.dispatchEvent(new CustomEvent(walletContextChangedEvent));
     }

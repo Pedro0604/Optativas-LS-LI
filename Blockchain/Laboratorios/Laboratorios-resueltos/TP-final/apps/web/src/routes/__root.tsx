@@ -1,6 +1,7 @@
 import { createRootRouteWithContext, Link, Outlet } from "@tanstack/react-router";
 import type { RouterContext } from "../routerContext";
 import { WalletControls } from "../wallet/WalletControls";
+import { TransactionRecovery } from "../transactions/TransactionRecovery";
 
 export const Route = createRootRouteWithContext<RouterContext>()({
   component: () => (
@@ -31,6 +32,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
           <span className="text-xs font-semibold tracking-wide text-primary">● Sepolia</span>
         </div>
       </header>
+      <TransactionRecovery />
       <main className="mx-auto w-[min(1120px,calc(100%-2rem))] pt-8">
         <Outlet />
       </main>

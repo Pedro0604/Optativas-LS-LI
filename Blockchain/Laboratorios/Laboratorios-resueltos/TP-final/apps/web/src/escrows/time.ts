@@ -42,17 +42,26 @@ export function formatDeadlineDate(timestamp: bigint): string {
 }
 
 /** Avanza desde el timestamp del bloque observado sin depender del reloj del dispositivo. */
-export function useChainTime(chainTime: bigint, deadline?: bigint): bigint {
+export function useChainTime(
+  chainTime: bigint,
+  deadline?: bigint,
+  onDeadline?: () => void,
+): bigint {
   const [now, setNow] = useState(chainTime);
 
   useEffect(() => {
     setNow(chainTime);
     const startedAt = performance.now();
     let timer: number;
+    let deadlineReported = deadline !== undefined && chainTime >= deadline;
 
     const tick = () => {
       const current = chainTime + BigInt(Math.floor((performance.now() - startedAt) / 1_000));
       setNow(current);
+      if (!deadlineReported && deadline !== undefined && current >= deadline) {
+        deadlineReported = true;
+        onDeadline?.();
+      }
       const distance = deadline === undefined ? undefined : deadline - current;
       const delay = distance !== undefined && distance >= -60n && distance <= 60n ? 1_000 : 60_000;
       timer = window.setTimeout(tick, delay);
@@ -66,7 +75,7 @@ export function useChainTime(chainTime: bigint, deadline?: bigint): bigint {
         : 60_000,
     );
     return () => window.clearTimeout(timer);
-  }, [chainTime, deadline]);
+  }, [chainTime, deadline, onDeadline]);
 
   return now;
 }

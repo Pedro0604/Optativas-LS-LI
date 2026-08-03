@@ -1,6 +1,7 @@
 import { escrowFactoryAbi } from "@escrow/contracts";
 import type { Address, PublicClient } from "viem";
 import { fetchEscrowPage, type DiscoveryPage } from "./escrowPage";
+import { LIST_POLL_INTERVAL_MS, visiblePollingInterval } from "../queryResilience";
 
 export const escrowRoles = ["owner", "worker", "arbiter"] as const;
 export type EscrowRole = (typeof escrowRoles)[number];
@@ -70,6 +71,7 @@ export function myEscrowsQuery(
   return {
     queryKey: ["my-escrows", account, role, page] as const,
     queryFn: () => fetchMyEscrows(client, factory, account, role, page),
-    refetchInterval: 30_000,
+    refetchInterval: visiblePollingInterval(LIST_POLL_INTERVAL_MS),
+    refetchIntervalInBackground: false,
   };
 }

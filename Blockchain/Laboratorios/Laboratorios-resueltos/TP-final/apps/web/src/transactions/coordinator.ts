@@ -1,4 +1,12 @@
 export type TransactionHash = `0x${string}`;
+export type PendingTransaction = {
+  escrow: string;
+  hash: TransactionHash;
+  submittedAt: number;
+};
+
+const pendingStorageKey = "pacto:pending-transactions:v1";
+export const PROLONGED_TRANSACTION_MS = 60_000;
 
 const knownRevertPattern =
   /OnlyWorkerAllowed|OnlyOwnerAllowed|OnlyArbiterAllowed|InvalidState|DeadlineAlreadyExpired|DeadlineNotExpiredYet|ZeroDuration|NoEthProvided|ZeroAddress|CannotHireYourself|ArbiterCannotParticipate|EmptyString|StringTooLong|WorkerAmountExceedsEscrow|NoFundsToWithdraw|WithdrawalFailed/i;
@@ -9,6 +17,8 @@ export type TransactionState =
   | { kind: "simulating" }
   | { kind: "wallet" }
   | { kind: "submitted"; hash: TransactionHash }
+  | { kind: "prolonged"; hash: TransactionHash }
+  | { kind: "replaced"; hash: TransactionHash; replacedHash: TransactionHash }
   | { kind: "confirmed"; hash: TransactionHash }
   | { kind: "rejected"; message: string; detail: string; hash?: TransactionHash }
   | { kind: "reverted"; message: string; detail: string; hash?: TransactionHash }
@@ -20,6 +30,51 @@ type RunTransactionInput<Request> = {
   wait: (hash: TransactionHash) => Promise<{ status: "success" | "reverted" }>;
   onState?: (state: TransactionState) => void;
 };
+
+function storage(): Storage | undefined {
+  try {
+    return typeof localStorage === "undefined" ? undefined : localStorage;
+  } catch {
+    return undefined;
+  }
+}
+
+export function readPendingTransactions(): PendingTransaction[] {
+  try {
+    const value = JSON.parse(storage()?.getItem(pendingStorageKey) ?? "[]") as unknown;
+    return Array.isArray(value) ? (value as PendingTransaction[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writePendingTransactions(items: PendingTransaction[]) {
+  const target = storage();
+  if (!target) return;
+  if (items.length) target.setItem(pendingStorageKey, JSON.stringify(items));
+  else target.removeItem(pendingStorageKey);
+}
+
+function rememberPending(escrow: string, hash: TransactionHash) {
+  const others = readPendingTransactions().filter(
+    (item) => item.escrow.toLowerCase() !== escrow.toLowerCase(),
+  );
+  writePendingTransactions([...others, { escrow, hash, submittedAt: Date.now() }]);
+}
+
+function forgetPending(hash: TransactionHash) {
+  writePendingTransactions(readPendingTransactions().filter((item) => item.hash !== hash));
+}
+
+export async function recoverPendingTransactions(
+  receipt: (hash: TransactionHash) => Promise<{ status: "success" | "reverted" } | null>,
+) {
+  const recovered = await Promise.all(
+    readPendingTransactions().map(async (item) => ({ item, receipt: await receipt(item.hash) })),
+  );
+  writePendingTransactions(recovered.filter(({ receipt }) => !receipt).map(({ item }) => item));
+  return recovered;
+}
 
 function errorDetail(error: unknown) {
   return error instanceof Error ? error.message : String(error);
@@ -51,6 +106,9 @@ export function translateTransactionError(error: unknown) {
 
 function failureState(error: unknown, hash?: TransactionHash): TransactionState {
   const detail = errorDetail(error);
+  const replacement = (error as { replacement?: { hash?: TransactionHash } } | null)?.replacement
+    ?.hash;
+  if (hash && replacement) return { kind: "replaced", hash: replacement, replacedHash: hash };
   if (/UserRejectedRequest|user rejected|rejected the request/i.test(detail))
     return { kind: "rejected", message: "La firma fue rechazada en la wallet.", detail };
   if (/revert|reverted/i.test(detail) || knownRevertPattern.test(detail))
@@ -69,7 +127,11 @@ export async function runTransaction<Request>(
     input.onState?.({ kind: "wallet" });
     hash = await input.write(simulation.request);
     input.onState?.({ kind: "submitted", hash });
-    const receipt = await input.wait(hash);
+    const prolongedTimer = setTimeout(
+      () => input.onState?.({ kind: "prolonged", hash: hash! }),
+      PROLONGED_TRANSACTION_MS,
+    );
+    const receipt = await input.wait(hash).finally(() => clearTimeout(prolongedTimer));
     if (receipt.status !== "success") {
       const state: TransactionState = {
         kind: "reverted",
@@ -91,7 +153,18 @@ export async function runTransaction<Request>(
 }
 
 export function isTransactionPending(state: TransactionState) {
-  return state.kind === "simulating" || state.kind === "wallet" || state.kind === "submitted";
+  return (
+    state.kind === "simulating" ||
+    state.kind === "wallet" ||
+    state.kind === "submitted" ||
+    state.kind === "prolonged"
+  );
+}
+
+export function hasTrackedTransaction(
+  state: TransactionState,
+): state is Extract<TransactionState, { hash: TransactionHash }> {
+  return state.kind === "submitted" || state.kind === "prolonged" || state.kind === "replaced";
 }
 
 /** Locks only one escrow while its simulation, signature, or receipt is in flight. */
@@ -108,7 +181,21 @@ export async function runEscrowTransaction<Request>(
     };
   pendingEscrows.add(key);
   try {
-    return await runTransaction(input);
+    const result = await runTransaction({
+      ...input,
+      onState: (state) => {
+        if (state.kind === "submitted" || state.kind === "prolonged")
+          rememberPending(escrow, state.hash);
+        if (state.kind === "replaced") {
+          forgetPending(state.replacedHash);
+          rememberPending(escrow, state.hash);
+        }
+        if ((state.kind === "confirmed" || state.kind === "reverted") && state.hash)
+          forgetPending(state.hash);
+        input.onState?.(state);
+      },
+    });
+    return result;
   } finally {
     pendingEscrows.delete(key);
   }
