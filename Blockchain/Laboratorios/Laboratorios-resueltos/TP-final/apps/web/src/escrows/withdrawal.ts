@@ -2,10 +2,7 @@ import { formatEther, type Address } from "viem";
 import type { EscrowSnapshot } from "./detail";
 import { canWrite } from "../wallet/wallet";
 
-export function pendingWithdrawalFor(
-  snapshot: EscrowSnapshot,
-  account?: Address,
-): bigint {
+export function pendingWithdrawalFor(snapshot: EscrowSnapshot, account?: Address): bigint {
   if (!account) return 0n;
   const normalized = account.toLowerCase();
   if (normalized === snapshot.owner.toLowerCase()) return snapshot.pendingWithdrawals.owner;

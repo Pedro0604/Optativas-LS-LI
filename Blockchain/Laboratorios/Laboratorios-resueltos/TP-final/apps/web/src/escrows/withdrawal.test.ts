@@ -1,11 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { EscrowState } from "./EscrowState";
 import type { EscrowSnapshot } from "./detail";
-import {
-  canWithdrawFromEscrow,
-  formatPendingWithdrawal,
-  pendingWithdrawalFor,
-} from "./withdrawal";
+import { canWithdrawFromEscrow, formatPendingWithdrawal, pendingWithdrawalFor } from "./withdrawal";
 import { runEscrowTransaction } from "../transactions/coordinator";
 import { vi } from "vitest";
 
@@ -38,9 +34,7 @@ describe("escrow withdrawal", () => {
 
   it("does not expose a balance to unrelated or disconnected accounts", () => {
     expect(pendingWithdrawalFor(snapshot)).toBe(0n);
-    expect(
-      pendingWithdrawalFor(snapshot, "0x0000000000000000000000000000000000000005"),
-    ).toBe(0n);
+    expect(pendingWithdrawalFor(snapshot, "0x0000000000000000000000000000000000000005")).toBe(0n);
   });
 
   it("offers withdrawal only to a funded beneficiary on Sepolia", () => {
@@ -52,32 +46,37 @@ describe("escrow withdrawal", () => {
 
   it("formats every wei exactly without rounding", () => {
     expect(formatPendingWithdrawal(1n)).toBe("0.000000000000000001 ETH");
-    expect(formatPendingWithdrawal(1_234_567_890_123_456_789n)).toBe(
-      "1.234567890123456789 ETH",
-    );
+    expect(formatPendingWithdrawal(1_234_567_890_123_456_789n)).toBe("1.234567890123456789 ETH");
   });
 
   it.each([
     ["owner", owner],
     ["worker", worker],
-  ])("withdraws for the %s beneficiary and reports a repeated no-balance attempt", async (_role, account) => {
-    expect(pendingWithdrawalFor(snapshot, account)).toBeGreaterThan(0n);
-    const transactionOperations = {
-      simulate: vi.fn().mockResolvedValue({ request: { functionName: "withdraw" } }),
-      write: vi.fn().mockResolvedValue("0x01" as const),
-      wait: vi.fn().mockResolvedValue({ status: "success" as const }),
-    };
+  ])(
+    "withdraws for the %s beneficiary and reports a repeated no-balance attempt",
+    async (_role, account) => {
+      expect(pendingWithdrawalFor(snapshot, account)).toBeGreaterThan(0n);
+      const transactionOperations = {
+        simulate: vi.fn().mockResolvedValue({ request: { functionName: "withdraw" } }),
+        write: vi.fn().mockResolvedValue("0x01" as const),
+        wait: vi.fn().mockResolvedValue({ status: "success" as const }),
+      };
 
-    await expect(runEscrowTransaction(snapshot.address, transactionOperations)).resolves.toMatchObject({
-      kind: "confirmed",
-    });
-    transactionOperations.simulate.mockRejectedValueOnce(new Error("NoFundsToWithdraw"));
-    await expect(runEscrowTransaction(snapshot.address, transactionOperations)).resolves.toMatchObject({
-      kind: "reverted",
-      message: "No hay fondos disponibles para retirar.",
-    });
-    expect(transactionOperations.write).toHaveBeenCalledOnce();
-  });
+      await expect(
+        runEscrowTransaction(snapshot.address, transactionOperations),
+      ).resolves.toMatchObject({
+        kind: "confirmed",
+      });
+      transactionOperations.simulate.mockRejectedValueOnce(new Error("NoFundsToWithdraw"));
+      await expect(
+        runEscrowTransaction(snapshot.address, transactionOperations),
+      ).resolves.toMatchObject({
+        kind: "reverted",
+        message: "No hay fondos disponibles para retirar.",
+      });
+      expect(transactionOperations.write).toHaveBeenCalledOnce();
+    },
+  );
 
   it.each([
     ["wallet rejection", new Error("UserRejectedRequest"), "rejected"],

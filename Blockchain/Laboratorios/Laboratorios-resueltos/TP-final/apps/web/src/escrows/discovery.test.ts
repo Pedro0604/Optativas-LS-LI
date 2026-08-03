@@ -71,19 +71,7 @@ describe("public discovery reads", () => {
         .fn()
         .mockResolvedValueOnce([escrow])
         .mockResolvedValueOnce(
-          [
-            "Contrato",
-            10n,
-            0n,
-            participant,
-            participant,
-            participant,
-            0n,
-            0n,
-            0n,
-            0n,
-            9n,
-          ].map(ok),
+          ["Contrato", 10n, 0n, participant, participant, participant, 0n, 0n, 0n, 0n, 9n].map(ok),
         ),
     };
 

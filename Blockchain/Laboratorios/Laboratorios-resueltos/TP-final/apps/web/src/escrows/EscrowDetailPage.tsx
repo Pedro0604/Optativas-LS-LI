@@ -38,22 +38,8 @@ import {
   parseWorkerAllocation,
 } from "./resolution";
 import { WalletControls } from "../wallet/WalletControls";
-import {
-  canWithdrawFromEscrow,
-  formatPendingWithdrawal,
-  pendingWithdrawalFor,
-} from "./withdrawal";
-
-function AddressRow({ label, address }: { label: string; address: Address }) {
-  return (
-    <div>
-      <dt className="text-sm text-muted">{label}</dt>
-      <dd className="mt-1">
-        <AddressDisplay address={address} format="long" />
-      </dd>
-    </div>
-  );
-}
+import { canWithdrawFromEscrow, formatPendingWithdrawal, pendingWithdrawalFor } from "./withdrawal";
+import { EscrowParticipants } from "./EscrowParticipants";
 
 function Evidence({
   label,
@@ -351,9 +337,12 @@ export function EscrowDetailPage() {
           <h2 className="font-display text-2xl font-bold">Fondos y participantes</h2>
           <p className="text-3xl font-bold text-primary-strong">{displayEth(snapshot.amount)}</p>
           <dl className="grid gap-4">
-            <AddressRow label="Owner" address={snapshot.owner} />
-            <AddressRow label="Worker" address={snapshot.worker} />
-            <AddressRow label="Árbitro" address={snapshot.arbiter} />
+            <EscrowParticipants
+              account={account}
+              owner={snapshot.owner}
+              worker={snapshot.worker}
+              arbiter={snapshot.arbiter}
+            />
             {account && (
               <div>
                 <dt className="text-sm text-muted">Tu saldo pendiente en este escrow</dt>
@@ -404,7 +393,8 @@ export function EscrowDetailPage() {
           ) : (
             <div className="grid gap-3 rounded-lg border border-line p-4">
               <p>
-                Vas a retirar <strong className="font-mono">{formatPendingWithdrawal(pendingWithdrawal)}</strong>{" "}
+                Vas a retirar{" "}
+                <strong className="font-mono">{formatPendingWithdrawal(pendingWithdrawal)}</strong>{" "}
                 desde el escrow <AddressDisplay address={snapshot.address} format="long" />.
               </p>
               <p>Primero simularemos la transacción; tu wallet confirma la firma final.</p>
@@ -825,7 +815,7 @@ export function EscrowDetailPage() {
             ) : !account ? (
               <div className="flex items-center gap-3 rounded-lg border border-line p-4">
                 <p>Conectá una wallet para continuar con esta acción: </p>
-                <WalletControls/>
+                <WalletControls />
               </div>
             ) : !connectedAndEligible ? (
               <div className="grid gap-3 rounded-lg border border-line p-4">

@@ -64,7 +64,9 @@ describe("EscrowCard", () => {
   });
 
   it("shows only a positive connected-account balance", () => {
-    const view = render(<EscrowCard summary={{ ...summary, pendingWithdrawal: 1n }} chainTime={1n} />);
+    const view = render(
+      <EscrowCard summary={{ ...summary, pendingWithdrawal: 1n }} chainTime={1n} />,
+    );
     expect(screen.getByText("Tu saldo pendiente:")).toBeInTheDocument();
     expect(screen.getByText("0.000000000000000001 ETH")).toBeInTheDocument();
 

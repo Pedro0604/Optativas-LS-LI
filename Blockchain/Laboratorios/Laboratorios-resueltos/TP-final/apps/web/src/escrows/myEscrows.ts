@@ -29,28 +29,35 @@ export async function fetchMyEscrows(
   page: number,
 ): Promise<DiscoveryPage> {
   const registry = registryByRole[role];
-  return fetchEscrowPage(client, factory, page, {
-    count: async (pageClient, pageFactory) =>
-      Number(
-        await pageClient.readContract({
-          address: pageFactory,
-          abi: escrowFactoryAbi,
-          functionName: registry.count,
-          args: [account],
-        } as never),
-      ),
-    addresses: async (pageClient, pageFactory, indexes, blockNumber) =>
-      (await pageClient.multicall({
-        allowFailure: false,
-        blockNumber,
-        contracts: indexes.map((index) => ({
-          address: pageFactory,
-          abi: escrowFactoryAbi,
-          functionName: registry.registry,
-          args: [account, index],
-        })),
-      })) as Address[],
-  }, undefined, account);
+  return fetchEscrowPage(
+    client,
+    factory,
+    page,
+    {
+      count: async (pageClient, pageFactory) =>
+        Number(
+          await pageClient.readContract({
+            address: pageFactory,
+            abi: escrowFactoryAbi,
+            functionName: registry.count,
+            args: [account],
+          } as never),
+        ),
+      addresses: async (pageClient, pageFactory, indexes, blockNumber) =>
+        (await pageClient.multicall({
+          allowFailure: false,
+          blockNumber,
+          contracts: indexes.map((index) => ({
+            address: pageFactory,
+            abi: escrowFactoryAbi,
+            functionName: registry.registry,
+            args: [account, index],
+          })),
+        })) as Address[],
+    },
+    undefined,
+    account,
+  );
 }
 
 export function myEscrowsQuery(
