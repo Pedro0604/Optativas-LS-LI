@@ -20,7 +20,7 @@ describe("EscrowParticipants", () => {
       <EscrowParticipants account={account} owner={owner} worker={worker} arbiter={arbiter} />,
     );
 
-    expect(screen.getByText(role, { selector: "dd" })).toBeInTheDocument();
+    expect(screen.getByText(role, { selector: "dd *" })).toBeInTheDocument();
     const marker = screen.getByText("Vos");
     expect(marker.closest("div")).toHaveTextContent(account);
     expect(screen.getAllByText("Vos")).toHaveLength(1);

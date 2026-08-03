@@ -22,6 +22,7 @@ import {
   type EscrowDraft,
   type FriendlyDuration,
 } from "./creation";
+import { formatDurationWithSeconds } from "./time";
 
 const initialDraft: EscrowDraft = {
   title: "",
@@ -141,6 +142,10 @@ export function CreateEscrowPage() {
   const [errors, setErrors] = useState<DraftErrors>({});
   const [touched, setTouched] = useState<TouchedFields>({});
   const [transaction, setTransaction] = useState<TransactionState>({ kind: "idle" });
+  const transactionPending =
+    transaction.kind === "simulating" ||
+    transaction.kind === "wallet" ||
+    transaction.kind === "submitted";
   const formRef = useRef<HTMLFormElement>(null);
   const titleBytes = new TextEncoder().encode(draft.title).length;
   const request = createEscrowRequest(draft, address);
@@ -389,10 +394,17 @@ export function CreateEscrowPage() {
                 <dt className="text-muted">Árbitro</dt>
                 <dd className="font-mono">{ready.args[1]}</dd>
               </div>
-              {(["Aceptación", "Entrega", "Revisión", "Arbitraje"] as const).map((label, index) => (
+              {(
+                [
+                  ["Aceptación", 2],
+                  ["Entrega", 3],
+                  ["Revisión", 4],
+                  ["Arbitraje", 5],
+                ] as const
+              ).map(([label, argumentIndex]) => (
                 <div key={label}>
                   <dt className="text-muted">{label}</dt>
-                  <dd>{ready.args[index + 2].toString()} segundos</dd>
+                  <dd>{formatDurationWithSeconds(ready.args[argumentIndex])}</dd>
                 </div>
               ))}
             </dl>
@@ -416,15 +428,7 @@ export function CreateEscrowPage() {
               Tu wallet debe usar Sepolia para crear el escrow.
             </p>
           ) : (
-            <Button
-              disabled={
-                !ready ||
-                transaction.kind === "simulating" ||
-                transaction.kind === "wallet" ||
-                transaction.kind === "submitted"
-              }
-              onClick={submit}
-            >
+            <Button disabled={!ready || transactionPending} onClick={submit}>
               {transaction.kind === "simulating"
                 ? "Simulando…"
                 : transaction.kind === "wallet"
@@ -470,6 +474,7 @@ export function CreateEscrowPage() {
           )}
           <Button
             variant="ghost"
+            disabled={transactionPending}
             onClick={() => {
               setReviewing(false);
               setTransaction({ kind: "idle" });

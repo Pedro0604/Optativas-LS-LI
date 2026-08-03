@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { CreateEscrowPage } from "./CreateEscrowPage";
@@ -199,7 +199,7 @@ describe("CreateEscrowPage", () => {
     const user = await completeDraft();
     await user.click(screen.getByRole("button", { name: "Revisar creación" }));
     expect(screen.getByText(/1000000000000000000 wei/)).toBeVisible();
-    expect(screen.getAllByText("86400 segundos")).toHaveLength(4);
+    expect(screen.getAllByText("86400 segundos (1 día)")).toHaveLength(4);
     expect(screen.getByRole("button", { name: "Conectar wallet" })).toBeVisible();
   });
 
@@ -225,6 +225,49 @@ describe("CreateEscrowPage", () => {
       "Cada duración debe ser mayor a cero.",
     );
     expect(mocks.writeContractAsync).not.toHaveBeenCalled();
+  });
+
+  it("locks editing throughout simulation, signature and on-chain confirmation", async () => {
+    let finishSimulation!: (value: { request: object }) => void;
+    let finishSignature!: (value: `0x${string}`) => void;
+    let finishConfirmation!: (value: { status: string; logs: never[] }) => void;
+    mocks.simulateContract.mockReturnValueOnce(
+      new Promise((resolve) => {
+        finishSimulation = resolve;
+      }),
+    );
+    mocks.writeContractAsync.mockReturnValueOnce(
+      new Promise((resolve) => {
+        finishSignature = resolve;
+      }),
+    );
+    mocks.waitForTransactionReceipt.mockReturnValueOnce(
+      new Promise((resolve) => {
+        finishConfirmation = resolve;
+      }),
+    );
+
+    const user = await reviewConnectedDraft();
+    await user.click(screen.getByRole("button", { name: "Simular y firmar" }));
+    const edit = screen.getByRole("button", { name: "Editar datos" });
+    expect(edit).toBeDisabled();
+
+    finishSimulation({ request: {} });
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Esperando confirmación…" })).toBeVisible(),
+    );
+    expect(edit).toBeDisabled();
+
+    finishSignature("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Esperando confirmación on-chain…" }),
+      ).toBeVisible(),
+    );
+    expect(edit).toBeDisabled();
+
+    finishConfirmation({ status: "success", logs: [] });
+    await waitFor(() => expect(edit).toBeEnabled());
   });
 
   it("retains the hash when confirmation lacks a factory creation event", async () => {

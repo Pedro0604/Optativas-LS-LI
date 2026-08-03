@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { formatDuration, formatDeadlineDistance } from "./time";
+import { formatDuration, formatDeadlineDistance, formatDurationWithSeconds } from "./time";
 
 describe("escrow time presentation", () => {
+  it("combines exact seconds with a readable duration only when useful", () => {
+    expect(formatDurationWithSeconds(86_400n)).toBe("86400 segundos (1 día)");
+    expect(formatDurationWithSeconds(90_061n)).toBe("90061 segundos (1 día 1 hora)");
+    expect(formatDurationWithSeconds(30n)).toBe("30 segundos");
+  });
+
   it.each([
     [60n, "1 minuto"],
     [3_600n, "1 hora"],

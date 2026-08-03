@@ -60,7 +60,11 @@ export function EscrowParticipants({ account, owner, worker, arbiter }: EscrowPa
         <dt className="text-sm text-muted">Tu rol en este escrow:</dt>
         <dd className="font-semibold">
           {account ? (
-            (role ? <Badge>{role}</Badge> : "No sos participante")
+            role ? (
+              <Badge>{role}</Badge>
+            ) : (
+              "No sos participante"
+            )
           ) : (
             <span className="flex flex-wrap items-center gap-2">
               Conectá tu wallet para identificarlo

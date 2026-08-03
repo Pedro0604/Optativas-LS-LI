@@ -22,6 +22,12 @@ export function formatDuration(seconds: bigint): string {
   return parts.length ? parts.join(" ") : "0 segundos";
 }
 
+export function formatDurationWithSeconds(seconds: bigint): string {
+  const exact = `${seconds} segundos`;
+  const readable = formatDuration(seconds);
+  return readable === exact ? exact : `${exact} (${readable})`;
+}
+
 export function formatDeadlineDistance(deadline: bigint, now: bigint): string {
   return deadline > now
     ? `Vence en ${formatDuration(deadline - now)}`
