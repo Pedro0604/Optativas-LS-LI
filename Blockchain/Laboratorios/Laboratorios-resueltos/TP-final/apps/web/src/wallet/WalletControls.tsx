@@ -6,6 +6,8 @@ import { walletContextChangedEvent } from "./accountChange";
 import { canWrite, SEPOLIA_CHAIN_ID, walletConnectionRequestEvent } from "./wallet";
 import { AddressDisplay } from "../ui/AddressDisplay";
 
+const isGenericInjectedConnector = (connector: { name: string }) => connector.name === "Injected";
+
 function WalletStateInvalidator() {
   const { address, chainId, isConnected } = useAccount();
   const queryClient = useQueryClient();
@@ -31,9 +33,9 @@ function WalletControlsContent() {
   const { switchChain, error: switchError, isPending: isSwitching } = useSwitchChain();
   const [showProviders, setShowProviders] = useState(false);
   const wrongNetwork = isConnected && !canWrite(chainId);
-  const hasNamedConnector = connectors.some((connector) => connector.name !== "Injected");
+  const hasNamedConnector = connectors.some((connector) => !isGenericInjectedConnector(connector));
   const visibleConnectors = hasNamedConnector
-    ? connectors.filter((connector) => connector.name !== "Injected")
+    ? connectors.filter((connector) => !isGenericInjectedConnector(connector))
     : connectors;
 
   useEffect(() => {
@@ -57,7 +59,7 @@ function WalletControlsContent() {
                 disabled={isPending}
                 onClick={() => connect({ connector })}
               >
-                {connector.name === "Injected" ? "Wallet del navegador" : connector.name}
+                {isGenericInjectedConnector(connector) ? "Wallet del navegador" : connector.name}
               </Button>
             ))}
             {connectionError && (

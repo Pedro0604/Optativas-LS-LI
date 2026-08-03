@@ -13,6 +13,8 @@ type AddressDisplayProps = {
 type CopyStatus = "idle" | "success" | "error";
 
 const shorten = (address: Address) => `${address.slice(0, 6)}…${address.slice(-4)}`;
+const iconActionClassName =
+  "m-0.5 inline-flex size-7 cursor-pointer items-center justify-center rounded-md text-muted transition hover:bg-primary/10 hover:text-primary-strong focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent";
 
 export function AddressDisplay({ address, format, tooltipSide = "top" }: AddressDisplayProps) {
   const explorerUrl = useExplorerUrl();
@@ -81,7 +83,7 @@ export function AddressDisplay({ address, format, tooltipSide = "top" }: Address
         <button
           type="button"
           aria-label={copyStatus === "success" ? "Dirección copiada" : "Copiar dirección"}
-          className="m-0.5 inline-flex size-7 cursor-pointer items-center justify-center rounded-md text-muted transition hover:bg-primary/10 hover:text-primary-strong focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent"
+          className={iconActionClassName}
           onClick={copyAddress}
         >
           {copyStatus === "success" ? (
@@ -99,7 +101,7 @@ export function AddressDisplay({ address, format, tooltipSide = "top" }: Address
               <Tooltip.Trigger asChild>
                 <a
                   aria-label="Abrir dirección en Etherscan"
-                  className="m-0.5 inline-flex size-7 cursor-pointer items-center justify-center rounded-md text-muted transition hover:bg-primary/10 hover:text-primary-strong focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent"
+                  className={iconActionClassName}
                   href={`${explorerUrl}/address/${address}`}
                   rel="noopener noreferrer"
                   target="_blank"
