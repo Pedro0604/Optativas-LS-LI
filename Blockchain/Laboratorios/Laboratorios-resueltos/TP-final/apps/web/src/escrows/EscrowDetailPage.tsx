@@ -317,7 +317,7 @@ export function EscrowDetailPage() {
 
   return (
     <div className="grid gap-6">
-      <section className="border-t border-line pt-8">
+      <section className="pt-8">
         <p className="text-xs font-bold tracking-[0.12em] text-primary uppercase">Escrow</p>
         <h1 className="my-3 font-display text-[clamp(2.4rem,7vw,5rem)] leading-none font-bold">
           {snapshot.title}

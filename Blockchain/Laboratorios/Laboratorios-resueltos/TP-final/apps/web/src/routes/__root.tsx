@@ -5,7 +5,7 @@ import { WalletControls } from "../wallet/WalletControls";
 export const Route = createRootRouteWithContext<RouterContext>()({
   component: () => (
     <div className="grid min-h-screen grid-rows-[auto_1fr_auto]">
-      <header className="mx-auto flex w-[min(1120px,calc(100%-2rem))] items-center justify-between py-6">
+      <header className="mx-auto flex w-[min(1120px,calc(100%-2rem))] items-center justify-between py-6 border-b border-line">
         <div className="flex gap-4 items-center">
           <Link
             to="/"
