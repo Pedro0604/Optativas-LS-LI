@@ -4,7 +4,11 @@ import {
   allocationFromOwnerSlider,
   allocationFromWorkerSlider,
   canResolveDispute,
+  complementAllocationPercent,
   formatAllocationEth,
+  formatAllocationPercent,
+  parseAllocationPercent,
+  parseOwnerAllocation,
   parseWorkerAllocation,
 } from "./resolution";
 import type { EscrowSnapshot } from "./detail";
@@ -48,6 +52,37 @@ describe("dispute resolution", () => {
     expect(parseWorkerAllocation("0.0000000000000000001", 5n)).toMatchObject({ ok: false });
     expect(parseWorkerAllocation("0.000000000000000006", 5n)).toMatchObject({ ok: false });
     expect(parseWorkerAllocation("1e-18", 5n)).toMatchObject({ ok: false });
+    expect(parseOwnerAllocation("0.000000000000000003", 5n)).toEqual({
+      ok: true,
+      workerAmountWei: 2n,
+    });
+  });
+
+  it("parses either party percentage and gives rounding dust to the other party", () => {
+    expect(parseAllocationPercent("10", "worker", 11n)).toEqual({
+      ok: true,
+      workerAmountWei: 1n,
+    });
+    expect(parseAllocationPercent("10,5", "owner", 11n)).toEqual({
+      ok: true,
+      workerAmountWei: 10n,
+    });
+    expect(parseAllocationPercent("33.33", "worker", 10n)).toEqual({
+      ok: true,
+      workerAmountWei: 3n,
+    });
+    expect(parseAllocationPercent("", "worker", 10n)).toMatchObject({ ok: false });
+    expect(parseAllocationPercent("10.001", "worker", 10n)).toMatchObject({ ok: false });
+    expect(parseAllocationPercent("101", "worker", 10n)).toMatchObject({ ok: false });
+    expect(complementAllocationPercent("10,5")).toBe("89.5");
+    expect(complementAllocationPercent("33.33")).toBe("66.67");
+    expect(complementAllocationPercent("101")).toBeUndefined();
+  });
+
+  it("formats exact amounts as complementary percentages rounded to two decimals", () => {
+    expect(formatAllocationPercent(1n, 3n)).toEqual({ worker: "33.33", owner: "66.67" });
+    expect(formatAllocationPercent(1n, 2n)).toEqual({ worker: "50", owner: "50" });
+    expect(formatAllocationPercent(0n, 0n)).toEqual({ worker: "0", owner: "100" });
   });
 
   it("requires a non-empty, byte-limited public resolution reason", () => {

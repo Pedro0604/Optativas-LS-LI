@@ -31,7 +31,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
           <span className="text-xs font-semibold tracking-wide text-primary">● Sepolia</span>
         </div>
       </header>
-      <main className="mx-auto w-[min(1120px,calc(100%-2rem))]">
+      <main className="mx-auto w-[min(1120px,calc(100%-2rem))] max-w-6xl overflow-auto">
         <Outlet />
       </main>
       <footer className="mx-auto mt-16 w-[min(1120px,calc(100%-2rem))] border-t border-line py-8 text-sm text-muted flex justify-between">

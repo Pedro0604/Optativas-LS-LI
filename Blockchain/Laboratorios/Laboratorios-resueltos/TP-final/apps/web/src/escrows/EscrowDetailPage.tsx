@@ -34,7 +34,11 @@ import {
   allocationFromWorkerSlider,
   allocationSliderSteps,
   canResolveDispute,
+  complementAllocationPercent,
   formatAllocationEth,
+  formatAllocationPercent,
+  parseAllocationPercent,
+  parseOwnerAllocation,
   parseWorkerAllocation,
 } from "./resolution";
 import { WalletControls } from "../wallet/WalletControls";
@@ -91,6 +95,9 @@ export function EscrowDetailPage() {
   const [reviewingWithdrawal, setReviewingWithdrawal] = useState(false);
   const [workerAmountWei, setWorkerAmountWei] = useState(0n);
   const [workerAmountInput, setWorkerAmountInput] = useState("0");
+  const [ownerAmountInput, setOwnerAmountInput] = useState("0");
+  const [workerPercentInput, setWorkerPercentInput] = useState("50");
+  const [ownerPercentInput, setOwnerPercentInput] = useState("50");
   const [resolutionReason, setResolutionReason] = useState("");
   const [transaction, setTransaction] = useState<TransactionState>({ kind: "idle" });
   const [withdrawalTransaction, setWithdrawalTransaction] = useState<TransactionState>({
@@ -148,7 +155,24 @@ export function EscrowDetailPage() {
   const dispute = canOpenDispute(snapshot, account, now, chainId);
   const resolution = canResolveDispute(snapshot, account, now, chainId);
   const allocation = formatAllocationEth(workerAmountWei, snapshot.amount);
-  const allocationValidation = parseWorkerAllocation(workerAmountInput, snapshot.amount);
+  const workerAmountValidation = parseWorkerAllocation(workerAmountInput, snapshot.amount);
+  const ownerAmountValidation = parseOwnerAllocation(ownerAmountInput, snapshot.amount);
+  const workerPercentValidation = parseAllocationPercent(
+    workerPercentInput,
+    "worker",
+    snapshot.amount,
+  );
+  const ownerPercentValidation = parseAllocationPercent(
+    ownerPercentInput,
+    "owner",
+    snapshot.amount,
+  );
+  const allocationInputError = [
+    workerAmountValidation,
+    ownerAmountValidation,
+    workerPercentValidation,
+    ownerPercentValidation,
+  ].find((validation) => !validation.ok);
   const resolutionReasonValidation = validatePublicText(resolutionReason, 256);
   const workerSliderValue = snapshot.amount
     ? Number((workerAmountWei * allocationSliderSteps) / snapshot.amount)
@@ -258,12 +282,41 @@ export function EscrowDetailPage() {
 
   function setWorkerAllocation(value: bigint) {
     setWorkerAmountWei(value);
-    setWorkerAmountInput(formatAllocationEth(value, snapshot.amount).worker);
+    const amounts = formatAllocationEth(value, snapshot.amount);
+    const percentages = formatAllocationPercent(value, snapshot.amount);
+    setWorkerAmountInput(amounts.worker);
+    setOwnerAmountInput(amounts.owner);
+    setWorkerPercentInput(percentages.worker);
+    setOwnerPercentInput(percentages.owner);
+  }
+
+  function setEthAllocation(value: string, party: "worker" | "owner") {
+    if (party === "worker") setWorkerAmountInput(value);
+    else setOwnerAmountInput(value);
+    const parsed =
+      party === "worker"
+        ? parseWorkerAllocation(value, snapshot.amount)
+        : parseOwnerAllocation(value, snapshot.amount);
+    if (parsed.ok) setWorkerAllocation(parsed.workerAmountWei);
+  }
+
+  function setPercentAllocation(value: string, party: "worker" | "owner") {
+    if (party === "worker") setWorkerPercentInput(value);
+    else setOwnerPercentInput(value);
+    const parsed = parseAllocationPercent(value, party, snapshot.amount);
+    const complement = complementAllocationPercent(value);
+    if (!parsed.ok || complement === undefined) return;
+
+    setWorkerAmountWei(parsed.workerAmountWei);
+    const amounts = formatAllocationEth(parsed.workerAmountWei, snapshot.amount);
+    setWorkerAmountInput(amounts.worker);
+    setOwnerAmountInput(amounts.owner);
+    if (party === "worker") setOwnerPercentInput(complement);
+    else setWorkerPercentInput(complement);
   }
 
   async function resolveDispute() {
-    if (!account || !resolution.ok || !allocationValidation.ok || resolutionReasonValidation)
-      return;
+    if (!account || !resolution.ok || allocationInputError || resolutionReasonValidation) return;
     const result = await runEscrowTransaction(snapshot.address, {
       simulate: () =>
         publicClient.simulateContract({
@@ -652,7 +705,7 @@ export function EscrowDetailPage() {
           {!reviewingResolution ? (
             <Button
               onClick={() => {
-                setWorkerAllocation(0n);
+                setPercentAllocation("50", "worker");
                 setResolutionReason("");
                 setReviewingResolution(true);
               }}
@@ -661,21 +714,29 @@ export function EscrowDetailPage() {
             </Button>
           ) : (
             <div className="grid gap-4 rounded-lg border border-line p-4">
-              <label className="grid gap-1">
-                <span>Asignación al worker (ETH exacto)</span>
-                <input
-                  className="rounded-lg border border-line bg-transparent p-3"
-                  inputMode="decimal"
-                  value={workerAmountInput}
-                  onChange={(event) => {
-                    const value = event.target.value;
-                    setWorkerAmountInput(value);
-                    const parsed = parseWorkerAllocation(value, snapshot.amount);
-                    if (parsed.ok) setWorkerAmountWei(parsed.workerAmountWei);
-                  }}
-                />
-                <span className="text-sm text-muted">{workerAmountWei.toString()} wei</span>
-              </label>
+              <div className="grid gap-4 md:grid-cols-2">
+                <label className="grid gap-1">
+                  <span>Worker (ETH exacto)</span>
+                  <input
+                    aria-label="Monto del worker en ETH"
+                    className="rounded-lg border border-line bg-transparent p-3"
+                    inputMode="decimal"
+                    value={workerAmountInput}
+                    onChange={(event) => setEthAllocation(event.target.value, "worker")}
+                  />
+                  <span className="text-sm text-muted">{workerAmountWei.toString()} wei</span>
+                </label>
+                <label className="grid gap-1">
+                  <span>Worker (%)</span>
+                  <input
+                    aria-label="Porcentaje del worker"
+                    className="rounded-lg border border-line bg-transparent p-3"
+                    inputMode="decimal"
+                    value={workerPercentInput}
+                    onChange={(event) => setPercentAllocation(event.target.value, "worker")}
+                  />
+                </label>
+              </div>
               <label className="grid gap-1">
                 <span>Worker · {allocation.worker} ETH</span>
                 <input
@@ -691,14 +752,33 @@ export function EscrowDetailPage() {
                   }
                 />
               </label>
+              <div className="grid gap-4 md:grid-cols-2">
+                <label className="grid gap-1">
+                  <span>Owner (ETH exacto)</span>
+                  <input
+                    aria-label="Monto del owner en ETH"
+                    className="rounded-lg border border-line bg-transparent p-3"
+                    inputMode="decimal"
+                    value={ownerAmountInput}
+                    onChange={(event) => setEthAllocation(event.target.value, "owner")}
+                  />
+                  <span className="text-sm text-muted">
+                    {(snapshot.amount - workerAmountWei).toString()} wei
+                  </span>
+                </label>
+                <label className="grid gap-1">
+                  <span>Owner (%)</span>
+                  <input
+                    aria-label="Porcentaje del owner"
+                    className="rounded-lg border border-line bg-transparent p-3"
+                    inputMode="decimal"
+                    value={ownerPercentInput}
+                    onChange={(event) => setPercentAllocation(event.target.value, "owner")}
+                  />
+                </label>
+              </div>
               <label className="grid gap-1">
                 <span>Owner · {allocation.owner} ETH</span>
-                <input
-                  className="rounded-lg border border-line bg-transparent p-3 text-muted"
-                  aria-label="Asignación al owner en ETH"
-                  readOnly
-                  value={allocation.owner}
-                />
                 <input
                   aria-label="Asignación al owner"
                   type="range"
@@ -713,14 +793,14 @@ export function EscrowDetailPage() {
                 />
               </label>
               <div className="flex flex-wrap gap-3">
-                <Button variant="ghost" onClick={() => setWorkerAllocation(0n)}>
-                  0% worker
+                <Button variant="ghost" onClick={() => setPercentAllocation("0", "worker")}>
+                  Worker 0% · Owner 100%
                 </Button>
-                <Button variant="ghost" onClick={() => setWorkerAllocation(snapshot.amount / 2n)}>
-                  Mitad
+                <Button variant="ghost" onClick={() => setPercentAllocation("50", "worker")}>
+                  Worker 50% · Owner 50%
                 </Button>
-                <Button variant="ghost" onClick={() => setWorkerAllocation(snapshot.amount)}>
-                  100% worker
+                <Button variant="ghost" onClick={() => setPercentAllocation("100", "worker")}>
+                  Worker 100% · Owner 0%
                 </Button>
               </div>
               <label className="grid gap-1">
@@ -737,9 +817,9 @@ export function EscrowDetailPage() {
                 El motivo será público e inmutable. No incluyas datos personales, credenciales ni
                 secretos.
               </p>
-              {!allocationValidation.ok && (
+              {allocationInputError && !allocationInputError.ok && (
                 <p role="alert" className="text-danger">
-                  {allocationValidation.message}
+                  {allocationInputError.message}
                 </p>
               )}
               {resolutionReasonValidation && (
@@ -751,11 +831,12 @@ export function EscrowDetailPage() {
               <div className="rounded-lg bg-surface-raised p-3">
                 <p className="font-semibold">Confirmación</p>
                 <p>
-                  Worker: {allocation.worker} ETH ({workerAmountWei.toString()} wei)
+                  Worker: {allocation.worker} ETH ({workerAmountWei.toString()} wei) ·{" "}
+                  {workerPercentInput}%
                 </p>
                 <p>
                   Owner: {allocation.owner} ETH ({(snapshot.amount - workerAmountWei).toString()}{" "}
-                  wei)
+                  wei) · {ownerPercentInput}%
                 </p>
                 <p className="break-words">Motivo: {resolutionReason || "Sin motivo"}</p>
               </div>
@@ -763,7 +844,7 @@ export function EscrowDetailPage() {
               <div className="flex flex-wrap gap-3">
                 <Button
                   disabled={
-                    !allocationValidation.ok ||
+                    !!allocationInputError ||
                     !!resolutionReasonValidation ||
                     !resolution.ok ||
                     isTransactionPending(transaction) ||

@@ -18,27 +18,91 @@ export function formatAllocationEth(workerAmountWei: bigint, amount: bigint) {
   return { worker: formatEther(workerAmountWei), owner: formatEther(amount - workerAmountWei) };
 }
 
-export function parseWorkerAllocation(
+function formatBasisPoints(value: bigint) {
+  const whole = value / 100n;
+  const fraction = value % 100n;
+  return fraction === 0n
+    ? whole.toString()
+    : `${whole}.${fraction.toString().padStart(2, "0").replace(/0$/, "")}`;
+}
+
+export function formatAllocationPercent(workerAmountWei: bigint, amount: bigint) {
+  const workerBasisPoints = amount
+    ? (workerAmountWei * allocationSliderSteps + amount / 2n) / amount
+    : 0n;
+  return {
+    worker: formatBasisPoints(workerBasisPoints),
+    owner: formatBasisPoints(allocationSliderSteps - workerBasisPoints),
+  };
+}
+
+type AllocationParseResult = { ok: true; workerAmountWei: bigint } | { ok: false; message: string };
+
+function parseEthAllocation(
   value: string,
+  party: "worker" | "owner",
   amount: bigint,
-): { ok: true; workerAmountWei: bigint } | { ok: false; message: string } {
+): AllocationParseResult {
+  const partyLabel = party === "worker" ? "worker" : "owner";
   const normalized = value.trim();
-  if (!normalized) return { ok: false, message: "Ingresá el monto asignado al worker." };
+  if (!normalized) return { ok: false, message: `Ingresá el monto asignado al ${partyLabel}.` };
   if (normalized.startsWith("-"))
     return { ok: false, message: "La asignación no puede ser negativa." };
   if (!/^\d+(?:\.\d{1,18})?$/.test(normalized))
     return { ok: false, message: "Ingresá un monto ETH exacto de hasta 18 decimales." };
   try {
-    const workerAmountWei = parseEther(normalized);
-    if (workerAmountWei > amount)
+    const partyAmountWei = parseEther(normalized);
+    if (partyAmountWei > amount)
       return {
         ok: false,
-        message: "La asignación al worker no puede superar el monto del escrow.",
+        message: `La asignación al ${partyLabel} no puede superar el monto del escrow.`,
       };
-    return { ok: true, workerAmountWei };
+    return {
+      ok: true,
+      workerAmountWei: party === "worker" ? partyAmountWei : amount - partyAmountWei,
+    };
   } catch {
     return { ok: false, message: "Ingresá un monto ETH exacto de hasta 18 decimales." };
   }
+}
+
+export function parseWorkerAllocation(value: string, amount: bigint): AllocationParseResult {
+  return parseEthAllocation(value, "worker", amount);
+}
+
+export function parseOwnerAllocation(value: string, amount: bigint): AllocationParseResult {
+  return parseEthAllocation(value, "owner", amount);
+}
+
+export function parseAllocationPercent(
+  value: string,
+  party: "worker" | "owner",
+  amount: bigint,
+): AllocationParseResult {
+  const normalized = value.trim().replace(",", ".");
+  if (!normalized) return { ok: false, message: `Ingresá el porcentaje del ${party}.` };
+  if (!/^\d{1,3}(?:\.\d{1,2})?$/.test(normalized))
+    return { ok: false, message: "Ingresá un porcentaje de hasta 2 decimales." };
+
+  const [whole, fraction = ""] = normalized.split(".");
+  const basisPoints = BigInt(whole) * 100n + BigInt(fraction.padEnd(2, "0"));
+  if (basisPoints > allocationSliderSteps)
+    return { ok: false, message: "El porcentaje debe estar entre 0 y 100." };
+
+  const partyAmountWei = (amount * basisPoints) / allocationSliderSteps;
+  return {
+    ok: true,
+    workerAmountWei: party === "worker" ? partyAmountWei : amount - partyAmountWei,
+  };
+}
+
+export function complementAllocationPercent(value: string) {
+  const normalized = value.trim().replace(",", ".");
+  if (!/^\d{1,3}(?:\.\d{1,2})?$/.test(normalized)) return undefined;
+  const [whole, fraction = ""] = normalized.split(".");
+  const basisPoints = BigInt(whole) * 100n + BigInt(fraction.padEnd(2, "0"));
+  if (basisPoints > allocationSliderSteps) return undefined;
+  return formatBasisPoints(allocationSliderSteps - basisPoints);
 }
 
 export function canResolveDispute(
