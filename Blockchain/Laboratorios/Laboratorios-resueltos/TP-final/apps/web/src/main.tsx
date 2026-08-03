@@ -6,6 +6,7 @@ import { WagmiProvider } from "wagmi";
 import { ConfigurationError } from "./config";
 import "./styles.css";
 import { Panel } from "./ui/Panel";
+import { ExplorerProvider } from "./ui/ExplorerProvider";
 
 const eyebrowClassName = "text-xs font-bold tracking-[0.12em] text-primary uppercase";
 
@@ -38,7 +39,9 @@ try {
     <React.StrictMode>
       <QueryClientProvider client={queryClient}>
         <WagmiProvider config={walletConfig} reconnectOnMount>
-          <RouterProvider router={router} />
+          <ExplorerProvider explorerUrl={config.explorerUrl}>
+            <RouterProvider router={router} />
+          </ExplorerProvider>
         </WagmiProvider>
       </QueryClientProvider>
     </React.StrictMode>,

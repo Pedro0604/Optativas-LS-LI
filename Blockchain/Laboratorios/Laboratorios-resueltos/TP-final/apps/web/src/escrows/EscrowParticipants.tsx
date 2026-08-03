@@ -68,12 +68,6 @@ export function EscrowParticipants({ account, owner, worker, arbiter }: EscrowPa
           ) : (
             <span className="flex flex-wrap items-center gap-2">
               Conectá tu wallet para identificarlo
-              <Button
-                variant="ghost"
-                onClick={() => window.dispatchEvent(new Event(walletConnectionRequestEvent))}
-              >
-                Conectar wallet
-              </Button>
             </span>
           )}
         </dd>

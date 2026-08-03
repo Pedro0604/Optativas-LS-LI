@@ -1,6 +1,7 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AddressDisplay } from "./AddressDisplay";
+import { ExplorerProvider } from "./ExplorerProvider";
 
 const address = "0x1234567890abcdef1234567890abcdef1234abcd" as const;
 let writeText: ReturnType<typeof vi.fn>;
@@ -21,6 +22,22 @@ afterEach(() => {
 });
 
 describe("AddressDisplay", () => {
+  it("links the address to the configured explorer in a new tab", async () => {
+    render(
+      <ExplorerProvider explorerUrl="https://sepolia.etherscan.io">
+        <AddressDisplay address={address} format="short" />
+      </ExplorerProvider>,
+    );
+
+    const link = screen.getByRole("link", { name: "Abrir dirección en Etherscan" });
+    expect(link).toHaveAttribute("href", `https://sepolia.etherscan.io/address/${address}`);
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link).toHaveAttribute("rel", "noopener noreferrer");
+
+    fireEvent.focus(link);
+    expect(screen.getByRole("tooltip")).toHaveTextContent("Abrir en Etherscan");
+  });
+
   it("renders its requested responsive format", () => {
     const { rerender } = render(<AddressDisplay address={address} format="short" />);
 

@@ -16,15 +16,16 @@ const mocks = vi.hoisted(() => ({
   switchChain: vi.fn(),
   connectionError: undefined as Error | undefined,
   switchError: undefined as Error | undefined,
+  connectors: [
+    { uid: "metamask", name: "MetaMask" },
+    { uid: "rabby", name: "Rabby" },
+  ],
 }));
 
 vi.mock("wagmi", () => ({
   useAccount: () => mocks.account,
   useConnect: () => ({
-    connectors: [
-      { uid: "metamask", name: "MetaMask" },
-      { uid: "rabby", name: "Rabby" },
-    ],
+    connectors: mocks.connectors,
     connect: mocks.connect,
     error: mocks.connectionError,
     isPending: false,
@@ -52,6 +53,10 @@ afterEach(() => {
   mocks.account = { isConnected: false, address: undefined, chainId: undefined };
   mocks.connectionError = undefined;
   mocks.switchError = undefined;
+  mocks.connectors = [
+    { uid: "metamask", name: "MetaMask" },
+    { uid: "rabby", name: "Rabby" },
+  ];
 });
 
 describe("WalletControls", () => {
@@ -71,6 +76,33 @@ describe("WalletControls", () => {
     renderControls();
     await act(async () => window.dispatchEvent(new Event(walletConnectionRequestEvent)));
     expect(screen.getByRole("button", { name: "MetaMask" })).toBeVisible();
+  });
+
+  it("hides the generic injected connector when named wallets are discovered", async () => {
+    mocks.connectors = [
+      { uid: "metamask", name: "MetaMask" },
+      { uid: "injected", name: "Injected" },
+      { uid: "rabby", name: "Rabby" },
+    ];
+    renderControls();
+
+    await userEvent.click(screen.getByRole("button", { name: "Conectar wallet" }));
+
+    expect(screen.getByRole("button", { name: "MetaMask" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Rabby" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Injected" })).not.toBeInTheDocument();
+  });
+
+  it("keeps a lone generic connector under a user-facing name", async () => {
+    mocks.connectors = [{ uid: "injected", name: "Injected" }];
+    renderControls();
+
+    await userEvent.click(screen.getByRole("button", { name: "Conectar wallet" }));
+    await userEvent.click(screen.getByRole("button", { name: "Wallet del navegador" }));
+
+    expect(mocks.connect).toHaveBeenCalledWith({
+      connector: expect.objectContaining({ uid: "injected" }),
+    });
   });
 
   it("keeps public browsing available when connection is rejected", async () => {

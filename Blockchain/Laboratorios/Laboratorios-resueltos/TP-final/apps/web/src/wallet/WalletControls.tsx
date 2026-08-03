@@ -31,6 +31,10 @@ function WalletControlsContent() {
   const { switchChain, error: switchError, isPending: isSwitching } = useSwitchChain();
   const [showProviders, setShowProviders] = useState(false);
   const wrongNetwork = isConnected && !canWrite(chainId);
+  const hasNamedConnector = connectors.some((connector) => connector.name !== "Injected");
+  const visibleConnectors = hasNamedConnector
+    ? connectors.filter((connector) => connector.name !== "Injected")
+    : connectors;
 
   useEffect(() => {
     const show = () => setShowProviders(true);
@@ -46,14 +50,14 @@ function WalletControlsContent() {
         </Button>
         {showProviders && (
           <div className="absolute right-0 z-10 mt-2 min-w-52 rounded-lg border border-line bg-surface-raised p-2 shadow-panel">
-            {connectors.map((connector) => (
+            {visibleConnectors.map((connector) => (
               <Button
                 key={connector.uid}
                 className="mb-1 w-full justify-start last:mb-0"
                 disabled={isPending}
                 onClick={() => connect({ connector })}
               >
-                {connector.name}
+                {connector.name === "Injected" ? "Wallet del navegador" : connector.name}
               </Button>
             ))}
             {connectionError && (
