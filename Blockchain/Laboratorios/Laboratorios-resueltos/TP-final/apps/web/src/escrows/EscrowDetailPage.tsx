@@ -4,6 +4,8 @@ import { Link, useParams } from "@tanstack/react-router";
 import type { Address } from "viem";
 import { escrowAbi } from "@escrow/contracts";
 import { useAccount, useWriteContract } from "wagmi";
+import * as Slider from "radix-ui/slider";
+import * as ToggleGroup from "radix-ui/toggle-group";
 import { config, publicClient } from "../runtime";
 import { Badge } from "../ui/Badge";
 import { Button, actionClassName } from "../ui/Button";
@@ -332,6 +334,20 @@ export function EscrowDetailPage() {
 
   function markResolutionFieldBlurred(field: ResolutionField) {
     setBlurredResolutionFields((current) => ({ ...current, [field]: true }));
+  }
+
+  function reviewAndResolveDispute() {
+    if (allocationInputError || resolutionReasonValidation) {
+      setBlurredResolutionFields({
+        workerAmount: true,
+        workerPercent: true,
+        ownerAmount: true,
+        ownerPercent: true,
+        reason: true,
+      });
+      return;
+    }
+    void resolveDispute();
   }
 
   async function resolveDispute() {
@@ -757,7 +773,7 @@ export function EscrowDetailPage() {
                       />
                       <span className="ml-1 text-lg font-semibold text-muted">%</span>
                     </span>
-                    <span className="min-h-10 text-sm">
+                    <span className="h-10 overflow-hidden text-sm">
                       {blurredResolutionFields.workerPercent && !workerPercentValidation.ok && (
                         <span role="alert" className="text-danger">
                           {workerPercentValidation.message}
@@ -778,7 +794,7 @@ export function EscrowDetailPage() {
                       />
                       <span className="ml-2 text-sm font-semibold text-muted">ETH</span>
                     </span>
-                    <span className="min-h-10 text-sm">
+                    <span className="h-10 overflow-hidden text-sm">
                       {blurredResolutionFields.workerAmount && !workerAmountValidation.ok ? (
                         <span role="alert" className="text-danger">
                           {workerAmountValidation.message}
@@ -812,7 +828,7 @@ export function EscrowDetailPage() {
                       />
                       <span className="ml-1 text-lg font-semibold text-muted">%</span>
                     </span>
-                    <span className="min-h-10 text-sm">
+                    <span className="h-10 overflow-hidden text-sm">
                       {blurredResolutionFields.ownerPercent && !ownerPercentValidation.ok && (
                         <span role="alert" className="text-danger">
                           {ownerPercentValidation.message}
@@ -833,7 +849,7 @@ export function EscrowDetailPage() {
                       />
                       <span className="ml-2 text-sm font-semibold text-muted">ETH</span>
                     </span>
-                    <span className="min-h-10 text-sm">
+                    <span className="h-10 overflow-hidden text-sm">
                       {blurredResolutionFields.ownerAmount && !ownerAmountValidation.ok ? (
                         <span role="alert" className="text-danger">
                           {ownerAmountValidation.message}
@@ -853,40 +869,48 @@ export function EscrowDetailPage() {
                   <span className="text-primary">Worker · {workerPercentInput}%</span>
                   <span className="text-accent">Owner · {ownerPercentInput}%</span>
                 </div>
-                <input
+                <Slider.Root
                   aria-label="Reparto entre worker y owner"
-                  type="range"
-                  min="0"
-                  max={allocationSliderSteps.toString()}
-                  value={workerSliderValue}
-                  onChange={(event) =>
-                    setWorkerAllocation(
-                      allocationFromWorkerSlider(Number(event.target.value), snapshot.amount),
-                    )
+                  className="relative flex h-5 touch-none select-none items-center"
+                  min={0}
+                  max={Number(allocationSliderSteps)}
+                  step={1}
+                  value={[workerSliderValue]}
+                  onValueChange={([value]) =>
+                    setWorkerAllocation(allocationFromWorkerSlider(value, snapshot.amount))
                   }
-                />
+                >
+                  <Slider.Track className="relative h-2 grow overflow-hidden rounded-full bg-accent/25">
+                    <Slider.Range className="absolute h-full bg-primary" />
+                  </Slider.Track>
+                  <Slider.Thumb className="block z-10 block size-5 rounded-full border-2 border-primary bg-surface shadow-sm transition-colors outline-none focus-visible:ring-3 focus-visible:ring-accent/40" />
+                </Slider.Root>
                 <div>
                   <p className="mb-2 text-center text-xs font-semibold uppercase tracking-wider text-muted">
                     Worker / Owner
                   </p>
-                  <div className="grid grid-cols-3 overflow-hidden rounded-xl border border-line bg-surface-raised p-1">
+                  <ToggleGroup.Root
+                    type="single"
+                    aria-label="Repartos rápidos"
+                    className="grid grid-cols-3 overflow-hidden rounded-xl border border-line bg-surface-raised p-1"
+                    value={activeAllocationPreset ?? ""}
+                    onValueChange={(value) => value && setPercentAllocation(value, "worker")}
+                  >
                     {[
                       ["0", "0 / 100"],
                       ["50", "50 / 50"],
                       ["100", "100 / 0"],
                     ].map(([workerPercent, label]) => (
-                      <Button
+                      <ToggleGroup.Item
                         key={workerPercent}
-                        variant="ghost"
+                        value={workerPercent}
                         aria-label={`Reparto ${label}`}
-                        aria-pressed={activeAllocationPreset === workerPercent}
-                        className={`rounded-lg border-transparent px-2 transition-colors ${activeAllocationPreset === workerPercent ? "border-primary/50 bg-primary/15 text-primary-strong" : "text-muted hover:text-primary-strong"}`}
-                        onClick={() => setPercentAllocation(workerPercent, "worker")}
+                        className="cursor-pointer rounded-lg border border-transparent px-2 py-2 text-sm font-semibold text-muted transition-colors hover:text-primary-strong focus-visible:outline-3 focus-visible:outline-accent data-[state=on]:border-primary/50 data-[state=on]:bg-primary/15 data-[state=on]:text-primary-strong"
                       >
                         {label}
-                      </Button>
+                      </ToggleGroup.Item>
                     ))}
-                  </div>
+                  </ToggleGroup.Root>
                 </div>
               </div>
               <label className="grid gap-2">
@@ -898,7 +922,7 @@ export function EscrowDetailPage() {
                   onBlur={() => markResolutionFieldBlurred("reason")}
                   onChange={(event) => setResolutionReason(event.target.value)}
                 />
-                <span className="min-h-10 text-sm">
+                <span className="h-10 overflow-hidden text-sm">
                   {blurredResolutionFields.reason && resolutionReasonValidation ? (
                     <span role="alert" className="text-danger">
                       {resolutionReasonValidation}
@@ -916,7 +940,10 @@ export function EscrowDetailPage() {
               <div className="grid gap-4 rounded-2xl border border-line bg-surface p-4">
                 <div className="flex items-center justify-between gap-3">
                   <p className="font-semibold">Resumen de la resolución</p>
-                  <Badge>100% distribuido</Badge>
+                  <div className="text-right">
+                    <Badge>100% distribuido</Badge>
+                    <p className="mt-1 text-xs text-muted">Total: {displayEth(snapshot.amount)}</p>
+                  </div>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="rounded-xl bg-primary/5 p-3">
@@ -944,13 +971,11 @@ export function EscrowDetailPage() {
               <div className="flex flex-wrap gap-3">
                 <Button
                   disabled={
-                    !!allocationInputError ||
-                    !!resolutionReasonValidation ||
                     !resolution.ok ||
                     isTransactionPending(transaction) ||
                     isEscrowTransactionPending(snapshot.address)
                   }
-                  onClick={resolveDispute}
+                  onClick={reviewAndResolveDispute}
                 >
                   {isTransactionPending(transaction)
                     ? "Procesando…"
