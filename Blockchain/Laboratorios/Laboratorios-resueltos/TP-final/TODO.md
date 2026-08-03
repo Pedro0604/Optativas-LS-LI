@@ -1,24 +1,21 @@
 ### Next
-- Hacer issue-10
-- Añadir porcentajes a la resolución de disputas (que se pueda poner un 10% al worker y calcule el resto de los campos en base a eso y así, lo mismo al owner, así como se puede poner 0% o mitad y mitad)
-- Debería aparecer en la página de un escrow: tu rol en este escrow: <rol>
-- Hacer lifecycle tests.
+- Desplegar front
+- Hacer cosas de antes de entregar
+- Hacer whitepaper
+- Si sobra tiempo, análisis de cosas a mejorar de UI y mejorarlas antes de entregar
 
 ### Bugs
-- Arreglar form de creación porque los errores siempre se muestran al inicio, deberían ir calculandose on blur o algo así
-- Al clickear conectar Wallet, aparece MetaMask y Injected, que abre MetaMask
-- En confirmación de creación mostrar duración en segundos, pero también en un formato más legible (días, horas, minutos, según corresponda)
-- Al firmar una creación y estar esperando la confirmación, que se deshabilite el botón de editar datos.
 
 ### Later
-- IEscrow.sol que tenga todos los eventos, errores y la interfaz con su NatSpec para que en Escrow.sol esté la implementación y no esté lleno de comentarios de specs (usar @inheritdoc) 
 
 ### Antes de entrgar
+- Format
 - Revisar 21, 22 y 23 de specs-todo
 - Revisar y aplicar o eliminar TODOs
 - Revisar docstrings de .sol para que todas las funciones tengan y que respete NatSpec, mejorarlo y asegurarse que es correcto para cada función.
 - Revisar que las funciones, constantes y types de archivos .ts tengan sus docstrings
 - Matchear state de Escrow.sol con state de State.ts y de EscrowState.ts y errores y eventos con Error.ts y Event.ts
+- Listado de posibles preguntas que podría hacer el profe sobre el frontend y respuestas, sobre todo orientado a blockchain, conexión con wallet, etc.
 
 ## Links
 Grilling: https://chatgpt.com/c/6a6a88a4-3b28-83e9-8cb8-8fe8a40804c0
@@ -47,4 +44,4 @@ Set config keys: https://chatgpt.com/c/6a6e36a3-90dc-83e9-8f46-98762c22a932
 - Arbiters designados por creador de EscrowFactory?
 - Despliegues de Escrow solo desde EscrowFactory?
 - Comisión del sistema
-- Referencias y razones de entrega, disputa y resolucion que sean bytes32 hash 
+- Referencias y razones de entrega, disputa y resolucion que sean bytes32 hash

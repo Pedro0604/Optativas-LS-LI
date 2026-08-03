@@ -12,6 +12,10 @@ _Avoid_: Contract, job, transaction
 Etapa autoritativa del ciclo de vida de un escrow, almacenada en la blockchain. Puede ser operativa o terminal.
 _Avoid_: UI status, transaction status
 
+**Escrow settlement**:
+Cierre económico completo de un escrow: alcanzó un estado terminal y todos los fondos asignados fueron retirados por sus destinatarios.
+_Avoid_: Terminal state, finalization
+
 **Available action**:
 Transición que una cuenta puede intentar según el estado del escrow, su rol y el plazo vigente. Un participante o visitor puede no tener ninguna sin que el escrow sea terminal. El contrato conserva la autoridad final para aceptarla o rechazarla.
 _Avoid_: Permission, authorized button
