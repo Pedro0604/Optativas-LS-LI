@@ -125,6 +125,48 @@ describe("CreateEscrowPage", () => {
     expect(screen.queryByText("Ingresá una duración entera mayor a cero.")).not.toBeInTheDocument();
   });
 
+  it("touches a duration on numeric blur and keeps validating it through unit changes", async () => {
+    renderPage();
+    const user = userEvent.setup();
+    const duration = screen.getByLabelText("Aceptación duración");
+
+    await user.click(duration);
+    await user.tab();
+    expect(screen.getByText("Ingresá una duración entera.")).toBeVisible();
+    expect(duration).toHaveAttribute("aria-describedby", "acceptance-error");
+
+    await user.type(duration, "1");
+    await user.selectOptions(screen.getByLabelText("Aceptación unidad"), "hours");
+    expect(screen.queryByText("Ingresá una duración entera.")).not.toBeInTheDocument();
+    expect(duration).toHaveAttribute("aria-invalid", "false");
+  });
+
+  it("marks every field touched after failed review and revalidates them live", async () => {
+    renderPage();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Revisar creación" }));
+
+    const fields = [
+      ["Título", "title-error"],
+      ["Monto (ETH)", "amountEth-error"],
+      ["Dirección del worker", "worker-error"],
+      ["Dirección del árbitro", "arbiter-error"],
+      ["Aceptación duración", "acceptance-error"],
+      ["Entrega duración", "submission-error"],
+      ["Revisión duración", "review-error"],
+      ["Arbitraje duración", "arbitration-error"],
+    ] as const;
+    for (const [label, errorId] of fields) {
+      expect(screen.getByLabelText(label)).toHaveAttribute("aria-invalid", "true");
+      expect(screen.getByLabelText(label)).toHaveAttribute("aria-describedby", errorId);
+    }
+
+    const amount = screen.getByLabelText("Monto (ETH)");
+    await user.type(amount, "1");
+    expect(screen.queryByText("Ingresá un monto válido en ETH.")).not.toBeInTheDocument();
+    expect(amount).toHaveAttribute("aria-invalid", "false");
+  });
+
   it("revalidates touched participant fields when the owner changes", async () => {
     mocks.account = {
       isConnected: true,
