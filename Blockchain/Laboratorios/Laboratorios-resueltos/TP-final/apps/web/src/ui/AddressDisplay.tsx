@@ -80,6 +80,8 @@ export function AddressDisplay({ address, format, tooltipSide = "top" }: Address
           </Tooltip.Portal>
         </Tooltip.Root>
         <span className="h-5 w-px bg-line" aria-hidden="true" />
+                <Tooltip.Root>
+          <Tooltip.Trigger asChild>
         <button
           type="button"
           aria-label={copyStatus === "success" ? "Dirección copiada" : "Copiar dirección"}
@@ -94,6 +96,17 @@ export function AddressDisplay({ address, format, tooltipSide = "top" }: Address
             <CopyIcon aria-hidden="true" />
           )}
         </button>
+          </Tooltip.Trigger>
+          <Tooltip.Portal>
+            <Tooltip.Content
+              side={tooltipSide}
+              sideOffset={8}
+              className="z-20 max-w-[calc(100vw-2rem)] rounded-md border border-line bg-surface px-2.5 py-2 text-xs break-all md:break-normal whitespace-normal text-ink shadow-panel"
+            >
+              Copiar al portapapeles
+            </Tooltip.Content>
+          </Tooltip.Portal>
+        </Tooltip.Root>
         {explorerUrl && (
           <>
             <span className="h-5 w-px bg-line" aria-hidden="true" />
