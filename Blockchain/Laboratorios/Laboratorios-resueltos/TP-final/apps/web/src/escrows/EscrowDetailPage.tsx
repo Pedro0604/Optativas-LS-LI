@@ -30,7 +30,6 @@ import {
 } from "../transactions/coordinator";
 import { walletConnectionRequestEvent } from "../wallet/wallet";
 import {
-  allocationFromOwnerSlider,
   allocationFromWorkerSlider,
   allocationSliderSteps,
   canResolveDispute,
@@ -77,6 +76,8 @@ function Evidence({
   );
 }
 
+type ResolutionField = "workerAmount" | "workerPercent" | "ownerAmount" | "ownerPercent" | "reason";
+
 export function EscrowDetailPage() {
   const { address } = useParams({ from: "/escrows/$address" });
   const { address: account, chainId } = useAccount();
@@ -98,6 +99,9 @@ export function EscrowDetailPage() {
   const [ownerAmountInput, setOwnerAmountInput] = useState("0");
   const [workerPercentInput, setWorkerPercentInput] = useState("50");
   const [ownerPercentInput, setOwnerPercentInput] = useState("50");
+  const [blurredResolutionFields, setBlurredResolutionFields] = useState<
+    Partial<Record<ResolutionField, true>>
+  >({});
   const [resolutionReason, setResolutionReason] = useState("");
   const [transaction, setTransaction] = useState<TransactionState>({ kind: "idle" });
   const [withdrawalTransaction, setWithdrawalTransaction] = useState<TransactionState>({
@@ -177,6 +181,11 @@ export function EscrowDetailPage() {
   const workerSliderValue = snapshot.amount
     ? Number((workerAmountWei * allocationSliderSteps) / snapshot.amount)
     : 0;
+  const activeAllocationPreset = workerPercentValidation.ok
+    ? ["0", "50", "100"].find(
+        (preset) => Number(workerPercentInput.replace(",", ".")) === Number(preset),
+      )
+    : undefined;
   const pendingWithdrawal = pendingWithdrawalFor(snapshot, account);
 
   async function refreshAfterConfirmation() {
@@ -319,6 +328,10 @@ export function EscrowDetailPage() {
       setOwnerPercentInput(normalized);
       setWorkerPercentInput(complement);
     }
+  }
+
+  function markResolutionFieldBlurred(field: ResolutionField) {
+    setBlurredResolutionFields((current) => ({ ...current, [field]: true }));
   }
 
   async function resolveDispute() {
@@ -713,50 +726,135 @@ export function EscrowDetailPage() {
               onClick={() => {
                 setPercentAllocation("50", "worker");
                 setResolutionReason("");
+                setBlurredResolutionFields({});
                 setReviewingResolution(true);
               }}
             >
               Revisar resolución
             </Button>
           ) : (
-            <div className="grid gap-4 rounded-lg border border-line p-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <label className="grid gap-1">
-                  <span>Worker (ETH exacto)</span>
-                  <input
-                    aria-label="Monto del worker en ETH"
-                    className="rounded-lg border border-line bg-transparent p-3"
-                    inputMode="decimal"
-                    value={workerAmountInput}
-                    onChange={(event) => setEthAllocation(event.target.value, "worker")}
-                  />
-                  {!workerAmountValidation.ok && (
-                    <span role="alert" className="text-sm text-danger">
-                      {workerAmountValidation.message}
+            <div className="grid gap-6 rounded-2xl border border-line bg-surface-raised/40 p-4 sm:p-6">
+              <div className="grid items-stretch gap-4 md:grid-cols-2">
+                <section className="grid content-start gap-4 rounded-2xl border border-primary/30 bg-primary/5 p-4 transition-colors">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-widest text-primary">
+                      Worker
+                    </p>
+                    <p className="text-sm text-muted">Recibe por el trabajo realizado</p>
+                  </div>
+                  <label className="grid gap-1.5">
+                    <span className="text-sm font-medium">Porcentaje</span>
+                    <span
+                      className={`flex w-36 items-baseline rounded-xl border bg-surface px-3 py-2 transition-colors focus-within:border-primary ${!workerPercentValidation.ok ? "border-danger/70" : "border-line"}`}
+                    >
+                      <input
+                        aria-label="Porcentaje del worker"
+                        className="min-w-0 flex-1 bg-transparent text-right font-display text-3xl font-bold outline-none"
+                        inputMode="decimal"
+                        value={workerPercentInput}
+                        onBlur={() => markResolutionFieldBlurred("workerPercent")}
+                        onChange={(event) => setPercentAllocation(event.target.value, "worker")}
+                      />
+                      <span className="ml-1 text-lg font-semibold text-muted">%</span>
                     </span>
-                  )}
-                  <span className="text-sm text-muted">{workerAmountWei.toString()} wei</span>
-                </label>
-                <label className="grid gap-1">
-                  <span>Worker (%)</span>
-                  <input
-                    aria-label="Porcentaje del worker"
-                    className="rounded-lg border border-line bg-transparent p-3"
-                    inputMode="decimal"
-                    value={workerPercentInput}
-                    onChange={(event) => setPercentAllocation(event.target.value, "worker")}
-                  />
-                  {!workerPercentValidation.ok && (
-                    <span role="alert" className="text-sm text-danger">
-                      {workerPercentValidation.message}
+                    <span className="min-h-10 text-sm">
+                      {blurredResolutionFields.workerPercent && !workerPercentValidation.ok && (
+                        <span role="alert" className="text-danger">
+                          {workerPercentValidation.message}
+                        </span>
+                      )}
                     </span>
-                  )}
-                </label>
+                  </label>
+                  <label className="grid gap-1.5">
+                    <span className="text-sm font-medium">Monto exacto</span>
+                    <span className="flex items-center rounded-xl border border-line bg-surface px-3 transition-colors focus-within:border-primary">
+                      <input
+                        aria-label="Monto del worker en ETH"
+                        className="min-w-0 flex-1 bg-transparent py-3 outline-none"
+                        inputMode="decimal"
+                        value={workerAmountInput}
+                        onBlur={() => markResolutionFieldBlurred("workerAmount")}
+                        onChange={(event) => setEthAllocation(event.target.value, "worker")}
+                      />
+                      <span className="ml-2 text-sm font-semibold text-muted">ETH</span>
+                    </span>
+                    <span className="min-h-10 text-sm">
+                      {blurredResolutionFields.workerAmount && !workerAmountValidation.ok ? (
+                        <span role="alert" className="text-danger">
+                          {workerAmountValidation.message}
+                        </span>
+                      ) : (
+                        <span className="text-muted">{workerAmountWei.toString()} wei</span>
+                      )}
+                    </span>
+                  </label>
+                </section>
+
+                <section className="grid content-start gap-4 rounded-2xl border border-accent/30 bg-accent/5 p-4 transition-colors">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-widest text-accent">
+                      Owner
+                    </p>
+                    <p className="text-sm text-muted">Recupera el remanente del escrow</p>
+                  </div>
+                  <label className="grid gap-1.5">
+                    <span className="text-sm font-medium">Porcentaje</span>
+                    <span
+                      className={`flex w-36 items-baseline rounded-xl border bg-surface px-3 py-2 transition-colors focus-within:border-accent ${!ownerPercentValidation.ok ? "border-danger/70" : "border-line"}`}
+                    >
+                      <input
+                        aria-label="Porcentaje del owner"
+                        className="min-w-0 flex-1 bg-transparent text-right font-display text-3xl font-bold outline-none"
+                        inputMode="decimal"
+                        value={ownerPercentInput}
+                        onBlur={() => markResolutionFieldBlurred("ownerPercent")}
+                        onChange={(event) => setPercentAllocation(event.target.value, "owner")}
+                      />
+                      <span className="ml-1 text-lg font-semibold text-muted">%</span>
+                    </span>
+                    <span className="min-h-10 text-sm">
+                      {blurredResolutionFields.ownerPercent && !ownerPercentValidation.ok && (
+                        <span role="alert" className="text-danger">
+                          {ownerPercentValidation.message}
+                        </span>
+                      )}
+                    </span>
+                  </label>
+                  <label className="grid gap-1.5">
+                    <span className="text-sm font-medium">Monto exacto</span>
+                    <span className="flex items-center rounded-xl border border-line bg-surface px-3 transition-colors focus-within:border-accent">
+                      <input
+                        aria-label="Monto del owner en ETH"
+                        className="min-w-0 flex-1 bg-transparent py-3 outline-none"
+                        inputMode="decimal"
+                        value={ownerAmountInput}
+                        onBlur={() => markResolutionFieldBlurred("ownerAmount")}
+                        onChange={(event) => setEthAllocation(event.target.value, "owner")}
+                      />
+                      <span className="ml-2 text-sm font-semibold text-muted">ETH</span>
+                    </span>
+                    <span className="min-h-10 text-sm">
+                      {blurredResolutionFields.ownerAmount && !ownerAmountValidation.ok ? (
+                        <span role="alert" className="text-danger">
+                          {ownerAmountValidation.message}
+                        </span>
+                      ) : (
+                        <span className="text-muted">
+                          {(snapshot.amount - workerAmountWei).toString()} wei
+                        </span>
+                      )}
+                    </span>
+                  </label>
+                </section>
               </div>
-              <label className="grid gap-1">
-                <span>Worker · {allocation.worker} ETH</span>
+
+              <div className="grid gap-3 rounded-2xl border border-line bg-surface p-4">
+                <div className="flex items-center justify-between gap-4 text-sm font-semibold">
+                  <span className="text-primary">Worker · {workerPercentInput}%</span>
+                  <span className="text-accent">Owner · {ownerPercentInput}%</span>
+                </div>
                 <input
-                  aria-label="Asignación al worker"
+                  aria-label="Reparto entre worker y owner"
                   type="range"
                   min="0"
                   max={allocationSliderSteps.toString()}
@@ -767,99 +865,80 @@ export function EscrowDetailPage() {
                     )
                   }
                 />
-              </label>
-              <div className="grid gap-4 md:grid-cols-2">
-                <label className="grid gap-1">
-                  <span>Owner (ETH exacto)</span>
-                  <input
-                    aria-label="Monto del owner en ETH"
-                    className="rounded-lg border border-line bg-transparent p-3"
-                    inputMode="decimal"
-                    value={ownerAmountInput}
-                    onChange={(event) => setEthAllocation(event.target.value, "owner")}
-                  />
-                  {!ownerAmountValidation.ok && (
-                    <span role="alert" className="text-sm text-danger">
-                      {ownerAmountValidation.message}
-                    </span>
-                  )}
-                  <span className="text-sm text-muted">
-                    {(snapshot.amount - workerAmountWei).toString()} wei
-                  </span>
-                </label>
-                <label className="grid gap-1">
-                  <span>Owner (%)</span>
-                  <input
-                    aria-label="Porcentaje del owner"
-                    className="rounded-lg border border-line bg-transparent p-3"
-                    inputMode="decimal"
-                    value={ownerPercentInput}
-                    onChange={(event) => setPercentAllocation(event.target.value, "owner")}
-                  />
-                  {!ownerPercentValidation.ok && (
-                    <span role="alert" className="text-sm text-danger">
-                      {ownerPercentValidation.message}
-                    </span>
-                  )}
-                </label>
+                <div>
+                  <p className="mb-2 text-center text-xs font-semibold uppercase tracking-wider text-muted">
+                    Worker / Owner
+                  </p>
+                  <div className="grid grid-cols-3 overflow-hidden rounded-xl border border-line bg-surface-raised p-1">
+                    {[
+                      ["0", "0 / 100"],
+                      ["50", "50 / 50"],
+                      ["100", "100 / 0"],
+                    ].map(([workerPercent, label]) => (
+                      <Button
+                        key={workerPercent}
+                        variant="ghost"
+                        aria-label={`Reparto ${label}`}
+                        aria-pressed={activeAllocationPreset === workerPercent}
+                        className={`rounded-lg border-transparent px-2 transition-colors ${activeAllocationPreset === workerPercent ? "border-primary/50 bg-primary/15 text-primary-strong" : "text-muted hover:text-primary-strong"}`}
+                        onClick={() => setPercentAllocation(workerPercent, "worker")}
+                      >
+                        {label}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
               </div>
-              <label className="grid gap-1">
-                <span>Owner · {allocation.owner} ETH</span>
-                <input
-                  aria-label="Asignación al owner"
-                  type="range"
-                  min="0"
-                  max={allocationSliderSteps.toString()}
-                  value={Number(allocationSliderSteps) - workerSliderValue}
-                  onChange={(event) =>
-                    setWorkerAllocation(
-                      allocationFromOwnerSlider(Number(event.target.value), snapshot.amount),
-                    )
-                  }
-                />
-              </label>
-              <div className="flex flex-wrap gap-3">
-                <Button variant="ghost" onClick={() => setPercentAllocation("0", "worker")}>
-                  Worker 0% · Owner 100%
-                </Button>
-                <Button variant="ghost" onClick={() => setPercentAllocation("50", "worker")}>
-                  Worker 50% · Owner 50%
-                </Button>
-                <Button variant="ghost" onClick={() => setPercentAllocation("100", "worker")}>
-                  Worker 100% · Owner 0%
-                </Button>
-              </div>
-              <label className="grid gap-1">
-                <span>Motivo de resolución</span>
+              <label className="grid gap-2">
+                <span className="font-semibold">Motivo de resolución</span>
                 <textarea
-                  className="min-h-24 rounded-lg border border-line bg-transparent p-3"
+                  className={`min-h-28 resize-y rounded-xl border bg-surface p-3 transition-colors outline-none focus:border-primary ${resolutionReasonValidation ? "border-danger/70" : "border-line"}`}
                   value={resolutionReason}
                   maxLength={256}
+                  onBlur={() => markResolutionFieldBlurred("reason")}
                   onChange={(event) => setResolutionReason(event.target.value)}
                 />
-                <span className="text-sm text-muted">Máximo 256 bytes UTF-8.</span>
+                <span className="min-h-10 text-sm">
+                  {blurredResolutionFields.reason && resolutionReasonValidation ? (
+                    <span role="alert" className="text-danger">
+                      {resolutionReasonValidation}
+                    </span>
+                  ) : (
+                    <span className="text-muted">Máximo 256 bytes UTF-8.</span>
+                  )}
+                </span>
               </label>
-              <p className="text-sm text-accent">
+              <p className="rounded-xl border border-accent/20 bg-accent/5 p-3 text-sm text-accent">
                 El motivo será público e inmutable. No incluyas datos personales, credenciales ni
                 secretos.
               </p>
-              {resolutionReasonValidation && (
-                <p role="alert" className="text-danger">
-                  {resolutionReasonValidation}
-                </p>
-              )}
               {!resolution.ok && <p className="text-danger">{resolution.message}</p>}
-              <div className="rounded-lg bg-surface-raised p-3">
-                <p className="font-semibold">Confirmación</p>
-                <p>
-                  Worker: {allocation.worker} ETH ({workerAmountWei.toString()} wei) ·{" "}
-                  {workerPercentInput}%
+              <div className="grid gap-4 rounded-2xl border border-line bg-surface p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="font-semibold">Resumen de la resolución</p>
+                  <Badge>100% distribuido</Badge>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-xl bg-primary/5 p-3">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-primary">
+                      Worker · {workerPercentInput}%
+                    </p>
+                    <p className="mt-1 font-display text-xl font-bold">{allocation.worker} ETH</p>
+                    <p className="break-all text-xs text-muted">{workerAmountWei.toString()} wei</p>
+                  </div>
+                  <div className="rounded-xl bg-accent/5 p-3">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-accent">
+                      Owner · {ownerPercentInput}%
+                    </p>
+                    <p className="mt-1 font-display text-xl font-bold">{allocation.owner} ETH</p>
+                    <p className="break-all text-xs text-muted">
+                      {(snapshot.amount - workerAmountWei).toString()} wei
+                    </p>
+                  </div>
+                </div>
+                <p className="break-words border-t border-line pt-3 text-sm text-muted">
+                  <span className="font-semibold">Motivo:</span> {resolutionReason || "Sin motivo"}
                 </p>
-                <p>
-                  Owner: {allocation.owner} ETH ({(snapshot.amount - workerAmountWei).toString()}{" "}
-                  wei) · {ownerPercentInput}%
-                </p>
-                <p className="break-words">Motivo: {resolutionReason || "Sin motivo"}</p>
               </div>
               <p>Primero simularemos la transacción; tu wallet confirma la firma final.</p>
               <div className="flex flex-wrap gap-3">
