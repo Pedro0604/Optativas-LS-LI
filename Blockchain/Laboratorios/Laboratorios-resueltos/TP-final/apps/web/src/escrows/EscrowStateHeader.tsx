@@ -33,15 +33,11 @@ export function EscrowStateHeader({
         <p className="my-3 font-display text-2xl font-bold text-primary-strong">{state}</p>
         {deadline !== undefined && (
           <div className="mt-4 border-t border-primary/20 pt-4">
-            <p
-              className={`text-sm font-bold ${deadlineElapsed ? "text-accent" : "text-ink"}`}
-            >
+            <p className={`text-sm font-bold ${deadlineElapsed ? "text-accent" : "text-ink"}`}>
               {formatDeadlineDistance(deadline, now)}
               {deadlineElapsed ? " · sin finalizar" : ""}
             </p>
-            <p className="mt-1 text-xs text-muted">
-              Fecha límite: {formatDeadlineDate(deadline)}
-            </p>
+            <p className="mt-1 text-xs text-muted">Fecha límite: {formatDeadlineDate(deadline)}</p>
           </div>
         )}
       </aside>

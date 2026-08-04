@@ -272,8 +272,7 @@ export function projectEscrow(
     stateLabel: escrowStateMetadata[snapshot.state].label,
     terminalOutcome: terminalOutcomes[snapshot.state],
     activeDeadline: activeDeadline && activeDeadline > 0n ? activeDeadline : undefined,
-    relevantDeadline:
-      relevantDeadline && relevantDeadline > 0n ? relevantDeadline : undefined,
+    relevantDeadline: relevantDeadline && relevantDeadline > 0n ? relevantDeadline : undefined,
     deadlineElapsed,
     availableActions: actionsForAccount(baseActions, snapshot, context),
     timeline,

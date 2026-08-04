@@ -32,12 +32,13 @@ function CommandLine() {
     else if (verb === "crear") void navigate({ to: "/create-escrow" });
     else if (verb === "escrow") {
       if (address && rest.length === 0) {
-            void navigate({ to: "/escrows/$address", params: { address } });
+        void navigate({ to: "/escrows/$address", params: { address } });
       } else {
-        setError(`Uso: escrow <dirección>. Ejemplo: escrow 0xBBcE0C86FdfaD7ea91AC1c0f9CAA4F066215402d`)
+        setError(
+          `Uso: escrow <dirección>. Ejemplo: escrow 0xBBcE0C86FdfaD7ea91AC1c0f9CAA4F066215402d`,
+        );
       }
-    } 
-    else setError(`Comando desconocido. Probá: ${commandHelp}`);
+    } else setError(`Comando desconocido. Probá: ${commandHelp}`);
   };
 
   return (
@@ -67,7 +68,9 @@ function CommandLine() {
         </button>
       </label>
       {matches.length > 0 && (
-        <div className={`absolute left-18 right-0 top-[calc(100%${error ? "+8px" : "-24px"})] z-10 overflow-hidden rounded-lg border border-line bg-[#171d1a] py-1 shadow-2xl`}>
+        <div
+          className={`absolute left-18 right-0 top-[calc(100%${error ? "+8px" : "-24px"})] z-10 overflow-hidden rounded-lg border border-line bg-[#171d1a] py-1 shadow-2xl`}
+        >
           <div className="flex items-center justify-between border-b border-line px-3 py-1.5 text-[10px] uppercase tracking-widest text-muted">
             <span>Comandos</span>
             <span>Tab para completar</span>
