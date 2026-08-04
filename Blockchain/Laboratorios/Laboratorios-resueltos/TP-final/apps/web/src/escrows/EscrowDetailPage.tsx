@@ -48,6 +48,7 @@ import { canWithdrawFromEscrow, formatPendingWithdrawal, pendingWithdrawalFor } 
 import { EscrowParticipants } from "./EscrowParticipants";
 import { escrowActionLabels, escrowSigningLabels, signingLabelForAction } from "./domainLabels";
 import { EscrowDetailSummary } from "./EscrowDetailSummary";
+import { EscrowStateHeader } from "./EscrowStateHeader";
 
 function Evidence({
   label,
@@ -465,21 +466,12 @@ export function EscrowDetailPage() {
 
   return (
     <div className="grid gap-6">
-      <section>
-        <p className="text-xs font-bold tracking-[0.12em] text-primary uppercase">Escrow</p>
-        <h1 className="my-3 font-display text-[clamp(2.4rem,7vw,5rem)] leading-none font-bold">
-          {snapshot.title}
-        </h1>
-        <AddressDisplay address={snapshot.address} format="long" />
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Badge>{projection.stateLabel}</Badge>
-          {projection.deadlineElapsed && (
-            <Badge className="border-accent/40 bg-accent/10 text-accent">
-              Plazo vencido · sin finalizar
-            </Badge>
-          )}
-        </div>
-      </section>
+      <EscrowStateHeader
+        title={snapshot.title}
+        address={snapshot.address}
+        state={projection.stateLabel}
+        deadlineElapsed={projection.deadlineElapsed}
+      />
       <EscrowDetailSummary
         amount={displayEth(snapshot.amount)}
         guidance={
@@ -512,11 +504,25 @@ export function EscrowDetailPage() {
         <div ref={resolutionPanelRef}>
         <Panel as="section" className="grid gap-4">
           <div>
-            <h2 className="font-display text-2xl font-bold">Resolver disputa</h2>
+            <p className="text-xs font-bold tracking-widest text-accent uppercase">
+              Decisión arbitral
+            </p>
+            <h2 className="mt-2 font-display text-2xl font-bold">Resolver disputa</h2>
             <p className="text-muted">
               Asigná el monto exacto al worker; el owner recibe siempre el remanente exacto.
             </p>
           </div>
+          <section className="rounded-xl border border-accent/35 bg-accent/5 p-4">
+            <h3 className="mb-4 font-display text-lg font-bold">Evidencia para decidir</h3>
+            <dl className="grid gap-5">
+              <Evidence
+                label="Referencia del trabajo"
+                value={snapshot.submissionReference}
+                link
+              />
+              <Evidence label="Motivo de la disputa" value={snapshot.disputeReason} />
+            </dl>
+          </section>
           {!reviewingResolution ? (
             <Button
               onClick={() => {
