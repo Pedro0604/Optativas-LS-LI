@@ -145,21 +145,21 @@
   **Referencias:** [Atomicidad y consistencia](./escrow-spec.md#atomicity-and-consistency) · [Invariantes contables](./guia-resumen.md#15-invariantes-contables) · [Tests 19.4–19.7](./guia-resumen.md#194-distribución-arbitral-extrema)  
   **Historias abarcadas:** [HU 126–129 y 137–139](./escrow-spec.md#user-stories)
 
-- [ ] **21. Implementar tests de registros y atomicidad de la fábrica**
+- [x] **21. Implementar tests de registros y atomicidad de la fábrica**
 
   Probar múltiples escrows y roles, `isEscrow`, arrays y counts; ante una creación inválida con registros previos, comprobar que direcciones, balances y entradas existentes permanecen sin cambios.
 
   **Referencias:** [Registros de la fábrica](./escrow-spec.md#factory-registries) · [Atomicidad y consistencia](./escrow-spec.md#atomicity-and-consistency) · [Estado previo no vacío](./guia-resumen.md#193-estado-previo-no-vacío-ante-creación-inválida) · [Registros por roles](./guia-resumen.md#1911-registros-por-roles-coincidentes-entre-escrows)  
   **Historias abarcadas:** [HU 106–119 y 130–131](./escrow-spec.md#user-stories)
 
-- [ ] **22. Revisar ABI, despliegue e integración con la interfaz**
+- [x] **22. Revisar ABI, despliegue e integración con la interfaz**
 
   Actualizar artefactos y módulo de despliegue de la fábrica; comprobar que la UI pueda descubrir escrows, leer strings, interpretar estados, mostrar deadlines, ofrecer acciones por rol y habilitar retiros.
 
   **Referencias:** [Further Notes](./escrow-spec.md#further-notes) · [Consideraciones para la interfaz web](./guia-resumen.md#20-consideraciones-para-la-interfaz-web) · [Resumen ejecutivo](./guia-resumen.md#22-resumen-ejecutivo)  
   **Historias abarcadas:** [HU 92–111 y 132–136](./escrow-spec.md#user-stories)
 
-- [ ] **23. Realizar una auditoría final de consistencia**
+- [x] **23. Realizar una auditoría final de consistencia**
 
   Verificar que nombres, documentación NatSpec, ABI, estados, eventos, errores y tests coincidan con la especificación; confirmar que no haya transiciones desde estados terminales ni caminos que asignen fondos dos veces.
 

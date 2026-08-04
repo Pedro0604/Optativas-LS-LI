@@ -1,9 +1,7 @@
 ### Next
-- 
 - Hacer cosas de antes de entregar
-- Hacer whitepaper
-- Si sobra tiempo, análisis de cosas a mejorar de UI y mejorarlas antes de entregar
 - Si sobra más, hacer que el 404 sea un cli y que los comandos te lleven a las páginas del sistema jeje
+- Después de tener todo listo probar cuanto gas se gasta si saco los mappings de escrowFactory
 
 ### Bugs
 
@@ -11,9 +9,6 @@
 
 ### Antes de entrgar
 - Format
-- Revisar 21, 22 y 23 de specs-todo
-- Revisar y aplicar o eliminar TODOs
-- Revisar docstrings de .sol para que todas las funciones tengan y que respete NatSpec, mejorarlo y asegurarse que es correcto para cada función.
 - Revisar que las funciones, constantes y types de archivos .ts tengan sus docstrings
 - Matchear state de Escrow.sol con state de State.ts y de EscrowState.ts y errores y eventos con Error.ts y Event.ts
 - Listado de posibles preguntas que podría hacer el profe sobre el frontend y respuestas, sobre todo orientado a blockchain, conexión con wallet, etc.

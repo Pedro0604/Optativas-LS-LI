@@ -284,10 +284,7 @@ contract Escrow {
     // Modificadores
     modifier inState(State expectedState) {
         if (state != expectedState) {
-            revert InvalidState({
-                currentState: state,
-                expectedState: expectedState
-            });
+            revert InvalidState({currentState: state, expectedState: expectedState});
         }
         _;
     }
@@ -365,11 +362,7 @@ contract Escrow {
             revert NoEthProvided();
         }
 
-        if (
-            owner_ == address(0) ||
-            worker_ == address(0) ||
-            arbiter_ == address(0)
-        ) {
+        if (owner_ == address(0) || worker_ == address(0) || arbiter_ == address(0)) {
             revert ZeroAddress();
         }
 
@@ -387,8 +380,7 @@ contract Escrow {
             reviewDuration_ == 0 ||
             arbitrationDuration_ == 0
         ) {
-            revert ZeroDuration(); // TODO - Revertir con errores específicos para cada uno(?
-            // TODO - QUIZAS VALIDAR QUE ESTÉ ENTRE UN MIN Y UN MAX (12 HORAS Y 1 MES(?)
+            revert ZeroDuration();
         }
 
         amount = msg.value;
@@ -601,11 +593,7 @@ contract Escrow {
      * - Transiciona de PendingReview a ReviewExpired.
      * - Emite el evento ReviewExpired.
      */
-    function expireReview()
-        external
-        inState(State.PendingReview)
-        expired(reviewDeadline)
-    {
+    function expireReview() external inState(State.PendingReview) expired(reviewDeadline) {
         pendingWithdrawals[worker] = amount;
         state = State.ReviewExpired;
         emit ReviewExpired();
@@ -624,7 +612,7 @@ contract Escrow {
      * Efectos:
      * - Transiciona de PendingArbitration a DisputeResolved.
      * - Emite el evento DisputeResolved.
-     * - Acredita workerAmount de wei al worker y el resto al owner 
+     * - Acredita workerAmount de wei al worker y el resto al owner
      *
      * @param workerAmount Cantidad de dinero a acreditar al worker, el resto se acredita al owner
      * @param resolutionReason_ Razón de la resolución
@@ -731,6 +719,12 @@ contract Escrow {
     }
 
     // Internal
+    /**
+     * Comprueba si un plazo inicializado ya venció.
+     *
+     * @param deadline Timestamp del vencimiento.
+     * @return expired_ True si el plazo es distinto de cero y ya fue alcanzado.
+     */
     function isExpired(uint256 deadline) internal view returns (bool expired_) {
         return deadline > 0 && block.timestamp >= deadline;
     }
