@@ -1,5 +1,4 @@
 ### Next
-- Si sobra más, hacer que el 404 sea un cli y que los comandos te lleven a las páginas del sistema
 
 ### Bugs
 
