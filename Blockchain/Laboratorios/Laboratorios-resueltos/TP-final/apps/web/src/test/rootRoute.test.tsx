@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import {
   createMemoryHistory,
   createRootRoute,
@@ -10,7 +11,8 @@ import { describe, expect, it } from "vitest";
 import { NotFoundPage } from "../ui/NotFoundPage";
 
 describe("root route", () => {
-  it("renders a Spanish 404 page with recovery links for an unknown route", async () => {
+  it("renders a Spanish 404 page with an autocompleting command line", async () => {
+    const user = userEvent.setup();
     const rootRoute = createRootRoute({ notFoundComponent: NotFoundPage });
     const indexRoute = createRoute({
       getParentRoute: () => rootRoute,
@@ -27,13 +29,13 @@ describe("root route", () => {
     await waitFor(() =>
       expect(screen.getByRole("heading", { name: "Conexión rota." })).toBeInTheDocument(),
     );
-    expect(screen.getByRole("link", { name: "↳ Reconectar al inicio" })).toHaveAttribute(
-      "href",
-      "/",
-    );
-    expect(screen.getByRole("link", { name: "Ver mis escrows" })).toHaveAttribute(
-      "href",
-      "/my-escrows",
-    );
+    const input = screen.getByRole("textbox", { name: "Comando de navegación" });
+    await user.type(input, "mi");
+
+    expect(screen.getByRole("button", { name: /mis-escrows/i })).toBeInTheDocument();
+
+    await user.tab();
+
+    expect(input).toHaveValue("mis-escrows");
   });
 });
