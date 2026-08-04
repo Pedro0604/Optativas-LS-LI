@@ -1,15 +1,24 @@
 import type { Address } from "viem";
 import { AddressDisplay } from "../ui/AddressDisplay";
-import { Badge } from "../ui/Badge";
+import { formatDeadlineDate, formatDeadlineDistance } from "./time";
 
 type Props = {
   title: string;
   address: Address;
   state: string;
   deadlineElapsed: boolean;
+  deadline?: bigint;
+  now: bigint;
 };
 
-export function EscrowStateHeader({ title, address, state, deadlineElapsed }: Props) {
+export function EscrowStateHeader({
+  title,
+  address,
+  state,
+  deadlineElapsed,
+  deadline,
+  now,
+}: Props) {
   return (
     <header className="grid gap-6 border-b border-line pb-6 md:grid-cols-[1.6fr_.55fr] md:items-start">
       <div>
@@ -22,10 +31,18 @@ export function EscrowStateHeader({ title, address, state, deadlineElapsed }: Pr
       <aside className="rounded-xl border border-primary/25 bg-primary/5 p-4">
         <p className="text-xs font-bold tracking-widest text-muted uppercase">Estado actual</p>
         <p className="my-3 font-display text-2xl font-bold text-primary-strong">{state}</p>
-        {deadlineElapsed && (
-          <Badge className="border-accent/40 bg-accent/10 text-accent">
-            Plazo vencido · sin finalizar
-          </Badge>
+        {deadline !== undefined && (
+          <div className="mt-4 border-t border-primary/20 pt-4">
+            <p
+              className={`text-sm font-bold ${deadlineElapsed ? "text-accent" : "text-ink"}`}
+            >
+              {formatDeadlineDistance(deadline, now)}
+              {deadlineElapsed ? " · sin finalizar" : ""}
+            </p>
+            <p className="mt-1 text-xs text-muted">
+              Fecha límite: {formatDeadlineDate(deadline)}
+            </p>
+          </div>
         )}
       </aside>
     </header>

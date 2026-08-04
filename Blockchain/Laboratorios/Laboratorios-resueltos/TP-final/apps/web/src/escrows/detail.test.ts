@@ -184,10 +184,13 @@ describe("escrow detail projection", () => {
 
   it("distinguishes processed expirations from other terminal outcomes", () => {
     const deadlines = { acceptance: 100n, submission: 200n, review: 0n, arbitration: 0n };
-    expect(
-      projectEscrow({ ...snapshot, state: EscrowState.SubmissionExpired, deadlines }, 220n)
-        .timeline[1].status,
-    ).toBe("expired");
+    const expiredSubmission = projectEscrow(
+      { ...snapshot, state: EscrowState.SubmissionExpired, deadlines },
+      220n,
+    );
+    expect(expiredSubmission.timeline[1].status).toBe("expired");
+    expect(expiredSubmission.activeDeadline).toBeUndefined();
+    expect(expiredSubmission.relevantDeadline).toBe(200n);
     expect(
       projectEscrow({ ...snapshot, state: EscrowState.WorkApproved, deadlines }, 220n).timeline[2]
         .status,

@@ -588,6 +588,8 @@ export function EscrowDetailPage() {
         address={snapshot.address}
         state={projection.stateLabel}
         deadlineElapsed={projection.deadlineElapsed}
+        deadline={projection.relevantDeadline}
+        now={now}
       />
       <EscrowDetailSummary
         amount={displayEth(snapshot.amount)}

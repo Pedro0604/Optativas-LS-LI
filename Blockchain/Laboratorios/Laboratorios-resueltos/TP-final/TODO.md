@@ -1,17 +1,11 @@
 ### Next
-- Hacer cosas de antes de entregar
-- Si sobra más, hacer que el 404 sea un cli y que los comandos te lleven a las páginas del sistema jeje
-- Después de tener todo listo probar cuanto gas se gasta si saco los mappings de escrowFactory
+- Si sobra más, hacer que el 404 sea un cli y que los comandos te lleven a las páginas del sistema
 
 ### Bugs
 
 ### Later
 
 ### Antes de entrgar
-- Format
-- Revisar que las funciones, constantes y types de archivos .ts tengan sus docstrings
-- Matchear state de Escrow.sol con state de State.ts y de EscrowState.ts y errores y eventos con Error.ts y Event.ts
-- Listado de posibles preguntas que podría hacer el profe sobre el frontend y respuestas, sobre todo orientado a blockchain, conexión con wallet, etc.
 
 ## Links
 Grilling: https://chatgpt.com/c/6a6a88a4-3b28-83e9-8cb8-8fe8a40804c0
@@ -37,7 +31,8 @@ Set config keys: https://chatgpt.com/c/6a6e36a3-90dc-83e9-8f46-98762c22a932
 
 ## Futurisimo
 - Comisión de arbiter
-- Arbiters designados por creador de EscrowFactory?
+- Arbiters designados por creador de EscrowFactory o por worker+owner?
 - Despliegues de Escrow solo desde EscrowFactory?
 - Comisión del sistema
+- Upgradable
 - Referencias y razones de entrega, disputa y resolucion que sean bytes32 hash

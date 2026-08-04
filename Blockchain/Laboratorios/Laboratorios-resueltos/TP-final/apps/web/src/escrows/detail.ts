@@ -40,6 +40,7 @@ export type EscrowProjection = {
   stateLabel: string;
   terminalOutcome?: string;
   activeDeadline?: bigint;
+  relevantDeadline?: bigint;
   deadlineElapsed: boolean;
   availableActions: EscrowActionLabel[];
   timeline: LifecycleStage[];
@@ -264,11 +265,15 @@ export function projectEscrow(
       ? [expirationActions[currentIndex]]
       : actionsByState[snapshot.state as (typeof operationalStates)[number]]
     : [];
+  const expiredDeadline = timeline.find((stage) => stage.status === "expired")?.deadline;
+  const relevantDeadline = activeDeadline ?? expiredDeadline;
 
   return {
     stateLabel: escrowStateMetadata[snapshot.state].label,
     terminalOutcome: terminalOutcomes[snapshot.state],
     activeDeadline: activeDeadline && activeDeadline > 0n ? activeDeadline : undefined,
+    relevantDeadline:
+      relevantDeadline && relevantDeadline > 0n ? relevantDeadline : undefined,
     deadlineElapsed,
     availableActions: actionsForAccount(baseActions, snapshot, context),
     timeline,
