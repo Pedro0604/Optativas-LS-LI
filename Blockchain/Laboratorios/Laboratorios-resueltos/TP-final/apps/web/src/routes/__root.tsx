@@ -17,7 +17,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
           >
             <span className="relative size-11 shrink-0 overflow-hidden rounded-xl border border-primary/30 bg-[#161a16] shadow-[0_8px_28px_rgb(119_201_154/0.14)] transition duration-200 group-hover:-translate-y-0.5 group-hover:border-primary/60 group-hover:shadow-[0_10px_32px_rgb(119_201_154/0.22)]">
               <img
-                src="/icon.png"
+                src="/icon-192.png"
                 alt=""
                 className="size-full scale-85 object-cover"
                 width="44"
